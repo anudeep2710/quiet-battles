@@ -161,7 +161,8 @@ function renderProduct(slug) {
   const product = getProduct(slug);
   const selection = sizeSelection[product.slug] || "";
   return '<main class="page product-page"><nav class="breadcrumbs" aria-label="Breadcrumbs"><a href="#home">Home</a><span>/</span><a href="#archive">Archive</a><span>/</span><a href="#series">Series 01</a><span>/</span><span>' + escapeHtml(product.name) + '</span></nav>' +
-    '<div class="product-detail-layout"><figure class="product-gallery"><img src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + '" fetchpriority="high"></figure>' +
+    '<div class="product-detail-layout"><div class="product-gallery"><figure class="gallery-frame"><img src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + ' front view" fetchpriority="high"></figure>' +
+    (product.secondaryImage ? '<figure class="gallery-frame"><img src="' + escapeHtml(product.secondaryImage) + '" alt="' + escapeHtml(product.name) + ' back or detail view" loading="lazy"></figure>' : "") + '</div>' +
     '<section class="product-info"><span class="mono section-label">' + escapeHtml(product.category) + ' · SAMPLE PRODUCT</span><h1 class="page-title">' + escapeHtml(product.name) + '</h1><div class="price">' + money(product.price) + '<small>INR · sample price</small></div><p class="product-desc">' + escapeHtml(product.description) + '</p>' +
     '<div class="size-label"><span>Choose your size</span><button class="size-guide" type="button" data-size-guide>Size guide</button></div><div class="size-options">' + product.sizes.map(function (size) { return '<button class="size-option' + (selection === size ? " selected" : "") + '" type="button" data-size="' + escapeHtml(size) + '" data-product="' + escapeHtml(product.slug) + '" aria-pressed="' + (selection === size) + '">' + escapeHtml(size) + '</button>'; }).join("") + '</div><div class="size-help" id="size-help" aria-live="polite"></div>' +
     '<button class="button button-dark" type="button" data-add="' + escapeHtml(product.slug) + '">Add to bag <span class="arrow">↗</span></button><p class="shipping-note">DEMONSTRATION CART · NO PAYMENT OR ORDER IS CREATED</p>' +
@@ -217,6 +218,7 @@ function adminDashboard() {
       '</div>' +
       field("Description", "products." + index + ".description", product.description, { textarea: true }) +
       field("Product image", "products." + index + ".image", product.image, { upload: true, hint: "Use a full image URL or upload a PNG, JPG, or WebP file (up to 2 MB)." }) +
+      field("Back or detail image", "products." + index + ".secondaryImage", product.secondaryImage || "", { upload: true, hint: "Optional second product view. Use a full image URL or upload a file (up to 2 MB)." }) +
       field("Details and care points", "products." + index + ".details", product.details, { textarea: true, kind: "lines", hint: "One detail per line." }) +
     '</article>';
   }).join("");
@@ -446,7 +448,7 @@ function bindEvents() {
   });
   document.querySelectorAll("[data-add-product]").forEach(function (button) {
     button.addEventListener("click", function () {
-      content.products.push({ slug: "new-piece-" + Date.now(), name: "New field piece", category: "SERIES 01", description: "", price: 0, image: "/assets/soft-armor.svg", sizes: ["XS", "S", "M", "L", "XL"], details: [], chapterSlug: content.series.chapters[0] ? content.series.chapters[0].slug : "" });
+      content.products.push({ slug: "new-piece-" + Date.now(), name: "New field piece", category: "SERIES 01", description: "", price: 0, image: "/assets/soft-armor.svg", secondaryImage: "", sizes: ["XS", "S", "M", "L", "XL"], details: [], chapterSlug: content.series.chapters[0] ? content.series.chapters[0].slug : "" });
       render();
       document.querySelector('[data-tab="products"]').click();
     });

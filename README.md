@@ -1,6 +1,6 @@
 # QUIET BATTLES™ — Website Development Demo
 
-A working assessment prototype for the QUIET BATTLES™ brief. It includes a cinematic homepage, responsive navigation, The Archive, Series 01 — THE GENTLE ARMOR™, five chapter entries, a complete Chapter 01 story, one linked sample product, size selection, a browser bag, and a Neon-backed content Studio.
+A working assessment prototype for the QUIET BATTLES™ brief. It includes a cinematic homepage, responsive navigation, The Archive, Series 01 — THE GENTLE ARMOR™, five chapter entries, a complete Chapter 01 story, a sample product with two illustrated views, size selection, a browser bag, and a Neon-backed content Studio.
 
 ## Explore the demo
 
@@ -28,7 +28,7 @@ Run npm run test:smoke while the local server is running on port 4174. The smoke
 
 ## Maintain the site
 
-Open Studio, enter the Studio key, and choose Brand & home, Series & chapters, or Products. Edit text, image URLs, slugs, story paragraphs, price, sizes, and details. Use the image picker to upload PNG, JPEG, or WebP files up to 2 MB. Save changes to publish them. New chapters and products can be added from their respective tabs. Every chapter must refer to an existing product slug, and every product must refer to an existing chapter slug.
+Open Studio, enter the Studio key, and choose Brand & home, Series & chapters, or Products. Edit text, image URLs, slugs, story paragraphs, price, sizes, details, and both product views. Use the image picker to upload PNG, JPEG, or WebP files up to 2 MB. Save changes to publish them. New chapters and products can be added from their respective tabs. Every chapter must refer to an existing product slug, and every product must refer to an existing chapter slug.
 
 Content is saved in Neon Postgres. Uploaded images and four-hour Studio sessions also persist in Neon. The image route serves an uploaded image from the database by its ID. For a larger production site, move media to object storage and add role-based access, image optimization, and an audit log.
 

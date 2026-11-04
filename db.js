@@ -8,6 +8,16 @@ const { neon, neonConfig } = require("@neondatabase/serverless");
 // The regional api.* host did not resolve for this Neon region. Its endpoint host
 // serves the same SQL-over-HTTPS route, so send HTTP queries there directly.
 neonConfig.fetchEndpoint = (host) => "https://" + host + "/sql";
+neonConfig.fetchFunction = async (input, init) => {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      return await fetch(input, init);
+    } catch (error) {
+      if (!["ENOTFOUND", "EAI_AGAIN"].includes(error.cause?.code) || attempt === 3) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+    }
+  }
+};
 
 let client;
 function getClient() {
@@ -19,7 +29,8 @@ function getClient() {
 const schema = [
   "CREATE TABLE IF NOT EXISTS site_settings (id SMALLINT PRIMARY KEY CHECK (id = 1), brand JSONB NOT NULL, hero JSONB NOT NULL, introduction JSONB NOT NULL, series JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now())",
   "CREATE TABLE IF NOT EXISTS chapters (sort_order INTEGER PRIMARY KEY, number TEXT NOT NULL, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, excerpt TEXT NOT NULL, image TEXT NOT NULL, product_slug TEXT NOT NULL, story JSONB NOT NULL)",
-  "CREATE TABLE IF NOT EXISTS products (sort_order INTEGER PRIMARY KEY, slug TEXT NOT NULL UNIQUE, name TEXT NOT NULL, category TEXT NOT NULL, description TEXT NOT NULL, price INTEGER NOT NULL CHECK (price >= 0), image TEXT NOT NULL, sizes JSONB NOT NULL, details JSONB NOT NULL, chapter_slug TEXT NOT NULL)",
+  "CREATE TABLE IF NOT EXISTS products (sort_order INTEGER PRIMARY KEY, slug TEXT NOT NULL UNIQUE, name TEXT NOT NULL, category TEXT NOT NULL, description TEXT NOT NULL, price INTEGER NOT NULL CHECK (price >= 0), image TEXT NOT NULL, secondary_image TEXT NOT NULL DEFAULT '', sizes JSONB NOT NULL, details JSONB NOT NULL, chapter_slug TEXT NOT NULL)",
+  "ALTER TABLE products ADD COLUMN IF NOT EXISTS secondary_image TEXT NOT NULL DEFAULT ''",
   "CREATE TABLE IF NOT EXISTS media_assets (id UUID PRIMARY KEY, mime_type TEXT NOT NULL, base64_data TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())",
   "CREATE TABLE IF NOT EXISTS admin_sessions (token_hash TEXT PRIMARY KEY, expires_at TIMESTAMPTZ NOT NULL)"
 ];
@@ -39,7 +50,7 @@ async function readContent() {
   const [settingsRows, chapterRows, productRows] = await sql.transaction([
     sql.query("SELECT brand, hero, introduction, series FROM site_settings WHERE id = 1"),
     sql.query("SELECT number, slug, title, excerpt, image, product_slug, story FROM chapters ORDER BY sort_order"),
-    sql.query("SELECT slug, name, category, description, price, image, sizes, details, chapter_slug FROM products ORDER BY sort_order")
+    sql.query("SELECT slug, name, category, description, price, image, secondary_image, sizes, details, chapter_slug FROM products ORDER BY sort_order")
   ], { readOnly: true });
   const settings = settingsRows[0];
   if (!settings) return null;
@@ -57,6 +68,7 @@ async function readContent() {
     products: productRows.map((row) => ({
       slug: row.slug, name: row.name, category: row.category,
       description: row.description, price: row.price, image: row.image,
+      secondaryImage: row.secondary_image,
       sizes: row.sizes, details: row.details, chapterSlug: row.chapter_slug
     }))
   };
@@ -87,8 +99,8 @@ async function writeContent(value) {
   });
   value.products.forEach((product, index) => {
     queries.push(sql.query(
-      "INSERT INTO products (sort_order, slug, name, category, description, price, image, sizes, details, chapter_slug) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::jsonb, $10)",
-      [index, product.slug, product.name, product.category, product.description, product.price, product.image, JSON.stringify(product.sizes), JSON.stringify(product.details), product.chapterSlug]
+      "INSERT INTO products (sort_order, slug, name, category, description, price, image, secondary_image, sizes, details, chapter_slug) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11)",
+      [index, product.slug, product.name, product.category, product.description, product.price, product.image, product.secondaryImage || "", JSON.stringify(product.sizes), JSON.stringify(product.details), product.chapterSlug]
     ));
   });
   await sql.transaction(queries);

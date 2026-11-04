@@ -126,6 +126,7 @@ function validContent(value) {
     if (!isObject(product) || !["name", "category", "description", "chapterSlug"].every((k) => validText(product[k])) ||
         !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(product.slug || "") ||
         productSlugs.has(product.slug) || !validImage(product.image) ||
+        (product.secondaryImage && !validImage(product.secondaryImage)) ||
         !Number.isInteger(product.price) || product.price < 0 || product.price > 10000000 ||
         !Array.isArray(product.sizes) || product.sizes.length < 1 || product.sizes.length > 30 ||
         !product.sizes.every((item) => validText(item, 30)) ||

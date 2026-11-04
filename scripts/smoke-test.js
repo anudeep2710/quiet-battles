@@ -26,6 +26,10 @@ async function main() {
   assert.equal(initial.response.status, 200);
   assert.equal(initial.body.series.chapters.length, 5);
   assert.equal(initial.body.products.length, 1);
+  assert.equal(initial.body.products[0].secondaryImage, "/assets/soft-armor-back.svg");
+  const alternateImage = await fetch(base + initial.body.products[0].secondaryImage);
+  assert.equal(alternateImage.status, 200);
+  assert.match(await alternateImage.text(), /back view/i);
 
   const denied = await jsonRequest("/api/admin/login", {
     method: "POST", headers: { "Content-Type": "application/json" },

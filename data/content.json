@@ -81,6 +81,7 @@
       "description": "A quiet layer for the days that ask a little more of you. Roomy through the body, soft at the edges, and made to move at your pace.",
       "price": 4800,
       "image": "/assets/soft-armor.svg",
+      "secondaryImage": "/assets/soft-armor-back.svg",
       "sizes": ["XS", "S", "M", "L", "XL"],
       "details": ["Relaxed, easy fit", "Midweight brushed cotton blend", "Designed for everyday layering"],
       "chapterSlug": "the-first-quiet"

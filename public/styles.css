@@ -157,7 +157,8 @@ img { max-width: 100%; display: block; }
 .product-page { padding: 55px 0 100px; }
 .breadcrumbs { display: flex; gap: 11px; margin-bottom: 30px; color: var(--muted); font: 9px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
 .product-detail-layout { display: grid; grid-template-columns: 1.12fr .88fr; gap: clamp(45px, 8vw, 115px); align-items: start; }
-.product-gallery { background: var(--paper-deep); position: sticky; top: 20px; }
+.product-gallery { display: grid; gap: 12px; }
+.gallery-frame { margin: 0; background: var(--paper-deep); }
 .product-gallery img { width: 100%; aspect-ratio: .84; object-fit: cover; }
 .product-info { padding-top: 5vw; }
 .product-info .page-title { font-size: clamp(56px, 7vw, 93px); }

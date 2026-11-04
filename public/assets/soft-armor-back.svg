@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" role="img" aria-labelledby="title desc">
+  <title id="title">The Soft Armor Hoodie — back view</title>
+  <desc id="desc">Illustrated back of a charcoal hoodie on a muted stone background.</desc>
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#c9c8c1"/>
+      <stop offset="1" stop-color="#a5a59f"/>
+    </linearGradient>
+    <linearGradient id="cloth" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3a3d39"/>
+      <stop offset=".6" stop-color="#262a27"/>
+      <stop offset="1" stop-color="#191c1a"/>
+    </linearGradient>
+    <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="22"/>
+      <feOffset dy="24"/>
+      <feComponentTransfer><feFuncA type="linear" slope=".23"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="900" height="1100" fill="url(#paper)"/>
+  <path d="M0 815c230-65 510-30 900-95v380H0z" fill="#95968f" opacity=".25"/>
+  <g filter="url(#shadow)">
+    <path d="M333 193c-48 13-91 43-119 83L128 432l137 99 50-60v395c81 38 189 44 294 0V471l49 60 137-99-86-156c-28-40-71-70-119-83l-63 72H396z" fill="url(#cloth)" stroke="#4c504c" stroke-width="5"/>
+    <path d="M398 188c-16 17-35 42-40 87-2 65 38 123 92 154 54-31 94-89 92-154-5-45-24-70-40-87l-52 43z" fill="#202421" stroke="#555a55" stroke-width="5"/>
+    <path d="M378 300c17 58 42 94 72 113 30-19 55-55 72-113" fill="none" stroke="#666a64" stroke-width="4"/>
+    <path d="M318 502v352m264-352v352" stroke="#525751" stroke-width="4" opacity=".7"/>
+    <path d="M284 495l-33 36 27 22 31-40zm332 0 33 36-27 22-31-40z" fill="#9b5948"/>
+    <path d="M335 803c72 27 156 30 234 0" fill="none" stroke="#686c66" stroke-width="4" stroke-dasharray="2 12" stroke-linecap="round"/>
+  </g>
+  <g font-family="Arial, sans-serif" fill="#222522">
+    <text x="54" y="76" font-size="18" letter-spacing="5">QUIET BATTLES™</text>
+    <text x="55" y="1030" font-size="15" letter-spacing="4">FIELD PIECE 001 · BACK VIEW</text>
+  </g>
+  <circle cx="763" cy="111" r="22" fill="#9b5948"/>
+  <path d="M755 111h16m-8-8v16" stroke="#e6e3da" stroke-width="2"/>
+</svg>

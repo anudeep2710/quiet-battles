@@ -4,7 +4,7 @@
 
 https://quiet-battles-demo.vercel.app
 
-Pages to review: home, The Archive, Series 01 — THE GENTLE ARMOR™, Chapter 01 — The First Quiet, and The Soft Armor Hoodie. The product page supports choosing a size and adding the piece to a demo bag.
+Pages to review: home, The Archive, Series 01 — THE GENTLE ARMOR™, Chapter 01 — The First Quiet, and The Soft Armor Hoodie. The product page shows front and back illustrations, supports choosing a size, and adds the piece to a demo bag.
 
 ## 2. Source code
 
