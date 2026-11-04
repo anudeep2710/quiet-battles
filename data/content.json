@@ -1,0 +1,89 @@
+{
+  "brand": {
+    "name": "QUIET BATTLES",
+    "tagline": "WEAR YOUR BATTLES.",
+    "intro": "For the parts of life that happen quietly. Clothing for showing up as you are."
+  },
+  "hero": {
+    "eyebrow": "CLOTHING FOR THE UNSEEN",
+    "title": "WEAR YOUR<br>BATTLES.",
+    "description": "Not every battle makes a sound. Some are carried gently, one ordinary day at a time.",
+    "image": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1900&q=88"
+  },
+  "introduction": {
+    "eyebrow": "A NOTE FROM US",
+    "title": "Strength can be soft.",
+    "copy": "QUIET BATTLES is a clothing label built around the stories we carry privately. We make considered everyday pieces and create space for the moments that rarely get named."
+  },
+  "series": {
+    "number": "SERIES 01",
+    "title": "THE GENTLE ARMOR",
+    "subtitle": "A study in softness, and the courage it takes to stay open.",
+    "description": "Five chapters on the quiet work of becoming. Read them in order, or begin wherever you are.",
+    "image": "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=1500&q=86",
+    "chapters": [
+      {
+        "number": "CHAPTER 01",
+        "slug": "the-first-quiet",
+        "title": "The First Quiet",
+        "excerpt": "Some mornings, getting dressed is the first promise you keep to yourself.",
+        "image": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1100&q=84",
+        "productSlug": "soft-armor-hoodie",
+        "story": [
+          "Some mornings, getting dressed is the first promise you keep to yourself. No audience. No announcement. Just the small decision to meet the day.",
+          "We made this piece for that kind of morning. The fabric is soft against the skin, the shape leaves room to breathe, and the weight feels like a hand at your back. It does not ask you to be ready. It goes with you while you become ready.",
+          "The first quiet is not giving up. It is the moment you stop arguing with the day ahead and begin, gently, from where you are."
+        ]
+      },
+      {
+        "number": "CHAPTER 02",
+        "slug": "the-weight-you-carry",
+        "title": "The Weight You Carry",
+        "excerpt": "There is no visible measure for what a person has carried to get here.",
+        "image": "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1100&q=84",
+        "productSlug": "soft-armor-hoodie",
+        "story": []
+      },
+      {
+        "number": "CHAPTER 03",
+        "slug": "letting-someone-in",
+        "title": "Letting Someone In",
+        "excerpt": "A little room for another person can be its own kind of bravery.",
+        "image": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1100&q=84",
+        "productSlug": "soft-armor-hoodie",
+        "story": []
+      },
+      {
+        "number": "CHAPTER 04",
+        "slug": "staying-tender",
+        "title": "Staying Tender",
+        "excerpt": "Softness is not the absence of a boundary. It is knowing what you are protecting.",
+        "image": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1100&q=84",
+        "productSlug": "soft-armor-hoodie",
+        "story": []
+      },
+      {
+        "number": "CHAPTER 05",
+        "slug": "after-the-noise",
+        "title": "After the Noise",
+        "excerpt": "Rest is not a reward at the end. It is part of how we continue.",
+        "image": "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=1100&q=84",
+        "productSlug": "soft-armor-hoodie",
+        "story": []
+      }
+    ]
+  },
+  "products": [
+    {
+      "slug": "soft-armor-hoodie",
+      "name": "The Soft Armor Hoodie",
+      "category": "SERIES 01 · CHAPTER 01",
+      "description": "A quiet layer for the days that ask a little more of you. Roomy through the body, soft at the edges, and made to move at your pace.",
+      "price": 4800,
+      "image": "/assets/soft-armor.svg",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "details": ["Relaxed, easy fit", "Midweight brushed cotton blend", "Designed for everyday layering"],
+      "chapterSlug": "the-first-quiet"
+    }
+  ]
+}

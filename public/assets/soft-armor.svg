@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" role="img" aria-labelledby="title desc">
+  <title id="title">The Soft Armor Hoodie</title>
+  <desc id="desc">Illustrated charcoal hoodie on a muted stone background.</desc>
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d5d2c9"/>
+      <stop offset="1" stop-color="#a9a9a2"/>
+    </linearGradient>
+    <linearGradient id="cloth" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#343735"/>
+      <stop offset=".55" stop-color="#202321"/>
+      <stop offset="1" stop-color="#151816"/>
+    </linearGradient>
+    <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="22"/>
+      <feOffset dy="24"/>
+      <feComponentTransfer><feFuncA type="linear" slope=".23"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="900" height="1100" fill="url(#paper)"/>
+  <path d="M0 840c210-48 494-25 900-115v375H0z" fill="#9f9f98" opacity=".28"/>
+  <g filter="url(#shadow)">
+    <path d="M334 182c-48 13-91 42-119 82L128 432l137 99 49-60v393c83 39 208 42 294 0V471l48 60 137-99-87-168c-28-40-71-69-119-82l-65 77-64 1-64-1z" fill="url(#cloth)" stroke="#4c504c" stroke-width="5"/>
+    <path d="M334 182c12 79 58 123 119 124 61-1 107-45 119-124l-64 77-55 1-55-1z" fill="#252926" stroke="#555954" stroke-width="4"/>
+    <path d="M404 255c-10 60 5 117 49 161 44-44 59-101 49-161" fill="#303431" stroke="#5c605b" stroke-width="4"/>
+    <path d="M435 286v92m36-92v92" stroke="#8b8c83" stroke-width="5" stroke-linecap="round"/>
+    <path d="M340 601c65 22 155 22 220 0v126c-62 27-158 27-220 0z" fill="#252926" stroke="#515650" stroke-width="4"/>
+    <path d="M279 507c-20 79-19 173 4 263" fill="none" stroke="#515650" stroke-width="5"/>
+    <path d="M621 507c20 79 19 173-4 263" fill="none" stroke="#515650" stroke-width="5"/>
+    <path d="M282 492l-32 38 27 21 32-39zm336 0 32 38-27 21-32-39z" fill="#9b5948"/>
+    <path d="M338 799c77 28 150 31 246 0" fill="none" stroke="#666a63" stroke-width="4" stroke-dasharray="2 12" stroke-linecap="round"/>
+  </g>
+  <g font-family="Arial, sans-serif" fill="#222522">
+    <text x="54" y="76" font-size="18" letter-spacing="5">QUIET BATTLES™</text>
+    <text x="55" y="1030" font-size="15" letter-spacing="4">FIELD PIECE 001 · THE GENTLE ARMOR</text>
+  </g>
+  <circle cx="763" cy="111" r="22" fill="#9b5948"/>
+  <path d="M755 111h16m-8-8v16" stroke="#e6e3da" stroke-width="2"/>
+</svg>

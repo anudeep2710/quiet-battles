@@ -1,0 +1,5 @@
+data/quiet-battles.sqlite
+data/quiet-battles.sqlite-shm
+data/quiet-battles.sqlite-wal
+public/uploads/*
+!public/uploads/.gitkeep
