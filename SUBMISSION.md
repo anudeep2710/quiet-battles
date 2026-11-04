@@ -16,6 +16,8 @@ The repository is private. Invite the assessment reviewers to the repository or 
 
 Hand-written HTML, CSS, and JavaScript; Node.js API; Neon Postgres with @neondatabase/serverless; Vercel hosting. Sample editorial photography is from Unsplash, fonts are served by Google Fonts, and the sample garment graphic is a local SVG. No site template, UI framework, or paid plugin was used.
 
+OpenAI Codex assisted with implementation, documentation, and review. Playwright CLI was used for browser checks. This assistance should be disclosed during the technical evaluation, and the candidate should be ready to explain the code and decisions.
+
 ## 4. Backend, database, and admin demonstration
 
 Use the Studio link in the site navigation. The Studio key is kept outside source control and should be entered privately during the evaluation. The Studio can edit brand and homepage copy, Series 01 metadata, chapter stories and images, product details and price, and can add or remove chapters and products. PNG/JPEG/WebP uploads up to 2 MB persist in Neon. Public pages read the edited data through the API.

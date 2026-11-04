@@ -73,6 +73,7 @@ Studio saves use one Neon transaction. SQL parameters are bound by the Neon serv
 - Hosting: Vercel. The connected GitHub repository deploys new pushes.
 - External media: sample editorial photography from Unsplash. The garment graphic is a local SVG made for this demo.
 - Fonts: Barlow Condensed, DM Sans, and IBM Plex Mono loaded from Google Fonts.
+- Development assistance: OpenAI Codex helped implement, document, and review this prototype. Playwright CLI was used for browser checks. GitHub hosts the source.
 
 The detailed brand document, licensed final imagery, garment specifications, approved copy, inventory, and commerce policies were not provided. The visual direction, stories, price, and product copy are clearly sample material.
 
