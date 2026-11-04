@@ -1,69 +1,59 @@
-# QUIET BATTLES™ — Technical Approach
+# QUIET BATTLES™ — Technical Approach and Full-Project Estimate
 
-## Day 1 proposal
+## Brief and assumptions
 
-The supplied assessment asks for a branded storefront and a small content-management demonstration. The detailed brand requirements referenced by the assignment were not attached, so this prototype uses the tagline, series name, and scope from the assessment. Its visual direction and all product and story copy are samples that should be replaced with approved brand material.
+The assignment names the brand, tagline, pages, example series, five chapters, sample product, and an editable backend. The referenced detailed brand requirements document was not supplied. The prototype therefore uses sample copy, sample pricing, sample editorial photographs, and a proposed visual direction. These need brand approval before a public launch.
 
-## Demo architecture
+## Why this stack
 
-    Visitor browser → Responsive storefront → Node.js HTTP API → SQLite database
-    Studio editor ────────────────────────→ Node.js HTTP API
-    Studio editor → Image upload route → Local uploads folder
-    Visitor browser → Demo bag → Browser localStorage
+The demo uses native HTML, CSS, and JavaScript for a small, fast interface with little framework overhead. The Node.js API keeps content editing, login, validation, and image handling on the server. Neon Postgres provides a durable database shared by the local preview and Vercel deployment. The Neon serverless driver uses parameterized SQL over HTTPS, which suits short-lived Vercel Functions. Vercel serves static assets and runs the API; its Git connection supports preview and production deployments.
 
-### Technology choices
+This choice keeps the assessment easy to explain while showing frontend, backend, database, API, and deployment work. A larger production catalogue may warrant a framework with server rendering and a specialist commerce platform. The full-project discovery phase should decide that with the actual requirements document in hand.
 
-- **Frontend:** semantic HTML, responsive CSS, and browser JavaScript. No UI framework or paid plugin is used.
-- **Backend:** Node.js built-in HTTP server and JSON API routes.
-- **Database:** file-backed SQLite, with separate tables for brand/series settings, chapters, and products. Admin saves run in a transaction. The initial records come from data/content.json.
-- **Media:** local PNG, JPG, and WebP uploads under public/uploads/; the editorial sample photographs load from Unsplash.
-- **Cart:** browser localStorage for a persistent demo bag. There is no checkout, payment, inventory, or order service.
-- **Fonts:** Barlow Condensed, DM Sans, and IBM Plex Mono from Google Fonts.
-- **Hosting:** local preview only. The database and uploaded files are on disk, so the current build needs a persistent host and storage before it can become a shared staging site.
+## Architecture and content flow
 
-The built-in node:sqlite module is used to keep the demo dependency-free. It is documented as a release candidate in Node.js 24.15 ([Node.js SQLite documentation](https://nodejs.org/download/release/v24.16.0/docs/api/sqlite.html)), so a production project should select a stable database driver and managed database as part of the approved architecture.
+    Public page → /api/content → site_settings + chapters + products in Neon
+    Studio → key login → hashed session in Neon → protected API
+    Studio save → content validation → one Postgres transaction
+    Studio upload → file signature check → media_assets in Neon → /api/media/:id
+    Product page → selected size → localStorage demo bag
 
-## Content model
+The seed file creates Series 01, five chapters, and the sample hoodie. Only Chapter 01 contains a full sample story; Chapters 02–05 remain previews. A new chapter or product can be added in Studio without editing source code.
 
-| Table | Purpose |
-| --- | --- |
-| site_settings | Brand name and tagline, homepage hero, introduction, and Series 01 metadata |
-| chapters | Chapter number, URL slug, title, summary, image, linked product, and story paragraphs |
-| products | Product name, URL slug, description, integer price in INR, image, size options, details, and linked chapter |
+## Security, reliability, performance, and SEO
 
-The studio can update content, add or remove chapters and products, and upload images. The public site reads the same content through the API.
-
-## API routes
-
-| Method and route | Purpose |
-| --- | --- |
-| GET /api/content | Return public brand, series, chapter, and product content |
-| POST /api/admin/login | Create a four-hour local studio session |
-| POST /api/admin/logout | End the current studio session |
-| PUT /api/admin/content | Validate and transactionally save the content model |
-| POST /api/admin/upload | Save an image after checking its type and 5 MB size limit |
-| GET /api/health | Local server status |
-
-## Current scope and limits
-
-- All five Series 01 chapters are listed. Chapter 01 has the complete sample story; Chapters 02–05 are short previews.
-- The sample product is priced in INR and supports size selection and add/remove quantity in the bag.
-- The studio key is displayed on the local demo sign-in screen. Replace it with QB_ADMIN_KEY before any private deployment. Sessions are stored in memory and expire when the server restarts.
-- The site uses hash-based client-side navigation. It is appropriate for a self-contained demo; production SEO should use crawlable page routes and page-specific metadata.
-- Product details, imagery, price, and copy are placeholders pending the detailed requirements and approved brand assets.
+- The Studio key is an environment secret of at least 16 characters. Login comparison uses a timing-safe check.
+- Sessions expire after four hours; only token hashes are stored, and sign-out deletes the session.
+- Admin writes require a valid session. Incoming content is bounded and validated, including linked slugs, image URLs, story lengths, and nonnegative integer prices.
+- Uploaded PNG/JPEG/WebP files are capped at 2 MB and checked against their file signatures. Public images have immutable cache headers.
+- Static CSS and JavaScript are served directly by Vercel; responsive layouts were checked at desktop and 390-pixel mobile widths.
+- The homepage has a description, Open Graph text, a favicon, semantic headings, descriptive image text, and route-specific browser titles. Hash routing limits search indexing of inner pages. Production should use crawlable URLs, page-specific server metadata, a sitemap, image optimization, and analytics.
+- This demo has no checkout or order service. A production launch needs managed commerce flows, legal policies, and a more complete admin permission model.
 
 ## Seven-day assessment plan
 
-| Day | Work |
+| Day | Deliverable |
 | --- | --- |
-| 1 | Confirm the full brand requirements, scope boundaries, content, and technical approach |
-| 2 | Lock page structure, design direction, and content model |
-| 3 | Build responsive homepage, navigation, and reusable visual elements |
-| 4 | Build Archive, Series 01, chapter index, and Chapter 01 story page |
-| 5 | Build the sample product page, size selection, and demo cart |
-| 6 | Add the content studio, SQLite persistence, image management, and responsive polish |
-| 7 | Review the demo, prepare source handoff, explain the architecture, and submit a scoped estimate |
+| 1 | Read the available brief; document assumptions and choose the stack |
+| 2 | Define page map, content model, editorial design direction, and interaction plan |
+| 3 | Build responsive homepage, navigation, and shared visual system |
+| 4 | Build Archive, Series 01, five chapter entries, and the complete Chapter 01 |
+| 5 | Build the product page, size selection, and demo bag |
+| 6 | Add the Neon-backed Studio, uploads, validation, and responsive verification |
+| 7 | Verify the deployment and API, document architecture, and prepare submission |
 
-## Full-project estimate
+## Production roadmap and indicative quotation
 
-The assignment does not include the detailed requirements document, approved assets, product count, payment/shipping requirements, or hosting expectations. A fixed project price would be guesswork at this stage. A responsible quote needs those inputs plus the developer’s rate. Checkout, order management, shipping/tax rules, and production authentication should be estimated separately from this demo.
+This is a provisional quotation because the full requirements document, approved assets, product count, checkout rules, shipping/tax rules, and support terms are missing.
+
+| Scope | Time after approval | Indicative fee |
+| --- | --- | --- |
+| Production editorial storefront and CMS: approved design, up to three series, 15 chapters, 10 products, media storage, admin roles, responsive QA, accessibility and SEO basics, deployment and handover | 6–8 weeks | ₹1,80,000–₹2,60,000 |
+| Optional commerce completion: secure checkout integration, order records, stock hooks, shipping and tax rules, payment testing and launch QA | 2–4 additional weeks | ₹90,000–₹1,50,000 |
+| Combined estimated project | 8–12 weeks | ₹2,70,000–₹4,10,000 |
+
+The estimate assumes brand copy, garment details, photography rights, size charts, legal policies, and payment/shipping accounts are supplied by the client. It excludes hosting, database and media usage, payment-provider fees, content production, tax, and ongoing maintenance. After the detailed requirements are reviewed, convert the chosen scope into a fixed deliverable list, acceptance criteria, milestones, and a final quote.
+
+## Maintenance handover
+
+The owner can edit existing text and images or add new chapters and products through Studio. A technical maintainer can change the layout or API in the GitHub repository, which is linked to Vercel. The database can be managed through Neon’s console and backed up using its managed features. Rotate the Studio key through Vercel environment settings and redeploy. Before public launch, replace the demo key flow with managed staff accounts and move uploaded media out of Postgres.

@@ -1,0 +1,8 @@
+.env*
+.studio-key
+.share-link.json
+.share-body.json
+.playwright-cli/
+output/
+data/*.sqlite*
+node_modules/

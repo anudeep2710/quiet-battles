@@ -3,3 +3,13 @@ data/quiet-battles.sqlite-shm
 data/quiet-battles.sqlite-wal
 public/uploads/*
 !public/uploads/.gitkeep
+
+.vercel
+.env*
+!.env.example
+node_modules/
+.studio-key
+.share-link.json
+.share-body.json
+output/playwright/
+.playwright-cli/

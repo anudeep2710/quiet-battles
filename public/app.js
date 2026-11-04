@@ -10,7 +10,12 @@ let noticeTimer = null;
 let sizeSelection = {};
 
 function readCart() {
-  try { return JSON.parse(localStorage.getItem("qbCart") || "[]"); }
+  try {
+    const stored = JSON.parse(localStorage.getItem("qbCart") || "[]");
+    return Array.isArray(stored) ? stored.filter(function (item) {
+      return item && Number.isInteger(item.qty) && item.qty > 0 && typeof item.slug === "string";
+    }) : [];
+  }
   catch { return []; }
 }
 
@@ -180,9 +185,9 @@ function field(label, path, value, options) {
 }
 
 function adminLogin() {
-  return '<form class="admin-login" id="admin-login"><span class="mono section-label">CONTENT DESK · PRIVATE PREVIEW</span><h2>Studio access</h2><p>Sign in to update the series, chapters, product details, and images for this local demo.</p>' +
+  return '<form class="admin-login" id="admin-login"><span class="mono section-label">CONTENT DESK · PRIVATE PREVIEW</span><h2>Studio access</h2><p>Sign in to update the series, chapters, product details, and images.</p>' +
     '<label class="admin-field"><span>Studio key</span><input type="password" name="key" autocomplete="current-password" required></label>' +
-    '<div class="demo-key">Local demo key: quietbattles-demo</div><div class="admin-status" role="status">' + escapeHtml(adminMessage) + '</div><button class="button button-dark" type="submit">Open the studio <span class="arrow">↗</span></button></form>';
+    '<div class="admin-status" role="status">' + escapeHtml(adminMessage) + '</div><button class="button button-dark" type="submit">Open the studio <span class="arrow">↗</span></button></form>';
 }
 
 function adminDashboard() {
@@ -195,7 +200,7 @@ function adminDashboard() {
         field("Linked product slug", "series.chapters." + index + ".productSlug", chapter.productSlug) +
       '</div>' +
       field("Short introduction", "series.chapters." + index + ".excerpt", chapter.excerpt, { textarea: true }) +
-      field("Chapter image", "series.chapters." + index + ".image", chapter.image, { upload: true, hint: "Use a full image URL or upload a PNG, JPG, or WebP file (up to 5 MB)." }) +
+      field("Chapter image", "series.chapters." + index + ".image", chapter.image, { upload: true, hint: "Use a full image URL or upload a PNG, JPG, or WebP file (up to 2 MB)." }) +
       field("Story paragraphs", "series.chapters." + index + ".story", chapter.story || [], { textarea: true, kind: "paragraphs", hint: "Separate paragraphs with a blank line. Leave blank for a series preview." }) +
     '</article>';
   }).join("");
@@ -211,13 +216,13 @@ function adminDashboard() {
         field("Linked chapter slug", "products." + index + ".chapterSlug", product.chapterSlug) +
       '</div>' +
       field("Description", "products." + index + ".description", product.description, { textarea: true }) +
-      field("Product image", "products." + index + ".image", product.image, { upload: true, hint: "Use a full image URL or upload a PNG, JPG, or WebP file (up to 5 MB)." }) +
+      field("Product image", "products." + index + ".image", product.image, { upload: true, hint: "Use a full image URL or upload a PNG, JPG, or WebP file (up to 2 MB)." }) +
       field("Details and care points", "products." + index + ".details", product.details, { textarea: true, kind: "lines", hint: "One detail per line." }) +
     '</article>';
   }).join("");
 
   return '<div class="admin-shell"><div class="page">' +
-    '<div class="admin-top"><div><span class="mono section-label">QUIET BATTLES · CONTENT DESK</span><h1>Studio</h1></div><div><p>Content is saved to the local SQLite database.<br>Uploaded images are stored in the local uploads folder.</p><button class="button button-light" type="button" data-logout>Sign out</button></div></div>' +
+    '<div class="admin-top"><div><span class="mono section-label">QUIET BATTLES · CONTENT DESK</span><h1>Studio</h1></div><div><p>Content and uploaded images are saved to Neon Postgres.</p><button class="button button-light" type="button" data-logout>Sign out</button></div></div>' +
     '<div class="admin-tabs" role="tablist"><button class="admin-tab active" type="button" data-tab="brand" role="tab" aria-selected="true">Brand & home</button><button class="admin-tab" type="button" data-tab="series" role="tab" aria-selected="false">Series & chapters</button><button class="admin-tab" type="button" data-tab="products" role="tab" aria-selected="false">Products</button></div>' +
     '<form id="admin-form">' +
       '<section class="admin-panel active" data-panel="brand"><div class="admin-card"><h2>Brand introduction</h2><div class="admin-grid">' +
@@ -228,13 +233,13 @@ function adminDashboard() {
         field("Eyebrow", "hero.eyebrow", content.hero.eyebrow) +
         field("Headline (type <br> for a line break)", "hero.title", content.hero.title) +
       '</div>' + field("Supporting copy", "hero.description", content.hero.description, { textarea: true }) +
-      field("Hero image", "hero.image", content.hero.image, { upload: true, hint: "Use a full image URL or upload a PNG, JPG, or WebP file (up to 5 MB)." }) +
+      field("Hero image", "hero.image", content.hero.image, { upload: true, hint: "Use a full image URL or upload a PNG, JPG, or WebP file (up to 2 MB)." }) +
       '</div><div class="admin-card"><h2>Our note</h2><div class="admin-grid">' + field("Section label", "introduction.eyebrow", content.introduction.eyebrow) + field("Heading", "introduction.title", content.introduction.title) + '</div>' + field("Copy", "introduction.copy", content.introduction.copy, { textarea: true }) + '</div></section>' +
       '<section class="admin-panel" data-panel="series"><div class="admin-card"><h2>Series details</h2><div class="admin-grid">' +
         field("Series number", "series.number", content.series.number) +
         field("Series title", "series.title", content.series.title) +
         field("Subtitle", "series.subtitle", content.series.subtitle) +
-        field("Series image", "series.image", content.series.image, { upload: true, hint: "Use a full image URL or upload a PNG, JPG, or WebP file (up to 5 MB)." }) +
+        field("Series image", "series.image", content.series.image, { upload: true, hint: "Use a full image URL or upload a PNG, JPG, or WebP file (up to 2 MB)." }) +
       '</div>' + field("Series description", "series.description", content.series.description, { textarea: true }) +
       '<div class="admin-row-title"><h2>Chapters · ' + content.series.chapters.length + '</h2><button class="button button-light" type="button" data-add-chapter>Add chapter</button></div>' + chapterForms + '</div></section>' +
       '<section class="admin-panel" data-panel="products"><div class="admin-card"><div class="admin-row-title"><h2>Product catalogue · ' + content.products.length + '</h2><button class="button button-light" type="button" data-add-product>Add product</button></div>' + productForms + '</div></section>' +
@@ -284,7 +289,19 @@ function render() {
   else if (route[0] === "admin") main = '<main>' + (adminToken ? adminDashboard() : '<div class="admin-shell"><div class="page">' + adminLogin() + '</div></div>') + '</main>';
   else main = renderHome();
   root.innerHTML = renderHeader() + main + renderFooter() + renderCart() + renderNotice();
-  document.title = route[0] === "admin" ? "Studio · QUIET BATTLES™" : "QUIET BATTLES™ — Wear Your Battles";
+  const pageTitle = route[0] === "admin" ? "Studio" :
+    route[0] === "archive" ? "The Archive" :
+    route[0] === "series" ? content.series.title :
+    route[0] === "chapter" ? getChapter(route[1]).title :
+    route[0] === "product" ? getProduct(route[1]).name : "Wear Your Battles";
+  document.title = pageTitle + " · QUIET BATTLES™";
+  const description = document.querySelector('meta[name="description"]');
+  if (description) {
+    description.content = route[0] === "chapter" ? getChapter(route[1]).excerpt :
+      route[0] === "product" ? getProduct(route[1]).description :
+      route[0] === "series" ? content.series.description :
+      "QUIET BATTLES makes considered everyday clothing for the stories we carry quietly. Wear your battles.";
+  }
   bindEvents();
 }
 
@@ -467,8 +484,8 @@ function updateField(input) {
 async function uploadImage(input) {
   const file = input.files && input.files[0];
   if (!file) return;
-  if (file.size > 5 * 1024 * 1024) {
-    adminMessage = "Images must be 5 MB or smaller.";
+  if (file.size > 2 * 1024 * 1024) {
+    adminMessage = "Images must be 2 MB or smaller.";
     render();
     return;
   }
@@ -516,7 +533,7 @@ async function saveAdminContent(event) {
       }
       throw new Error(result.error || "Changes could not be saved.");
     }
-    adminMessage = "Saved to the local content file.";
+    adminMessage = "Saved to Neon Postgres.";
     render();
     document.querySelector('[data-tab="brand"]').click();
     document.getElementById("admin-status").textContent = adminMessage;
@@ -549,8 +566,8 @@ window.addEventListener("keydown", function (event) {
 });
 
 fetch("/api/content")
-  .then(function (response) { if (!response.ok) throw new Error("The local content service is unavailable."); return response.json(); })
+  .then(function (response) { if (!response.ok) throw new Error("The content service is unavailable."); return response.json(); })
   .then(function (data) { content = data; render(); })
   .catch(function () {
-    root.innerHTML = '<main class="page" style="padding:80px 0"><span class="mono">The archive is offline.</span><p>Start the local demo server to open the site.</p></main>';
+    root.innerHTML = '<main class="page" style="padding:80px 0"><span class="mono">The archive is offline.</span><p>Please try again shortly.</p></main>';
   });
