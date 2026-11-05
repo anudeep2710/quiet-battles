@@ -1,41 +1,51 @@
 # QUIET BATTLES™ — Assessment Submission
 
-## 1. Working demonstration and staging link
+**Assessment deadline:** 11 November 2026, 6:00 PM IST
+
+## Working demonstration
 
 https://quiet-battles-demo.vercel.app
 
-Pages to review: home, The Archive, Series 01 — THE GENTLE ARMOR™, Chapter 01 — The First Quiet, and The Soft Armor Hoodie. The product page shows front and back illustrations, supports choosing a size, and adds the piece to a demo bag.
+The demo follows the brand path from the homepage to The Archive, a Series, a Chapter Chamber, its sample artifact, and the demo bag. It includes five complete sample stories, a responsive layout, and a Neon-backed Studio.
 
-## 2. Source code
+## Source code and local run instructions
 
-https://github.com/anudeep2710/quiet-battles-demo
+- Private GitHub repository: https://github.com/anudeep2710/quiet-battles-demo
+- A portable source ZIP is provided alongside this submission. The ZIP excludes local environment files and Studio credentials.
+- Setup and run instructions: [README.md](README.md)
 
-The repository is private. Invite the assessment reviewers to the repository or provide a source archive when submitting it.
+Reviewers will need access to the private repository or the source ZIP.
 
-## 3. Technology stack
+## Screenshots and demonstration evidence
 
-Hand-written HTML, CSS, and JavaScript; Node.js API; Neon Postgres with @neondatabase/serverless; Vercel hosting. Sample editorial photography is from Unsplash, fonts are served by Google Fonts, and the sample garment graphic is a local SVG. No site template, UI framework, or paid plugin was used.
+The screenshot index is [docs/screenshots/README.md](docs/screenshots/README.md). It includes desktop and mobile views of the homepage and product, Archive, Series 01, Chapter Chambers, the demo bag, and Studio. The capture script can reproduce them with Playwright.
 
-OpenAI Codex assisted with implementation, documentation, and review. Playwright CLI was used for browser checks. This assistance should be disclosed during the technical evaluation, and the candidate should be ready to explain the code and decisions.
+## Technologies
 
-## 4. Backend, database, and admin demonstration
+- Frontend: hand-written HTML, CSS, and browser JavaScript.
+- Backend: Node.js API, run locally by `server.js` and deployed as a Vercel Function.
+- Database: Neon Postgres through `@neondatabase/serverless`.
+- Hosting and source: Vercel and GitHub.
+- External services and assets: Unsplash sample photography, Google Fonts, two original images generated with OpenAI image generation, and original local SVG garment illustrations.
 
-Use the Studio link in the site navigation. The Studio key is kept outside source control and should be entered privately during the evaluation. The Studio can edit brand and homepage copy, Series 01 metadata, chapter stories and images, product details and price, and can add or remove chapters and products. PNG/JPEG/WebP uploads up to 2 MB persist in Neon. Public pages read the edited data through the API.
+No site template, frontend framework, CMS plugin, or paid UI plugin was used. OpenAI Codex assisted with implementation and documentation; Playwright was used for browser checks and screenshot capture. These tools are disclosed for the technical evaluation.
 
-The Neon schema has tables for site settings, chapters, products, media assets, and hashed Studio sessions. See README.md and TECHNICAL_APPROACH.md for the content model and API details.
+## Database and Studio
 
-## 5. Architecture
+The schema, fields, and relationships are documented in [docs/database-schema.md](docs/database-schema.md). Studio at `/#admin` can edit brand and homepage content; add, edit, and remove Series and Chapters; manage products; and upload images. Image uploads up to 2 MB are stored in Neon for this demo.
 
-Vercel serves static files from public/ and sends API requests to a Node Function. The function reads and writes Neon Postgres. The visitor bag is stored in that visitor's browser. Database initialization and sample content are provided by scripts/init-db.js and data/content.json.
+The Studio key is kept outside source control. Enter it privately during the review; do not include it in the submission.
 
-## 6. Verification
+## Architecture
 
-The local smoke check passed for public content, login, chapter and product edits, image upload, and sign-out. The hosted health and content APIs returned the expected Neon data. The homepage was checked in a real browser at desktop and 390-pixel mobile widths; the product bag flow was exercised on mobile.
+Visitors load static files from Vercel. The browser requests published content from a Node API, which reads Neon. Studio edits use a protected API session and write content to Neon. The selected size and bag are stored in the visitor's browser.
 
-## 7. Indicative completion timeline and quotation
+## Demonstration boundaries
 
-Production editorial storefront and CMS: 6–8 weeks, ₹1,80,000–₹2,60,000. Optional checkout, orders, shipping and tax integration: another 2–4 weeks, ₹90,000–₹1,50,000. Combined estimate: 8–12 weeks, ₹2,70,000–₹4,10,000, excluding third-party charges and tax. The scope assumptions and exclusions are in TECHNICAL_APPROACH.md; a fixed quote requires the detailed brand requirements.
+All stories, garment details, product price, and some photography are sample material. The product illustrations are original SVG concepts. Chapters 02–05 link to the sample Series 01 artifact to demonstrate the journey; only Chapter 01 owns that sample product record. The client can replace these links and content through Studio.
 
-## 8. Demo limitations
+The bag does not create an order or process payment. Stock control, order management, shipping, returns, customer accounts, and payment integration are outside the prototype. The current inner pages use hash-based URLs, so production SEO requires crawlable routes and page-specific server metadata.
 
-Only Chapter 01 is a complete story; Chapters 02–05 are previews. Garment specification, price, copy, and editorial photographs are samples because the detailed requirements and approved assets were not provided. The bag does not process a payment or order. Hash-based inner pages need crawlable URLs before a production SEO launch.
+## Indicative full-project estimate
+
+The updated overview clarifies the brand and demo scope. The production estimate in [TECHNICAL_APPROACH.md](TECHNICAL_APPROACH.md) remains provisional until the client supplies approved assets, final product and content volume, and commerce rules.

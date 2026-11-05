@@ -46,7 +46,19 @@ function imageFrame(src, alt, className) {
 }
 
 function getChapter(slug) {
-  return content.series.chapters.find(function (item) { return item.slug === slug; }) || content.series.chapters[0];
+  for (const series of content.seriesList) {
+    const chapter = series.chapters.find(function (item) { return item.slug === slug; });
+    if (chapter) return chapter;
+  }
+  return content.seriesList[0].chapters[0];
+}
+
+function getSeries(slug) {
+  return content.seriesList.find(function (item) { return item.slug === slug; }) || content.seriesList[0];
+}
+
+function getChapterSeries(chapter) {
+  return content.seriesList.find(function (item) { return item.chapters.includes(chapter); }) || content.seriesList[0];
 }
 
 function getProduct(slug) {
@@ -54,13 +66,13 @@ function getProduct(slug) {
 }
 
 function renderHeader() {
-  return '<div class="topline">A quieter kind of strength · Series 01 now open</div>' +
+  return '<div class="topline">A quieter kind of strength · ' + escapeHtml(content.seriesList[0].number) + ' now open</div>' +
     '<header class="site-header"><div class="nav-wrap">' +
       '<a class="wordmark" href="#home" aria-label="Quiet Battles home">' + escapeHtml(content.brand.name) + '<sup>™</sup></a>' +
       '<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav">Menu</button>' +
       '<nav class="nav-links" id="main-nav" aria-label="Main navigation">' +
         navLink("The archive", "#archive") +
-        navLink("Series 01", "#series") +
+        navLink(content.seriesList[0].number, "#series/" + escapeHtml(content.seriesList[0].slug)) +
         navLink("Our note", "#belief") +
       '</nav>' +
       '<div class="nav-actions"><a href="#admin">Studio</a><button class="cart-trigger" type="button" data-cart-open>Bag <span class="cart-count">(' + cart.reduce(function (sum, item) { return sum + item.qty; }, 0) + ')</span></button></div>' +
@@ -72,17 +84,16 @@ function renderFooter() {
     '<div class="footer-main">' +
       '<h2>For what<br>you carry.</h2>' +
       '<p class="footer-note">' + escapeHtml(content.brand.intro) + '</p>' +
-      '<div class="footer-links"><a href="#archive">Explore the archive</a><a href="#product/' + escapeHtml(content.products[0].slug) + '">The Gentle Armor</a><a href="#admin">Studio access</a></div>' +
+      '<div class="footer-links"><a href="#archive">Explore the archive</a><a href="#series/' + escapeHtml(getSeries().slug) + '">' + escapeHtml(getSeries().title) + '</a><a href="#admin">Studio access</a></div>' +
     '</div>' +
     '<div class="footer-bottom"><span>© 2026 ' + escapeHtml(content.brand.name) + '™</span><span>' + escapeHtml(content.brand.tagline) + '</span><span>Independent demo experience</span></div>' +
   '</div></footer>';
 }
 
-function chapterCards() {
-  return content.series.chapters.map(function (chapter, index) {
-    const marker = index === 0 ? "FULL CHAPTER" : "SERIES NOTE";
+function chapterCards(series) {
+  return series.chapters.map(function (chapter) {
     return '<a class="chapter-card" href="#chapter/' + escapeHtml(chapter.slug) + '">' +
-      '<span class="mono">' + escapeHtml(chapter.number) + ' <span aria-hidden="true">·</span> ' + marker + '</span>' +
+      '<span class="mono">' + escapeHtml(chapter.number) + ' <span aria-hidden="true">·</span> CHAPTER CHAMBER</span>' +
       '<h3>' + escapeHtml(chapter.title) + '</h3>' +
       '<p>' + escapeHtml(chapter.excerpt) + '</p>' +
       '<span class="card-link">Read this chapter <span class="arrow">↗</span></span>' +
@@ -92,7 +103,8 @@ function chapterCards() {
 
 function renderHome() {
   const product = content.products[0];
-  const firstChapter = content.series.chapters[0];
+  const series = getSeries();
+  const firstChapter = series.chapters[0];
   return '<main>' +
     '<section class="hero">' +
       '<div class="hero-copy">' +
@@ -116,9 +128,9 @@ function renderHome() {
       '</div>' +
     '</section>' +
     '<section class="series-band"><div class="series-intro">' +
-      '<div class="series-copy"><span class="mono section-label">' + escapeHtml(content.series.number) + ' · THE ARCHIVE</span><h2>' + escapeHtml(content.series.title) + '</h2><p class="subtitle">' + escapeHtml(content.series.subtitle) + '</p><p class="description">' + escapeHtml(content.series.description) + '</p><a class="button" href="#series">Open the series <span class="arrow">↗</span></a></div>' +
-      '<figure class="series-image"><img src="' + escapeHtml(content.series.image) + '" alt="The Gentle Armor collection portrait" loading="lazy"><figcaption class="mono">A study in everyday courage</figcaption></figure>' +
-    '</div><div class="page chapter-list">' + chapterCards() + '</div></section>' +
+      '<div class="series-copy"><span class="mono section-label">' + escapeHtml(series.number) + ' · THE ARCHIVE</span><h2>' + escapeHtml(series.title) + '</h2><p class="subtitle">' + escapeHtml(series.subtitle) + '</p><p class="description">' + escapeHtml(series.description) + '</p><a class="button" href="#series/' + escapeHtml(series.slug) + '">Open the series <span class="arrow">↗</span></a></div>' +
+      '<figure class="series-image"><img src="' + escapeHtml(series.image) + '" alt="The Gentle Armor collection portrait" loading="lazy"><figcaption class="mono">A study in everyday courage</figcaption></figure>' +
+    '</div><div class="page chapter-list">' + chapterCards(series) + '</div></section>' +
     '<section class="page section product-feature">' +
       '<div class="product-photo"><img src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + '" loading="lazy"><span class="product-stamp mono">FIELD PIECE 001</span></div>' +
       '<div class="product-copy"><span class="mono section-label">FROM THE SERIES · CHAPTER 01</span><h2>' + escapeHtml(product.name) + '</h2><p>' + escapeHtml(product.description) + '</p><div class="price">' + money(product.price) + '<small>Sample price · INR</small></div><div class="product-details">' + product.details.map(function (line) { return "<span>" + escapeHtml(line) + "</span>"; }).join("") + '</div><a class="button button-dark" href="#product/' + escapeHtml(product.slug) + '">View the piece <span class="arrow">↗</span></a></div>' +
@@ -127,40 +139,48 @@ function renderHome() {
 }
 
 function renderArchive() {
+  const entries = content.seriesList.map(function (series) {
+    return '<article class="archive-item"><div class="archive-art"><img src="' + escapeHtml(series.image) + '" alt="' + escapeHtml(series.number + ' — ' + series.title) + '" loading="lazy"><span class="hero-stamp">' + escapeHtml(series.number) + ' · ' + series.chapters.length + ' chapters</span></div><div class="archive-copy"><span class="mono section-label">' + escapeHtml(series.number) + '</span><h2 class="page-title">' + escapeHtml(series.title) + '</h2><p>' + escapeHtml(series.subtitle) + '</p><p>' + escapeHtml(series.description) + '</p><a class="button button-dark" href="#series/' + escapeHtml(series.slug) + '">Explore this series <span class="arrow">↗</span></a></div></article>';
+  }).join("");
   return '<main><section class="archive-hero"><div class="page"><span class="mono section-label">THE QUIET BATTLES ARCHIVE</span><h1 class="page-title">Stories to<br>wear with you.</h1><p class="lead">A growing collection of chapters, objects, and small reminders for the lives we are living between the lines.</p></div></section>' +
-    '<section class="page archive-list"><article class="archive-item"><div class="archive-art"><img src="' + escapeHtml(content.series.image) + '" alt="Series 01 — The Gentle Armor" fetchpriority="high"><span class="hero-stamp">Series 01 · five chapters</span></div><div class="archive-copy"><span class="mono section-label">' + escapeHtml(content.series.number) + '</span><h2 class="page-title">' + escapeHtml(content.series.title) + '</h2><p>' + escapeHtml(content.series.subtitle) + '</p><p>' + escapeHtml(content.series.description) + '</p><a class="button button-dark" href="#series">Explore this series <span class="arrow">↗</span></a></div></article></section></main>';
+    '<section class="page archive-list">' + entries + '</section></main>';
 }
 
-function renderSeries() {
+function renderSeries(slug) {
+  const series = getSeries(slug);
   return '<main><section class="series-band"><div class="series-intro">' +
-    '<div class="series-copy"><span class="mono section-label">' + escapeHtml(content.series.number) + ' · THE ARCHIVE</span><h1>' + escapeHtml(content.series.title) + '</h1><p class="subtitle">' + escapeHtml(content.series.subtitle) + '</p><p class="description">' + escapeHtml(content.series.description) + '</p><span class="hero-caption">Five chapters · One continuous thread</span></div>' +
-    '<figure class="series-image"><img src="' + escapeHtml(content.series.image) + '" alt="The Gentle Armor series" fetchpriority="high"><figcaption class="mono">The Gentle Armor · 2026</figcaption></figure>' +
-    '</div><div class="page chapter-list">' + chapterCards() + '</div></section>' +
-    '<section class="page section"><div class="section-head"><div><span class="mono section-label">THE THREAD</span><h2>Keep what<br>helps.</h2></div><p>The series moves from beginning, to carrying, to letting in. Take the order as a suggestion. Start where you need to.</p></div><a class="button button-dark" href="#chapter/' + escapeHtml(content.series.chapters[0].slug) + '">Begin with Chapter 01 <span class="arrow">↗</span></a></section></main>';
+    '<div class="series-copy"><span class="mono section-label">' + escapeHtml(series.number) + ' · THE ARCHIVE</span><h1>' + escapeHtml(series.title) + '</h1><p class="subtitle">' + escapeHtml(series.subtitle) + '</p><p class="description">' + escapeHtml(series.description) + '</p><span class="hero-caption">' + series.chapters.length + ' chapters · One continuous thread</span></div>' +
+    '<figure class="series-image"><img src="' + escapeHtml(series.image) + '" alt="' + escapeHtml(series.title) + ' series" fetchpriority="high"><figcaption class="mono">' + escapeHtml(series.title) + ' · 2026</figcaption></figure>' +
+    '</div><div class="page chapter-list">' + chapterCards(series) + '</div></section>' +
+    '<section class="page section"><div class="section-head"><div><span class="mono section-label">THE THREAD</span><h2>Keep what<br>helps.</h2></div><p>' + escapeHtml(series.description) + '</p></div><a class="button button-dark" href="#chapter/' + escapeHtml(series.chapters[0].slug) + '">Begin with ' + escapeHtml(series.chapters[0].number) + ' <span class="arrow">↗</span></a></section></main>';
 }
 
 function renderChapter(slug) {
   const chapter = getChapter(slug);
-  const index = content.series.chapters.indexOf(chapter);
+  const series = getChapterSeries(chapter);
+  const index = series.chapters.indexOf(chapter);
   const product = content.products.find(function (item) { return item.slug === chapter.productSlug; }) || content.products[0];
   const story = Array.isArray(chapter.story) ? chapter.story : [];
-  const next = content.series.chapters[index + 1];
+  const next = series.chapters[index + 1];
+  const artifactLabel = product.chapterSlug === chapter.slug ? "ARTIFACT FROM THIS CHAPTER" : "EXPLORE A SERIES ARTIFACT";
   const storyBlock = story.length
     ? '<div class="story-copy">' + story.map(function (paragraph, i) { return '<p' + (i === 0 ? ' class="dropcap"' : "") + '>' + escapeHtml(paragraph) + '</p>'; }).join("") + '</div>'
     : '<div class="story-copy"><p>' + escapeHtml(chapter.excerpt) + '</p><p class="chapter-note">This chapter is part of the series preview. The complete story is being shaped for the archive.</p></div>';
 
   return '<main class="chapter-page">' +
-    '<section class="chapter-hero"><div class="chapter-heading"><span class="mono section-label">' + escapeHtml(content.series.number) + ' · ' + escapeHtml(chapter.number) + '</span><h1 class="page-title">' + escapeHtml(chapter.title) + '</h1><p class="excerpt">' + escapeHtml(chapter.excerpt) + '</p><span class="mono">THE GENTLE ARMOR · ' + String(index + 1).padStart(2, "0") + ' / ' + String(content.series.chapters.length).padStart(2, "0") + '</span></div><div class="chapter-visual"><img src="' + escapeHtml(chapter.image) + '" alt="' + escapeHtml(chapter.title) + '" fetchpriority="high"></div></section>' +
-    '<section class="page story-layout"><aside class="story-aside"><span class="mono section-label">A NOTE FROM THE ARCHIVE</span><p>' + escapeHtml(content.series.subtitle) + '</p><span class="mono">READ AT YOUR OWN PACE</span></aside>' + storyBlock + '</section>' +
-    '<section class="chapter-product"><img src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + '" loading="lazy"><div class="chapter-product-copy"><span class="mono section-label">A PIECE FROM THIS CHAPTER</span><h2>' + escapeHtml(product.name) + '</h2><p>' + escapeHtml(product.description) + '</p><a class="button button-dark" href="#product/' + escapeHtml(product.slug) + '">Meet the piece <span class="arrow">↗</span></a></div></section>' +
-    '<div class="page">' + (next ? '<a class="chapter-next" href="#chapter/' + escapeHtml(next.slug) + '"><span><span class="mono section-label">NEXT IN THE SERIES</span><strong>' + escapeHtml(next.title) + '</strong></span><span class="arrow">↗</span></a>' : '<a class="chapter-next" href="#series"><span><span class="mono section-label">BACK TO THE SERIES</span><strong>' + escapeHtml(content.series.title) + '</strong></span><span class="arrow">↗</span></a>') + '</div>' +
+    '<section class="chapter-hero"><div class="chapter-heading"><span class="mono section-label">CHAPTER CHAMBER · ' + escapeHtml(series.number) + ' · ' + escapeHtml(chapter.number) + '</span><h1 class="page-title">' + escapeHtml(chapter.title) + '</h1><p class="excerpt">' + escapeHtml(chapter.excerpt) + '</p><span class="mono">' + escapeHtml(series.title) + ' · ' + String(index + 1).padStart(2, "0") + ' / ' + String(series.chapters.length).padStart(2, "0") + '</span></div><div class="chapter-visual"><img src="' + escapeHtml(chapter.image) + '" alt="' + escapeHtml(chapter.title) + '" fetchpriority="high"></div></section>' +
+    '<section class="page story-layout"><aside class="story-aside"><span class="mono section-label">A NOTE FROM THE ARCHIVE</span><p>' + escapeHtml(series.subtitle) + '</p><span class="mono">READ AT YOUR OWN PACE</span></aside>' + storyBlock + '</section>' +
+    '<section class="chapter-product"><img src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + '" loading="lazy"><div class="chapter-product-copy"><span class="mono section-label">' + artifactLabel + '</span><h2>' + escapeHtml(product.name) + '</h2><p>' + escapeHtml(product.description) + '</p><a class="button button-dark" href="#product/' + escapeHtml(product.slug) + '">Meet the artifact <span class="arrow">↗</span></a></div></section>' +
+    '<div class="page">' + (next ? '<a class="chapter-next" href="#chapter/' + escapeHtml(next.slug) + '"><span><span class="mono section-label">NEXT IN THE SERIES</span><strong>' + escapeHtml(next.title) + '</strong></span><span class="arrow">↗</span></a>' : '<a class="chapter-next" href="#series/' + escapeHtml(series.slug) + '"><span><span class="mono section-label">BACK TO THE SERIES</span><strong>' + escapeHtml(series.title) + '</strong></span><span class="arrow">↗</span></a>') + '</div>' +
   '</main>';
 }
 
 function renderProduct(slug) {
   const product = getProduct(slug);
+  const chapter = getChapter(product.chapterSlug);
+  const series = getChapterSeries(chapter);
   const selection = sizeSelection[product.slug] || "";
-  return '<main class="page product-page"><nav class="breadcrumbs" aria-label="Breadcrumbs"><a href="#home">Home</a><span>/</span><a href="#archive">Archive</a><span>/</span><a href="#series">Series 01</a><span>/</span><span>' + escapeHtml(product.name) + '</span></nav>' +
+  return '<main class="page product-page"><nav class="breadcrumbs" aria-label="Breadcrumbs"><a href="#home">Home</a><span>/</span><a href="#archive">Archive</a><span>/</span><a href="#series/' + escapeHtml(series.slug) + '">' + escapeHtml(series.number) + '</a><span>/</span><a href="#chapter/' + escapeHtml(chapter.slug) + '">' + escapeHtml(chapter.number) + '</a><span>/</span><span>Artifact</span></nav>' +
     '<div class="product-detail-layout"><div class="product-gallery"><figure class="gallery-frame"><img src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + ' front view" fetchpriority="high"></figure>' +
     (product.secondaryImage ? '<figure class="gallery-frame"><img src="' + escapeHtml(product.secondaryImage) + '" alt="' + escapeHtml(product.name) + ' back or detail view" loading="lazy"></figure>' : "") + '</div>' +
     '<section class="product-info"><span class="mono section-label">' + escapeHtml(product.category) + ' · SAMPLE PRODUCT</span><h1 class="page-title">' + escapeHtml(product.name) + '</h1><div class="price">' + money(product.price) + '<small>INR · sample price</small></div><p class="product-desc">' + escapeHtml(product.description) + '</p>' +
@@ -192,18 +212,30 @@ function adminLogin() {
 }
 
 function adminDashboard() {
-  const chapterForms = content.series.chapters.map(function (chapter, index) {
-    return '<article class="admin-chapter"><div class="admin-row-title"><h3>' + escapeHtml(chapter.number) + ' · ' + escapeHtml(chapter.title) + '</h3><button class="remove-button" type="button" data-remove-chapter="' + index + '">Remove chapter</button></div>' +
+  const seriesForms = content.seriesList.map(function (series, seriesIndex) {
+    const chapterForms = series.chapters.map(function (chapter, index) {
+      const fieldPath = "seriesList." + seriesIndex + ".chapters." + index;
+      return '<article class="admin-chapter"><div class="admin-row-title"><h3>' + escapeHtml(chapter.number) + ' · ' + escapeHtml(chapter.title) + '</h3><button class="remove-button" type="button" data-remove-chapter="' + seriesIndex + ':' + index + '">Remove chapter</button></div>' +
       '<div class="admin-grid">' +
-        field("Chapter number", "series.chapters." + index + ".number", chapter.number) +
-        field("Title", "series.chapters." + index + ".title", chapter.title) +
-        field("URL slug", "series.chapters." + index + ".slug", chapter.slug) +
-        field("Linked product slug", "series.chapters." + index + ".productSlug", chapter.productSlug) +
+        field("Chapter number", fieldPath + ".number", chapter.number) +
+        field("Title", fieldPath + ".title", chapter.title) +
+        field("URL slug", fieldPath + ".slug", chapter.slug) +
+        field("Linked product slug", fieldPath + ".productSlug", chapter.productSlug) +
       '</div>' +
-      field("Short introduction", "series.chapters." + index + ".excerpt", chapter.excerpt, { textarea: true }) +
-      field("Chapter image", "series.chapters." + index + ".image", chapter.image, { upload: true, hint: "Use a full image URL or upload a PNG, JPG, or WebP file (up to 2 MB)." }) +
-      field("Story paragraphs", "series.chapters." + index + ".story", chapter.story || [], { textarea: true, kind: "paragraphs", hint: "Separate paragraphs with a blank line. Leave blank for a series preview." }) +
-    '</article>';
+      field("Short introduction", fieldPath + ".excerpt", chapter.excerpt, { textarea: true }) +
+      field("Chapter image", fieldPath + ".image", chapter.image, { upload: true, hint: "Use a full image URL or upload a PNG, JPG, or WebP file (up to 2 MB)." }) +
+      field("Story paragraphs", fieldPath + ".story", chapter.story || [], { textarea: true, kind: "paragraphs", hint: "Separate paragraphs with a blank line." }) +
+      '</article>';
+    }).join("");
+    const seriesPath = "seriesList." + seriesIndex;
+    return '<section class="admin-card"><div class="admin-row-title"><h2>' + escapeHtml(series.number) + ' · ' + escapeHtml(series.title) + '</h2><button class="remove-button" type="button" data-remove-series="' + seriesIndex + '">Remove series</button></div><div class="admin-grid">' +
+      field("Series number", seriesPath + ".number", series.number) +
+      field("Series title", seriesPath + ".title", series.title) +
+      field("URL slug", seriesPath + ".slug", series.slug) +
+      field("Subtitle", seriesPath + ".subtitle", series.subtitle) +
+      field("Series image", seriesPath + ".image", series.image, { upload: true, hint: "Use a full image URL or upload a PNG, JPG, or WebP file (up to 2 MB)." }) +
+      '</div>' + field("Series description", seriesPath + ".description", series.description, { textarea: true }) +
+      '<div class="admin-row-title"><h3>Chapters · ' + series.chapters.length + '</h3><button class="button button-light" type="button" data-add-chapter="' + seriesIndex + '">Add chapter</button></div>' + chapterForms + '</section>';
   }).join("");
 
   const productForms = content.products.map(function (product, index) {
@@ -237,13 +269,7 @@ function adminDashboard() {
       '</div>' + field("Supporting copy", "hero.description", content.hero.description, { textarea: true }) +
       field("Hero image", "hero.image", content.hero.image, { upload: true, hint: "Use a full image URL or upload a PNG, JPG, or WebP file (up to 2 MB)." }) +
       '</div><div class="admin-card"><h2>Our note</h2><div class="admin-grid">' + field("Section label", "introduction.eyebrow", content.introduction.eyebrow) + field("Heading", "introduction.title", content.introduction.title) + '</div>' + field("Copy", "introduction.copy", content.introduction.copy, { textarea: true }) + '</div></section>' +
-      '<section class="admin-panel" data-panel="series"><div class="admin-card"><h2>Series details</h2><div class="admin-grid">' +
-        field("Series number", "series.number", content.series.number) +
-        field("Series title", "series.title", content.series.title) +
-        field("Subtitle", "series.subtitle", content.series.subtitle) +
-        field("Series image", "series.image", content.series.image, { upload: true, hint: "Use a full image URL or upload a PNG, JPG, or WebP file (up to 2 MB)." }) +
-      '</div>' + field("Series description", "series.description", content.series.description, { textarea: true }) +
-      '<div class="admin-row-title"><h2>Chapters · ' + content.series.chapters.length + '</h2><button class="button button-light" type="button" data-add-chapter>Add chapter</button></div>' + chapterForms + '</div></section>' +
+      '<section class="admin-panel" data-panel="series"><div class="admin-row-title"><h2>Archive Series · ' + content.seriesList.length + '</h2><button class="button button-dark" type="button" data-add-series>Add series</button></div>' + seriesForms + '</section>' +
       '<section class="admin-panel" data-panel="products"><div class="admin-card"><div class="admin-row-title"><h2>Product catalogue · ' + content.products.length + '</h2><button class="button button-light" type="button" data-add-product>Add product</button></div>' + productForms + '</div></section>' +
       '<div class="admin-savebar"><span>Remember to save your changes before leaving this page.</span><div class="admin-actions"><span class="admin-status" id="admin-status" role="status">' + escapeHtml(adminMessage) + '</span><button class="button" type="submit">Save changes <span class="arrow">↗</span></button></div></div>' +
     '</form></div></div>';
@@ -285,7 +311,7 @@ function render() {
   const route = currentRoute();
   let main;
   if (route[0] === "archive") main = renderArchive();
-  else if (route[0] === "series") main = renderSeries();
+  else if (route[0] === "series") main = renderSeries(route[1]);
   else if (route[0] === "chapter") main = renderChapter(route[1]);
   else if (route[0] === "product") main = renderProduct(route[1]);
   else if (route[0] === "admin") main = '<main>' + (adminToken ? adminDashboard() : '<div class="admin-shell"><div class="page">' + adminLogin() + '</div></div>') + '</main>';
@@ -293,7 +319,7 @@ function render() {
   root.innerHTML = renderHeader() + main + renderFooter() + renderCart() + renderNotice();
   const pageTitle = route[0] === "admin" ? "Studio" :
     route[0] === "archive" ? "The Archive" :
-    route[0] === "series" ? content.series.title :
+    route[0] === "series" ? getSeries(route[1]).title :
     route[0] === "chapter" ? getChapter(route[1]).title :
     route[0] === "product" ? getProduct(route[1]).name : "Wear Your Battles";
   document.title = pageTitle + " · QUIET BATTLES™";
@@ -301,7 +327,7 @@ function render() {
   if (description) {
     description.content = route[0] === "chapter" ? getChapter(route[1]).excerpt :
       route[0] === "product" ? getProduct(route[1]).description :
-      route[0] === "series" ? content.series.description :
+      route[0] === "series" ? getSeries(route[1]).description :
       "QUIET BATTLES makes considered everyday clothing for the stories we carry quietly. Wear your battles.";
   }
   bindEvents();
@@ -424,31 +450,66 @@ function bindEvents() {
   document.querySelectorAll("[data-upload]").forEach(function (input) {
     input.addEventListener("change", function () { uploadImage(input); });
   });
+  const addSeries = document.querySelector("[data-add-series]");
+  if (addSeries) addSeries.addEventListener("click", function () {
+    const index = content.seriesList.length + 1;
+    const first = getSeries();
+    const slug = "new-series-" + Date.now();
+    content.seriesList.push({
+      slug: slug, number: "SERIES " + String(index).padStart(2, "0"), title: "Untitled series",
+      subtitle: "A new story in the archive.", description: "Edit this series introduction in Studio.", image: first.image,
+      chapters: [{ number: "CHAPTER 01", slug: slug + "-first-chapter", title: "Untitled chapter",
+        excerpt: "Edit this chapter introduction in Studio.", image: first.image,
+        productSlug: content.products[0].slug, story: [] }]
+    });
+    adminMessage = "New Series added to the draft. Edit its details and save changes.";
+    render();
+    document.querySelector('[data-tab="series"]').click();
+  });
+  document.querySelectorAll("[data-remove-series]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      const index = Number(button.dataset.removeSeries);
+      const series = content.seriesList[index];
+      if (content.seriesList.length <= 1) adminMessage = "Keep at least one Series in the archive.";
+      else if (content.products.some(function (product) { return series.chapters.some(function (chapter) { return chapter.slug === product.chapterSlug; }); })) {
+        adminMessage = "Move or remove products linked to this Series before removing it.";
+      } else {
+        content.seriesList.splice(index, 1);
+        adminMessage = "Series removed from the draft. Save changes to keep it.";
+      }
+      render();
+      document.querySelector('[data-tab="series"]').click();
+    });
+  });
   document.querySelectorAll("[data-add-chapter]").forEach(function (button) {
     button.addEventListener("click", function () {
-      const number = "CHAPTER " + String(content.series.chapters.length + 1).padStart(2, "0");
-      content.series.chapters.push({ number: number, slug: "new-chapter-" + Date.now(), title: "Untitled chapter", excerpt: "", image: content.series.image, productSlug: content.products[0].slug, story: [] });
+      const series = content.seriesList[Number(button.dataset.addChapter)];
+      const number = "CHAPTER " + String(series.chapters.length + 1).padStart(2, "0");
+      series.chapters.push({ number: number, slug: "new-chapter-" + Date.now(), title: "Untitled chapter", excerpt: "", image: series.image, productSlug: content.products[0].slug, story: [] });
       render();
       document.querySelector('[data-tab="series"]').click();
     });
   });
   document.querySelectorAll("[data-remove-chapter]").forEach(function (button) {
     button.addEventListener("click", function () {
-      if (content.series.chapters.length <= 1) {
+      const indices = button.dataset.removeChapter.split(":").map(Number);
+      const series = content.seriesList[indices[0]];
+      const chapter = series.chapters[indices[1]];
+      if (series.chapters.length <= 1) {
         adminMessage = "Keep at least one chapter in the series.";
-        render();
-        document.querySelector('[data-tab="series"]').click();
-        return;
+      } else if (content.products.some(function (product) { return product.chapterSlug === chapter.slug; })) {
+        adminMessage = "Move or remove the product linked to this chapter first.";
+      } else {
+        series.chapters.splice(indices[1], 1);
+        adminMessage = "Chapter removed from the draft. Save changes to keep it.";
       }
-      content.series.chapters.splice(Number(button.dataset.removeChapter), 1);
-      adminMessage = "Chapter removed from the draft. Save changes to keep it.";
       render();
       document.querySelector('[data-tab="series"]').click();
     });
   });
   document.querySelectorAll("[data-add-product]").forEach(function (button) {
     button.addEventListener("click", function () {
-      content.products.push({ slug: "new-piece-" + Date.now(), name: "New field piece", category: "SERIES 01", description: "", price: 0, image: "/assets/soft-armor.svg", secondaryImage: "", sizes: ["XS", "S", "M", "L", "XL"], details: [], chapterSlug: content.series.chapters[0] ? content.series.chapters[0].slug : "" });
+      content.products.push({ slug: "new-piece-" + Date.now(), name: "New field piece", category: getSeries().number, description: "", price: 0, image: "/assets/soft-armor.svg", secondaryImage: "", sizes: ["XS", "S", "M", "L", "XL"], details: [], chapterSlug: getSeries().chapters[0].slug });
       render();
       document.querySelector('[data-tab="products"]').click();
     });
@@ -461,8 +522,13 @@ function bindEvents() {
         document.querySelector('[data-tab="products"]').click();
         return;
       }
-      content.products.splice(Number(button.dataset.removeProduct), 1);
-      adminMessage = "Product removed from the draft. Save changes to keep it.";
+      const product = content.products[Number(button.dataset.removeProduct)];
+      if (content.seriesList.some(function (series) { return series.chapters.some(function (chapter) { return chapter.productSlug === product.slug; }); })) {
+        adminMessage = "Link chapters to another product before removing this one.";
+      } else {
+        content.products.splice(Number(button.dataset.removeProduct), 1);
+        adminMessage = "Product removed from the draft. Save changes to keep it.";
+      }
       render();
       document.querySelector('[data-tab="products"]').click();
     });
@@ -492,7 +558,7 @@ async function uploadImage(input) {
     return;
   }
   const tabName = input.dataset.upload.split(".")[0] === "products" ? "products" :
-    input.dataset.upload.split(".")[0] === "series" ? "series" : "brand";
+    input.dataset.upload.split(".")[0] === "seriesList" ? "series" : "brand";
   const status = document.getElementById("admin-status");
   if (status) status.textContent = "Uploading image…";
   const dataUrl = await new Promise(function (resolve, reject) {

@@ -28,7 +28,9 @@ function getClient() {
 
 const schema = [
   "CREATE TABLE IF NOT EXISTS site_settings (id SMALLINT PRIMARY KEY CHECK (id = 1), brand JSONB NOT NULL, hero JSONB NOT NULL, introduction JSONB NOT NULL, series JSONB NOT NULL, updated_at TIMESTAMPTZ NOT NULL DEFAULT now())",
-  "CREATE TABLE IF NOT EXISTS chapters (sort_order INTEGER PRIMARY KEY, number TEXT NOT NULL, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, excerpt TEXT NOT NULL, image TEXT NOT NULL, product_slug TEXT NOT NULL, story JSONB NOT NULL)",
+  "CREATE TABLE IF NOT EXISTS series (sort_order INTEGER PRIMARY KEY, slug TEXT NOT NULL UNIQUE, number TEXT NOT NULL, title TEXT NOT NULL, subtitle TEXT NOT NULL, description TEXT NOT NULL, image TEXT NOT NULL)",
+  "CREATE TABLE IF NOT EXISTS chapters (sort_order INTEGER PRIMARY KEY, series_slug TEXT NOT NULL DEFAULT 'the-gentle-armor', number TEXT NOT NULL, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, excerpt TEXT NOT NULL, image TEXT NOT NULL, product_slug TEXT NOT NULL, story JSONB NOT NULL)",
+  "ALTER TABLE chapters ADD COLUMN IF NOT EXISTS series_slug TEXT NOT NULL DEFAULT 'the-gentle-armor'",
   "CREATE TABLE IF NOT EXISTS products (sort_order INTEGER PRIMARY KEY, slug TEXT NOT NULL UNIQUE, name TEXT NOT NULL, category TEXT NOT NULL, description TEXT NOT NULL, price INTEGER NOT NULL CHECK (price >= 0), image TEXT NOT NULL, secondary_image TEXT NOT NULL DEFAULT '', sizes JSONB NOT NULL, details JSONB NOT NULL, chapter_slug TEXT NOT NULL)",
   "ALTER TABLE products ADD COLUMN IF NOT EXISTS secondary_image TEXT NOT NULL DEFAULT ''",
   "CREATE TABLE IF NOT EXISTS media_assets (id UUID PRIMARY KEY, mime_type TEXT NOT NULL, base64_data TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())",
@@ -38,33 +40,49 @@ const schema = [
 async function initializeDatabase() {
   const sql = getClient();
   for (const statement of schema) await sql.query(statement);
-  const rows = await sql.query("SELECT 1 FROM site_settings WHERE id = 1");
+  const rows = await sql.query("SELECT series FROM site_settings WHERE id = 1");
   if (!rows.length) {
     const seed = JSON.parse(fs.readFileSync(path.join(__dirname, "data", "content.json"), "utf8"));
     await writeContent(seed);
+  } else {
+    const seriesRows = await sql.query("SELECT 1 FROM series LIMIT 1");
+    if (!seriesRows.length) {
+      const legacy = rows[0].series;
+      await sql.query(
+        "INSERT INTO series (sort_order, slug, number, title, subtitle, description, image) VALUES (0, $1, $2, $3, $4, $5, $6)",
+        [legacy.slug || "the-gentle-armor", legacy.number, legacy.title, legacy.subtitle, legacy.description, legacy.image]
+      );
+    }
   }
 }
 
 async function readContent() {
   const sql = getClient();
-  const [settingsRows, chapterRows, productRows] = await sql.transaction([
+  const [settingsRows, seriesRows, chapterRows, productRows] = await sql.transaction([
     sql.query("SELECT brand, hero, introduction, series FROM site_settings WHERE id = 1"),
-    sql.query("SELECT number, slug, title, excerpt, image, product_slug, story FROM chapters ORDER BY sort_order"),
+    sql.query("SELECT slug, number, title, subtitle, description, image FROM series ORDER BY sort_order"),
+    sql.query("SELECT series_slug, number, slug, title, excerpt, image, product_slug, story FROM chapters ORDER BY sort_order"),
     sql.query("SELECT slug, name, category, description, price, image, secondary_image, sizes, details, chapter_slug FROM products ORDER BY sort_order")
   ], { readOnly: true });
   const settings = settingsRows[0];
   if (!settings) return null;
+  const seriesList = (seriesRows.length ? seriesRows : [{ ...settings.series, slug: "the-gentle-armor" }]).map((series) => ({
+    slug: series.slug,
+    number: series.number,
+    title: series.title,
+    subtitle: series.subtitle,
+    description: series.description,
+    image: series.image,
+    chapters: chapterRows.filter((row) => row.series_slug === series.slug).map((row) => ({
+      number: row.number, slug: row.slug, title: row.title, excerpt: row.excerpt,
+      image: row.image, productSlug: row.product_slug, story: row.story
+    }))
+  }));
   return {
     brand: settings.brand,
     hero: settings.hero,
     introduction: settings.introduction,
-    series: {
-      ...settings.series,
-      chapters: chapterRows.map((row) => ({
-        number: row.number, slug: row.slug, title: row.title, excerpt: row.excerpt,
-        image: row.image, productSlug: row.product_slug, story: row.story
-      }))
-    },
+    seriesList,
     products: productRows.map((row) => ({
       slug: row.slug, name: row.name, category: row.category,
       description: row.description, price: row.price, image: row.image,
@@ -76,12 +94,10 @@ async function readContent() {
 
 async function writeContent(value) {
   const sql = getClient();
+  const featured = value.seriesList[0];
   const series = {
-    number: value.series.number,
-    title: value.series.title,
-    subtitle: value.series.subtitle,
-    description: value.series.description,
-    image: value.series.image
+    slug: featured.slug, number: featured.number, title: featured.title,
+    subtitle: featured.subtitle, description: featured.description, image: featured.image
   };
   const queries = [
     sql.query(
@@ -89,13 +105,21 @@ async function writeContent(value) {
       [JSON.stringify(value.brand), JSON.stringify(value.hero), JSON.stringify(value.introduction), JSON.stringify(series)]
     ),
     sql.query("DELETE FROM chapters"),
-    sql.query("DELETE FROM products")
+    sql.query("DELETE FROM products"),
+    sql.query("DELETE FROM series")
   ];
-  value.series.chapters.forEach((chapter, index) => {
+  let chapterOrder = 0;
+  value.seriesList.forEach((item, seriesOrder) => {
     queries.push(sql.query(
-      "INSERT INTO chapters (sort_order, number, slug, title, excerpt, image, product_slug, story) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)",
-      [index, chapter.number, chapter.slug, chapter.title, chapter.excerpt, chapter.image, chapter.productSlug, JSON.stringify(chapter.story)]
+      "INSERT INTO series (sort_order, slug, number, title, subtitle, description, image) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+      [seriesOrder, item.slug, item.number, item.title, item.subtitle, item.description, item.image]
     ));
+    item.chapters.forEach((chapter) => {
+      queries.push(sql.query(
+        "INSERT INTO chapters (sort_order, series_slug, number, slug, title, excerpt, image, product_slug, story) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)",
+        [chapterOrder++, item.slug, chapter.number, chapter.slug, chapter.title, chapter.excerpt, chapter.image, chapter.productSlug, JSON.stringify(chapter.story)]
+      ));
+    });
   });
   value.products.forEach((product, index) => {
     queries.push(sql.query(

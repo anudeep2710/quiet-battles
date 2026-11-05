@@ -102,24 +102,34 @@ function validImage(value) {
 
 function validContent(value) {
   if (!isObject(value) || !isObject(value.brand) || !isObject(value.hero) ||
-      !isObject(value.introduction) || !isObject(value.series) ||
-      !Array.isArray(value.series.chapters) || !Array.isArray(value.products)) return false;
-  if (value.series.chapters.length < 1 || value.series.chapters.length > 30 ||
+      !isObject(value.introduction) || !Array.isArray(value.seriesList) ||
+      !Array.isArray(value.products)) return false;
+  if (value.seriesList.length < 1 || value.seriesList.length > 12 ||
       value.products.length < 1 || value.products.length > 100) return false;
   if (!["name", "tagline", "intro"].every((k) => validText(value.brand[k])) ||
       !["eyebrow", "title", "description"].every((k) => validText(value.hero[k])) ||
       !validImage(value.hero.image) ||
-      !["eyebrow", "title", "copy"].every((k) => validText(value.introduction[k])) ||
-      !["number", "title", "subtitle", "description"].every((k) => validText(value.series[k])) ||
-      !validImage(value.series.image)) return false;
+      !["eyebrow", "title", "copy"].every((k) => validText(value.introduction[k]))) return false;
+  const seriesSlugs = new Set();
   const chapterSlugs = new Set();
-  for (const chapter of value.series.chapters) {
-    if (!isObject(chapter) || !["number", "title", "excerpt", "productSlug"].every((k) => validText(chapter[k])) ||
-        !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(chapter.slug || "") ||
-        chapterSlugs.has(chapter.slug) || !validImage(chapter.image) ||
-        !Array.isArray(chapter.story) || chapter.story.length > 30 ||
-        !chapter.story.every((item) => validText(item, 5000))) return false;
-    chapterSlugs.add(chapter.slug);
+  const allChapters = [];
+  for (const series of value.seriesList) {
+    if (!isObject(series) ||
+        !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(series.slug || "") ||
+        seriesSlugs.has(series.slug) ||
+        !["number", "title", "subtitle", "description"].every((k) => validText(series[k])) ||
+        !validImage(series.image) || !Array.isArray(series.chapters) ||
+        series.chapters.length < 1 || series.chapters.length > 30) return false;
+    seriesSlugs.add(series.slug);
+    for (const chapter of series.chapters) {
+      if (!isObject(chapter) || !["number", "title", "excerpt", "productSlug"].every((k) => validText(chapter[k])) ||
+          !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(chapter.slug || "") ||
+          chapterSlugs.has(chapter.slug) || !validImage(chapter.image) ||
+          !Array.isArray(chapter.story) || chapter.story.length > 30 ||
+          !chapter.story.every((item) => validText(item, 5000))) return false;
+      chapterSlugs.add(chapter.slug);
+      allChapters.push(chapter);
+    }
   }
   const productSlugs = new Set();
   for (const product of value.products) {
@@ -135,7 +145,7 @@ function validContent(value) {
         !chapterSlugs.has(product.chapterSlug)) return false;
     productSlugs.add(product.slug);
   }
-  return value.series.chapters.every((chapter) => productSlugs.has(chapter.productSlug));
+  return allChapters.every((chapter) => productSlugs.has(chapter.productSlug));
 }
 
 function validImageBytes(mime, bytes) {
@@ -192,7 +202,7 @@ async function handle(req, res) {
     if (!await requireAdmin(req, res)) return;
     const body = await readJson(req, 1024 * 1024);
     if (!validContent(body)) {
-      return send(res, 400, { error: "Check required fields, unique slugs, linked items, and image URLs." });
+      return send(res, 400, { error: "Check required fields, unique Series and Chapter slugs, linked products, and image URLs." });
     }
     await db.writeContent(body);
     return send(res, 200, { ok: true, savedAt: new Date().toISOString() });

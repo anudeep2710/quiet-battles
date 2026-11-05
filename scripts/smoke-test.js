@@ -24,7 +24,8 @@ async function main() {
 
   const initial = await jsonRequest("/api/content");
   assert.equal(initial.response.status, 200);
-  assert.equal(initial.body.series.chapters.length, 5);
+  assert.equal(initial.body.seriesList.length, 1);
+  assert.equal(initial.body.seriesList[0].chapters.length, 5);
   assert.equal(initial.body.products.length, 1);
   assert.equal(initial.body.products[0].secondaryImage, "/assets/soft-armor-back.svg");
   const alternateImage = await fetch(base + initial.body.products[0].secondaryImage);
@@ -47,10 +48,16 @@ async function main() {
   let changed = false;
   try {
     const temporary = structuredClone(original);
-    temporary.series.chapters.push({
-      number: "CHAPTER 06", slug: "verification-chapter", title: "Verification Chapter",
-      excerpt: "Temporary verification entry.", image: temporary.series.image,
-      productSlug: temporary.products[0].slug, story: ["A temporary test story."]
+    temporary.seriesList[0].chapters[0].title = "Verification edit";
+    temporary.seriesList.push({
+      slug: "verification-series", number: "SERIES 99", title: "Verification Series",
+      subtitle: "Temporary verification series.", description: "Temporary verification entry.",
+      image: temporary.seriesList[0].image,
+      chapters: [{
+        number: "CHAPTER 01", slug: "verification-chapter", title: "Verification Chapter",
+        excerpt: "Temporary verification entry.", image: temporary.seriesList[0].image,
+        productSlug: "verification-piece", story: ["A temporary test story."]
+      }]
     });
     temporary.products.push({
       slug: "verification-piece", name: "Verification Piece", category: "TEST",
@@ -64,7 +71,10 @@ async function main() {
     assert.equal(saved.response.status, 200, JSON.stringify(saved.body));
     changed = true;
     const updated = await jsonRequest("/api/content");
-    assert.equal(updated.body.series.chapters.length, 6);
+    assert.equal(updated.body.seriesList.length, 2);
+    assert.equal(updated.body.seriesList[0].chapters.length, 5);
+    assert.equal(updated.body.seriesList[0].chapters[0].title, "Verification edit");
+    assert.equal(updated.body.seriesList[1].chapters[0].slug, "verification-chapter");
     assert.equal(updated.body.products.length, 2);
     assert.equal(updated.body.products[1].slug, "verification-piece");
 

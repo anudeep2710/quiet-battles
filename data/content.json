@@ -8,19 +8,20 @@
     "eyebrow": "CLOTHING FOR THE UNSEEN",
     "title": "WEAR YOUR<br>BATTLES.",
     "description": "Not every battle makes a sound. Some are carried gently, one ordinary day at a time.",
-    "image": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1900&q=88"
+    "image": "/assets/hero-editorial.webp"
   },
   "introduction": {
     "eyebrow": "A NOTE FROM US",
     "title": "Strength can be soft.",
     "copy": "QUIET BATTLES is a clothing label built around the stories we carry privately. We make considered everyday pieces and create space for the moments that rarely get named."
   },
-  "series": {
+  "seriesList": [{
+    "slug": "the-gentle-armor",
     "number": "SERIES 01",
     "title": "THE GENTLE ARMOR™",
     "subtitle": "A study in softness, and the courage it takes to stay open.",
     "description": "Five chapters on the quiet work of becoming. Read them in order, or begin wherever you are.",
-    "image": "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=1500&q=86",
+    "image": "/assets/series-gentle-armor.webp",
     "chapters": [
       {
         "number": "CHAPTER 01",
@@ -40,9 +41,13 @@
         "slug": "the-weight-you-carry",
         "title": "The Weight You Carry",
         "excerpt": "There is no visible measure for what a person has carried to get here.",
-        "image": "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1100&q=84",
+        "image": "/assets/series-gentle-armor.webp",
         "productSlug": "soft-armor-hoodie",
-        "story": []
+        "story": [
+          "There are things we carry without a handle. A conversation we keep replaying. The work of holding a family together. The effort of looking composed when we feel anything but. None of it appears in a photograph, yet it changes the way we move through a room.",
+          "We do not need to make those weights beautiful to acknowledge them. Some days strength looks like asking for help. Some days it is setting one thing down, even for an hour, and discovering the world does not fall apart.",
+          "If you are carrying more than people can see, you do not have to earn permission to rest. The weight is real. So is the possibility of sharing it."
+        ]
       },
       {
         "number": "CHAPTER 03",
@@ -51,28 +56,40 @@
         "excerpt": "A little room for another person can be its own kind of bravery.",
         "image": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1100&q=84",
         "productSlug": "soft-armor-hoodie",
-        "story": []
+        "story": [
+          "A door can stay closed for so long that we forget it has a handle on both sides. We learn to say we are fine before anyone has finished asking. It works, for a while. It keeps the day moving.",
+          "Then someone stays. They listen without trying to repair the whole story. We let one honest sentence into the room, and the room becomes a little larger. That is not a grand transformation. It is a beginning that belongs to both people.",
+          "Letting someone in does not mean handing them every part of yourself. It can be as small as saying, 'Today was hard,' and allowing the answer to matter."
+        ]
       },
       {
         "number": "CHAPTER 04",
         "slug": "staying-tender",
         "title": "Staying Tender",
         "excerpt": "Softness is not the absence of a boundary. It is knowing what you are protecting.",
-        "image": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1100&q=84",
+        "image": "/assets/hero-editorial.webp",
         "productSlug": "soft-armor-hoodie",
-        "story": []
+        "story": [
+          "Tenderness is often mistaken for an open door. But a tender person can choose where they stand, what they give, and when they need space. A boundary can be an act of care, too.",
+          "We imagined gentle armor as something you could move inside. It has room for feeling and room for refusal. It does not ask you to harden before you are taken seriously.",
+          "There is courage in remaining open to the world without abandoning yourself. Wear that courage in whatever shape today allows."
+        ]
       },
       {
         "number": "CHAPTER 05",
         "slug": "after-the-noise",
         "title": "After the Noise",
         "excerpt": "Rest is not a reward at the end. It is part of how we continue.",
-        "image": "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&w=1100&q=84",
+        "image": "/assets/series-gentle-armor.webp",
         "productSlug": "soft-armor-hoodie",
-        "story": []
+        "story": [
+          "After a difficult season, quiet can feel unfamiliar. We wait for the next demand, the next urgent sound. Even a peaceful afternoon may take practice to believe.",
+          "So we begin with ordinary rituals. We fold the clothes. We walk a familiar street. We sit down before we are exhausted. Rest arrives less like a finish line and more like a place we can return to.",
+          "The noise may come again. For now, there is this breath, this room, this chance to continue without rushing. That is enough for today."
+        ]
       }
     ]
-  },
+  }],
   "products": [
     {
       "slug": "soft-armor-hoodie",

@@ -1,15 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1100" role="img" aria-labelledby="title desc">
-  <title id="title">The Soft Armor Hoodie — back view</title>
-  <desc id="desc">Illustrated back of a charcoal hoodie on a muted stone background.</desc>
+  <title id="title">The Soft Armor Hoodie · back view</title>
+  <desc id="desc">Original back illustration of a charcoal hooded sweatshirt on a warm stone background.</desc>
   <defs>
     <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#c9c8c1"/>
-      <stop offset="1" stop-color="#a5a59f"/>
+      <stop offset="0" stop-color="#cfcdc5"/>
+      <stop offset="1" stop-color="#a6a69f"/>
     </linearGradient>
     <linearGradient id="cloth" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#3a3d39"/>
-      <stop offset=".6" stop-color="#262a27"/>
-      <stop offset="1" stop-color="#191c1a"/>
+      <stop offset="0" stop-color="#41443f"/>
+      <stop offset=".6" stop-color="#292c29"/>
+      <stop offset="1" stop-color="#1a1d1b"/>
     </linearGradient>
     <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%">
       <feGaussianBlur in="SourceAlpha" stdDeviation="22"/>
@@ -19,14 +19,16 @@
     </filter>
   </defs>
   <rect width="900" height="1100" fill="url(#paper)"/>
-  <path d="M0 815c230-65 510-30 900-95v380H0z" fill="#95968f" opacity=".25"/>
+  <path d="M0 825c220-61 500-31 900-98v373H0z" fill="#95968f" opacity=".25"/>
   <g filter="url(#shadow)">
-    <path d="M333 193c-48 13-91 43-119 83L128 432l137 99 50-60v395c81 38 189 44 294 0V471l49 60 137-99-86-156c-28-40-71-70-119-83l-63 72H396z" fill="url(#cloth)" stroke="#4c504c" stroke-width="5"/>
-    <path d="M398 188c-16 17-35 42-40 87-2 65 38 123 92 154 54-31 94-89 92-154-5-45-24-70-40-87l-52 43z" fill="#202421" stroke="#555a55" stroke-width="5"/>
-    <path d="M378 300c17 58 42 94 72 113 30-19 55-55 72-113" fill="none" stroke="#666a64" stroke-width="4"/>
-    <path d="M318 502v352m264-352v352" stroke="#525751" stroke-width="4" opacity=".7"/>
-    <path d="M284 495l-33 36 27 22 31-40zm332 0 33 36-27 22-31-40z" fill="#9b5948"/>
-    <path d="M335 803c72 27 156 30 234 0" fill="none" stroke="#686c66" stroke-width="4" stroke-dasharray="2 12" stroke-linecap="round"/>
+    <path d="M342 196c-46 8-84 26-120 55L92 531l77 42 101-81 31 94v264c97 34 201 34 298 0V586l31-94 101 81 77-42-130-280c-36-29-74-47-120-55l-47 62H389z" fill="url(#cloth)" stroke="#4c504c" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M386 194c-33 38-49 75-48 111 2 72 49 135 112 170 63-35 110-98 112-170 1-36-15-73-48-111l-64 48z" fill="#202421" stroke="#555a55" stroke-width="5"/>
+    <path d="M363 290c15 64 47 112 87 145 40-33 72-81 87-145" fill="none" stroke="#686c64" stroke-width="4"/>
+    <path d="M298 584v253m304-253v253" stroke="#525751" stroke-width="4" opacity=".7"/>
+    <path d="M323 842c81 25 173 25 254 0v39c-81 24-173 24-254 0z" fill="#202320" stroke="#515650" stroke-width="4"/>
+    <path d="M104 508l69 37-18 39-76-43zm692 0-69 37 18 39 76-43z" fill="#313531" stroke="#5c605b" stroke-width="4"/>
+    <path d="M110 507l18 9m654-9-18 9" stroke="#8d8e85" stroke-width="3" stroke-dasharray="2 9"/>
+    <path d="M353 298c27 18 59 27 97 27s70-9 97-27" fill="none" stroke="#444843" stroke-width="4"/>
   </g>
   <g font-family="Arial, sans-serif" fill="#222522">
     <text x="54" y="76" font-size="18" letter-spacing="5">QUIET BATTLES™</text>

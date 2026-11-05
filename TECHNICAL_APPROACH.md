@@ -1,59 +1,75 @@
-# QUIET BATTLES™ — Technical Approach and Full-Project Estimate
+# QUIET BATTLES™ — Technical Approach and Estimate
 
-## Brief and assumptions
+## How the brief shaped the demo
 
-The assignment names the brand, tagline, pages, example series, five chapters, sample product, and an editable backend. The referenced detailed brand requirements document was not supplied. The prototype therefore uses sample copy, sample pricing, sample editorial photographs, and a proposed visual direction. These need brand approval before a public launch.
+The updated overview establishes the path **QUIET BATTLES™ → The Archive → Series → Chapters → Chapter Chamber → Artifact → Acquisition**. The implementation uses an editorial story experience with a sample bag interaction rather than treating the homepage as a product grid.
+
+The demo contains one featured Series, five complete sample Chapter stories, one linked sample hoodie, and a private content Studio. The client permits temporary imagery. The brand direction, copy, product specifications, and price remain assumptions pending approval.
+
+## Architecture
+
+```text
+Vercel static site ──→ browser JavaScript ──→ Node.js JSON API ──→ Neon Postgres
+          │                    │                    ↑
+          │                    └── demo bag in localStorage
+          └── images and fonts                       │
+Studio editor ── protected API session ──────────────┘
+Studio image upload ────────────────────────────────→ Neon media_assets
+```
+
+The public site is served from `public/`. `server.js` exposes the JSON API for local development; `api/index.js` exposes the same handler as a Vercel Function. `db.js` handles Neon queries and schema setup. `data/content.json` supplies seed content. The database tables and relationships are listed in [docs/database-schema.md](docs/database-schema.md).
 
 ## Why this stack
 
-The demo uses native HTML, CSS, and JavaScript for a small, fast interface with little framework overhead. The Node.js API keeps content editing, login, validation, and image handling on the server. Neon Postgres provides a durable database shared by the local preview and Vercel deployment. The Neon serverless driver uses parameterized SQL over HTTPS, which suits short-lived Vercel Functions. Vercel serves static assets and runs the API; its Git connection supports preview and production deployments.
+- **HTML, CSS, and browser JavaScript** keep a small assessment prototype fast to load and straightforward to explain.
+- **Node.js** provides server-side content validation, image checks, and Studio authentication.
+- **Neon Postgres** stores ordered Series, Chapters, products, uploaded demo images, and hashed Studio sessions. It provides durable data across local and hosted versions.
+- **Vercel** serves the static site and runs the API function. The connected GitHub repository can deploy commits to the staging site.
 
-This choice keeps the assessment easy to explain while showing frontend, backend, database, API, and deployment work. A larger production catalogue may warrant a framework with server rendering and a specialist commerce platform. The full-project discovery phase should decide that with the actual requirements document in hand.
+The data model supports multiple Series, with Chapters belonging to a Series and products linked to a Chapter. Studio can add, edit, and remove these records. The public Archive and Series routes read all Series from the same content API. The initial database setup also migrates the previous single-Series demo content.
 
-## Architecture and content flow
+## Visitor experience
 
-    Public page → /api/content → site_settings + chapters + products in Neon
-    Studio → key login → hashed session in Neon → protected API
-    Studio save → content validation → one Postgres transaction
-    Studio upload → file signature check → media_assets in Neon → /api/media/:id
-    Product page → selected size → localStorage demo bag
+The homepage introduces the brand and points into The Archive. The Archive presents Series entries; Series 01 opens five Chapter Chambers. Each Chamber includes its own image, complete sample story, related artifact entry, and a link to the next Chapter. The artifact page shows front and back SVG illustrations, a sample INR price, size selection, product details, and an Add to Bag interaction. The bag is stored in the visitor's browser.
 
-The seed file creates Series 01, five chapters, and the sample hoodie. Only Chapter 01 contains a full sample story; Chapters 02–05 remain previews. A new chapter or product can be added in Studio without editing source code.
+Chapters 02–05 currently link to the Series 01 sample hoodie to demonstrate the route. The product record belongs to Chapter 01; Studio can replace these relationships once the client supplies the real garment-to-story map.
 
-## Security, reliability, performance, and SEO
+## Content Studio
 
-- The Studio key is an environment secret of at least 16 characters. Login comparison uses a timing-safe check.
-- Sessions expire after four hours; only token hashes are stored, and sign-out deletes the session.
-- Admin writes require a valid session. Incoming content is bounded and validated, including linked slugs, image URLs, story lengths, and nonnegative integer prices.
-- Uploaded PNG/JPEG/WebP files are capped at 2 MB and checked against their file signatures. Public images have immutable cache headers.
-- Static CSS and JavaScript are served directly by Vercel; responsive layouts were checked at desktop and 390-pixel mobile widths.
-- The homepage has a description, Open Graph text, a favicon, semantic headings, descriptive image text, and route-specific browser titles. Hash routing limits search indexing of inner pages. Production should use crawlable URLs, page-specific server metadata, a sitemap, image optimization, and analytics.
-- This demo has no checkout or order service. A production launch needs managed commerce flows, legal policies, and a more complete admin permission model.
+Studio uses an environment-held access key. Successful sign-in creates a random four-hour token; Neon stores only its SHA-256 hash. Protected requests require the token. Studio can manage homepage copy, multiple Series, Chapters and product details; PNG, JPEG, and WebP uploads are checked by file signature and limited to 2 MB. Saves validate slugs and cross-links and write the content in a database transaction.
 
-## Seven-day assessment plan
+This is suitable for an assessment demo. A production content team should use named staff accounts, role-based access, an audit log, and a dedicated media service instead of storing image bytes in Postgres.
 
-| Day | Deliverable |
-| --- | --- |
-| 1 | Read the available brief; document assumptions and choose the stack |
-| 2 | Define page map, content model, editorial design direction, and interaction plan |
-| 3 | Build responsive homepage, navigation, and shared visual system |
-| 4 | Build Archive, Series 01, five chapter entries, and the complete Chapter 01 |
-| 5 | Build the product page, size selection, and demo bag |
-| 6 | Add the Neon-backed Studio, uploads, validation, and responsive verification |
-| 7 | Verify the deployment and API, document architecture, and prepare submission |
+## Performance, accessibility, and search
 
-## Production roadmap and indicative quotation
+- Static CSS, JavaScript, SVG, and WebP assets are served directly by Vercel.
+- Layouts have been checked at desktop and 390-pixel mobile widths. Buttons and links have visible keyboard focus, and reduced-motion preferences are respected.
+- The homepage includes a page description, Open Graph text, a favicon, semantic headings, and descriptive image text.
+- Pages currently use hash-based navigation. Production should adopt crawlable URLs, page-specific server metadata, a sitemap, optimized image variants, and analytics.
+- Demo content endpoints are public by design. Admin updates require a Studio session; SQL values are parameterized.
 
-This is a provisional quotation because the full requirements document, approved assets, product count, checkout rules, shipping/tax rules, and support terms are missing.
+## Local setup
 
-| Scope | Time after approval | Indicative fee |
+See [README.md](README.md) for Node.js requirements and commands. Run `npm run db:init` after setting `DATABASE_URL` and `QB_ADMIN_KEY` in an ignored `.env.local` file. The migration is idempotent and seeds the database only when it has no site content.
+
+## Asset and tool disclosure
+
+The design uses two original editorial concept images generated with OpenAI image generation, supplementary Unsplash sample photography, and two locally authored SVG garment illustrations. Typography loads from Google Fonts. No website template, UI framework, CMS plugin, or paid UI plugin was used.
+
+OpenAI Codex assisted with implementation, documentation, and code review. Playwright was used for browser checks and to capture the submission screenshots. These tools should be disclosed during the interview, and the developer should be ready to explain the code and trade-offs.
+
+## Indicative production estimate
+
+The overview now clarifies brand intent and the expected experience. A fixed production estimate still depends on final product count, story volume, approved media, checkout requirements, shipping and tax rules, and staff access needs.
+
+| Scope | Estimated time after approval | Indicative fee |
 | --- | --- | --- |
-| Production editorial storefront and CMS: approved design, up to three series, 15 chapters, 10 products, media storage, admin roles, responsive QA, accessibility and SEO basics, deployment and handover | 6–8 weeks | ₹1,80,000–₹2,60,000 |
-| Optional commerce completion: secure checkout integration, order records, stock hooks, shipping and tax rules, payment testing and launch QA | 2–4 additional weeks | ₹90,000–₹1,50,000 |
-| Combined estimated project | 8–12 weeks | ₹2,70,000–₹4,10,000 |
+| Production editorial site and CMS: approved design, up to three Series, 15 Chapters, 10 products, media storage, staff roles, responsive QA, accessibility and SEO basics, deployment and handover | 6–8 weeks | ₹1,80,000–₹2,60,000 |
+| Optional commerce completion: checkout, order records, stock hooks, shipping and tax rules, payment testing and launch QA | 2–4 additional weeks | ₹90,000–₹1,50,000 |
+| Combined estimate | 8–12 weeks | ₹2,70,000–₹4,10,000 |
 
-The estimate assumes brand copy, garment details, photography rights, size charts, legal policies, and payment/shipping accounts are supplied by the client. It excludes hosting, database and media usage, payment-provider fees, content production, tax, and ongoing maintenance. After the detailed requirements are reviewed, convert the chosen scope into a fixed deliverable list, acceptance criteria, milestones, and a final quote.
+The estimate assumes the client supplies final brand copy, garment data, photography rights, size charts, legal policies, and payment and shipping accounts. It excludes hosting, database and media usage, payment-provider fees, content production, taxes, and ongoing maintenance. Convert this range to a fixed quote after requirements and acceptance criteria are agreed.
 
-## Maintenance handover
+## Handover and maintenance
 
-The owner can edit existing text and images or add new chapters and products through Studio. A technical maintainer can change the layout or API in the GitHub repository, which is linked to Vercel. The database can be managed through Neon’s console and backed up using its managed features. Rotate the Studio key through Vercel environment settings and redeploy. Before public launch, replace the demo key flow with managed staff accounts and move uploaded media out of Postgres.
+The site owner can update copy, Series, Chapters, products, and demo images in Studio. Source code is in GitHub, with Vercel deployments connected to the repository. Neon manages the content database. Before public commerce launch, rotate the Studio key, use individual staff accounts, move media to object storage, and integrate the selected payment and order services.
