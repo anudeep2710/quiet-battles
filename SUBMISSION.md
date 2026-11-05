@@ -26,7 +26,7 @@ The screenshot index is [docs/screenshots/README.md](docs/screenshots/README.md)
 - Backend: Node.js API, run locally by `server.js` and deployed as a Vercel Function.
 - Database: Neon Postgres through `@neondatabase/serverless`.
 - Hosting and source: Vercel and GitHub.
-- External services and assets: Unsplash sample photography, Google Fonts, two original images generated with OpenAI image generation, and original local SVG garment illustrations.
+- External services and assets: Unsplash sample photography, Google Fonts, five original images generated with OpenAI image generation, and original local SVG garment illustrations.
 
 No site template, frontend framework, CMS plugin, or paid UI plugin was used. OpenAI Codex assisted with implementation and documentation; Playwright was used for browser checks and screenshot capture. These tools are disclosed for the technical evaluation.
 

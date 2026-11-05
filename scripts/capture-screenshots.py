@@ -75,8 +75,7 @@ def main():
         for slug in CHAPTER_SLUGS:
             open_route(page, args.base_url, f"chapter/{slug}", ".story-copy")
             assert page.locator(".story-copy p").count() >= 3, slug
-            if slug in ("the-first-quiet", "after-the-noise"):
-                capture(page, output_dir, f"04-chamber-{slug}.jpg")
+            capture(page, output_dir, f"04-chamber-{slug}.jpg")
 
         open_route(page, args.base_url, "product/soft-armor-hoodie", ".product-info")
         assert page.locator(".product-gallery img").count() == 2

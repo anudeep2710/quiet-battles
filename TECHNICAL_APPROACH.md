@@ -54,7 +54,7 @@ See [README.md](README.md) for Node.js requirements and commands. Run `npm run d
 
 ## Asset and tool disclosure
 
-The design uses two original editorial concept images generated with OpenAI image generation, supplementary Unsplash sample photography, and two locally authored SVG garment illustrations. Typography loads from Google Fonts. No website template, UI framework, CMS plugin, or paid UI plugin was used.
+The design uses five original editorial concept images generated with OpenAI image generation, supplementary Unsplash sample photography, and two locally authored SVG garment illustrations. Typography loads from Google Fonts. No website template, UI framework, CMS plugin, or paid UI plugin was used.
 
 OpenAI Codex assisted with implementation, documentation, and code review. Playwright was used for browser checks and to capture the submission screenshots. These tools should be disclosed during the interview, and the developer should be ready to explain the code and trade-offs.
 

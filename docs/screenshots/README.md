@@ -8,6 +8,9 @@ These screenshots show the demonstration's main paths on desktop and mobile. `sc
 | `02-archive-desktop.jpg` | The Archive |
 | `03-series-desktop.jpg` | Series 01 and its five Chapters |
 | `04-chamber-the-first-quiet.jpg` | Chapter 01 Chamber and linked Artifact |
+| `04-chamber-the-weight-you-carry.jpg` | Chapter 02 Chamber |
+| `04-chamber-letting-someone-in.jpg` | Chapter 03 Chamber |
+| `04-chamber-staying-tender.jpg` | Chapter 04 Chamber |
 | `04-chamber-after-the-noise.jpg` | Chapter 05 Chamber |
 | `05-artifact-desktop.jpg` | Product details, two views, size selection |
 | `06-home-mobile.jpg` | Mobile homepage |

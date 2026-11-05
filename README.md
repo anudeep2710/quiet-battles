@@ -78,7 +78,7 @@ Studio saves use one Neon transaction. SQL parameters are bound by the Neon serv
 - Backend: Node.js HTTP API, deployed as a Vercel Node Function.
 - Database: Neon Postgres, accessed with @neondatabase/serverless.
 - Hosting: Vercel. The connected GitHub repository deploys new pushes.
-- Images: two original editorial concepts generated with OpenAI image generation, supplementary sample photography from Unsplash, and original local SVG garment illustrations.
+- Images: five original editorial concepts generated with OpenAI image generation, supplementary sample photography from Unsplash, and original local SVG garment illustrations.
 - Fonts: Barlow Condensed, DM Sans, and IBM Plex Mono loaded from Google Fonts.
 - Development assistance: OpenAI Codex helped implement, document, and review this prototype. Playwright was used to check the browser experience and capture screenshots. GitHub hosts the source.
 

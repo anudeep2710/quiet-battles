@@ -28,7 +28,7 @@
         "slug": "the-first-quiet",
         "title": "The First Quiet",
         "excerpt": "Some mornings, getting dressed is the first promise you keep to yourself.",
-        "image": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1100&q=84",
+        "image": "/assets/chapter-first-quiet.webp",
         "productSlug": "soft-armor-hoodie",
         "story": [
           "Some mornings, getting dressed is the first promise you keep to yourself. No audience. No announcement. Just the small decision to meet the day.",
@@ -41,7 +41,7 @@
         "slug": "the-weight-you-carry",
         "title": "The Weight You Carry",
         "excerpt": "There is no visible measure for what a person has carried to get here.",
-        "image": "/assets/series-gentle-armor.webp",
+        "image": "/assets/chapter-weight-you-carry.webp",
         "productSlug": "soft-armor-hoodie",
         "story": [
           "There are things we carry without a handle. A conversation we keep replaying. The work of holding a family together. The effort of looking composed when we feel anything but. None of it appears in a photograph, yet it changes the way we move through a room.",
@@ -54,7 +54,7 @@
         "slug": "letting-someone-in",
         "title": "Letting Someone In",
         "excerpt": "A little room for another person can be its own kind of bravery.",
-        "image": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1100&q=84",
+        "image": "/assets/chapter-letting-someone-in.webp",
         "productSlug": "soft-armor-hoodie",
         "story": [
           "A door can stay closed for so long that we forget it has a handle on both sides. We learn to say we are fine before anyone has finished asking. It works, for a while. It keeps the day moving.",
