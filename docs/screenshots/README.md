@@ -30,6 +30,7 @@ These screenshots show the demonstration's main paths on desktop and mobile. `sc
 | `19-account-empty-mobile.jpg` | New private archive before an acquisition |
 | `20-account-order-mobile.jpg` | Private archive with its linked demo order |
 | `21-studio-customers.jpg` | Studio customer account management |
+| `23-checkout-account-gate-mobile.jpg` | Required sign-in or account creation before checkout |
 
 Regenerate with Python Playwright installed and the site key kept in the ignored `.studio-key` file:
 

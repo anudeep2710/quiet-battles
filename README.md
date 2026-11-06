@@ -19,7 +19,7 @@ A working full-stack assessment prototype for the QUIET BATTLES™ brief. It inc
 
 The five chapters have complete sample stories. The bag supports size selection and quantity changes. Checkout collects sample delivery details, presents a clearly labelled non-payable QR, and creates a demonstration order in Neon. It never connects to a bank, UPI account, or payment provider and never transfers money.
 
-Customers can create an account, sign out, sign back in, and see their own linked demo orders. Guest checkout is also supported. Screenshots of the homepage, Archive, Series, Chapters, artifact catalogue, account flows, product, mobile layout, demo bag, and Studio are in [docs/screenshots](docs/screenshots/README.md).
+Customers can create an account, sign out, sign back in, and see their own linked demo orders. An account is required before checkout; visitors can browse and build a bag before signing in or creating one. Screenshots of the homepage, Archive, Series, Chapters, artifact catalogue, checkout account gate, product, mobile layout, demo bag, and Studio are in [docs/screenshots](docs/screenshots/README.md).
 
 ## Run locally
 
@@ -32,7 +32,7 @@ Requirements: Node.js 24.15 or newer, npm, and a Neon Postgres database.
 
 For the linked Vercel project, run npx vercel env pull .env.local after linking to download its development connection variables. The current Studio key is kept in the ignored .studio-key file in this workspace. Never commit either file.
 
-Run npm run test:smoke while the local server is running on port 4174. The smoke check exercises the eight-product catalogue, customer sign-up/sign-in/sign-out, account-linked checkout, the private order archive, Studio customer and order controls, content writes, image upload and cleanup. It restores the original content and deletes its temporary account and order before exiting.
+Run npm run test:smoke while the local server is running on port 4174. The smoke check exercises the eight-product catalogue, guest-order rejection, customer sign-up/sign-in/sign-out, account-linked checkout, the private order archive, Studio customer and order controls, content writes, image upload and cleanup. It restores the original content and deletes its temporary account and order before exiting.
 
 ## Maintain the site
 
@@ -46,8 +46,8 @@ Content is saved in Neon Postgres. Uploaded images and four-hour Studio sessions
     Studio editor ───────────────────────────────→ protected JSON API
     Studio image picker → upload API → Neon media_assets table
     Customer sign-up/sign-in → salted password hash + hashed session → Neon customers
-    Visitor bag → browser localStorage → dummy-QR checkout → Neon orders
-    Signed-in checkout → customer-linked order → private acquisition archive
+    Visitor bag → browser localStorage → required customer sign-in → dummy-QR checkout
+    Checkout → customer-linked order → private acquisition archive
 
 The Vercel deployment serves the public folder as static assets and runs the API from api/index.js. The same server.js handles requests when running locally. The database schema is created and migrated by scripts/init-db.js. The seed content is in data/content.json.
 
@@ -63,7 +63,7 @@ Database tables:
 | admin_sessions | Hashed Studio token and expiration |
 | customers | Customer profile, normalized email, salted scrypt password hash |
 | customer_sessions | Hashed seven-day customer token, account link and expiration |
-| orders | Optional customer link, delivery snapshot, item snapshots, subtotal, payment label, fulfilment status and timestamps |
+| orders | Account link (nullable for legacy records), delivery snapshot, item snapshots, subtotal, payment label, fulfilment status and timestamps |
 
 See [docs/database-schema.md](docs/database-schema.md) for fields, constraints, and content relationships.
 
@@ -105,6 +105,6 @@ The updated overview clarifies the brand philosophy, architecture, and assessmen
 
 ## Demo boundaries
 
-This is an assessment prototype, not a live payment system. Its complete demonstration flow records an order, but the QR is deliberately non-payable and no payment is verified or transferred. Customer accounts work for the demo, but email verification, password recovery, login throttling, production privacy controls, shipping rates, taxes, stock reservations, returns, transactional email, and production staff roles remain outside the demo. Use sample details and a password not used elsewhere. The current hash-based pages are not independently crawlable routes; production should use server-rendered or statically generated URLs. Production media should also move to object storage with optimized derivatives.
+This is an assessment prototype, not a live payment system. Its demonstration checkout requires a customer account and records an order, but the QR is deliberately non-payable and no payment is verified or transferred. Customer accounts work for the demo, but email verification, password recovery, login throttling, production privacy controls, shipping rates, taxes, stock reservations, returns, transactional email, and production staff roles remain outside the demo. Use sample details and a password not used elsewhere. The current hash-based pages are not independently crawlable routes; production should use server-rendered or statically generated URLs. Production media should also move to object storage with optimized derivatives.
 
 See TECHNICAL_APPROACH.md for the implementation rationale, seven-day plan, production roadmap, and indicative full-project quotation.

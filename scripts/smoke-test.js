@@ -40,6 +40,11 @@ async function main() {
     assert.match(await alternateImage.text(), /back view/i);
   }
 
+  const guestOrder = await jsonRequest("/api/orders", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({})
+  });
+  assert.equal(guestOrder.response.status, 401);
+
   const denied = await jsonRequest("/api/admin/login", {
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ key: "incorrect-key" })
@@ -211,7 +216,7 @@ async function main() {
   assert.equal(ordersAfterLogout.response.status, 401);
   const customersAfterLogout = await jsonRequest("/api/admin/customers", { headers: auth });
   assert.equal(customersAfterLogout.response.status, 401);
-  console.log("Smoke test passed: site, eight-product catalogue, customer accounts, linked order history, Neon reads/writes, Studio controls, login/logout, and media upload.");
+  console.log("Smoke test passed: site, eight-product catalogue, guest-order rejection, customer accounts, linked order history, Neon reads/writes, Studio controls, login/logout, and media upload.");
 }
 
 main().catch((error) => {

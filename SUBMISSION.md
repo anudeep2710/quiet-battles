@@ -6,7 +6,7 @@
 
 https://quiet-battles-demo.vercel.app
 
-The demo follows the brand path from the homepage to The Archive, a Series, a Chapter Chamber, its artifact, and Acquisition. It includes five complete sample stories, eight products with original front/back artwork, category filters, sorting, quick add, customer sign-up/sign-in, a private order archive, a responsive dummy-QR checkout that records demonstration orders, and a Neon-backed Studio.
+The demo follows the brand path from the homepage to The Archive, a Series, a Chapter Chamber, its artifact, and Acquisition. It includes five complete sample stories, eight products with original front/back artwork, category filters, sorting, quick add, customer sign-up/sign-in, a private order archive, and a responsive checkout that requires a customer account before the clearly non-payable QR demonstration step. Orders are linked to the signed-in customer in Neon.
 
 ## Source code and local run instructions
 
@@ -44,7 +44,7 @@ Visitors load static files from Vercel. The browser requests published content f
 
 All stories, garment details, product prices, and some photography are sample material. The product illustrations are original SVG concepts. Chapters 01–04 each link to a distinct artifact; Chapter 05 returns to the Soft Armor Hoodie. The client can replace these relationships and content through Studio.
 
-The acquisition flow creates a demonstration order and exposes it in Studio. The displayed QR is deliberately non-payable: it does not connect to UPI, a bank, or a payment gateway, and confirming it does not prove payment. Customer accounts and private order history work in the prototype. Email verification, password recovery, login throttling, stock reservation, shipping calculation, tax, returns, transactional messages, and live payment verification remain outside it. The current inner pages use hash-based URLs, so production SEO requires crawlable routes and page-specific server metadata.
+The acquisition flow requires a customer account, creates an account-linked demonstration order, and exposes it in Studio. The displayed QR is deliberately non-payable: it does not connect to UPI, a bank, or a payment gateway, and confirming it does not prove payment. Customer accounts and private order history work in the prototype. Email verification, password recovery, login throttling, stock reservation, shipping calculation, tax, returns, transactional messages, and live payment verification remain outside it. The current inner pages use hash-based URLs, so production SEO requires crawlable routes and page-specific server metadata.
 
 ## Indicative full-project estimate
 

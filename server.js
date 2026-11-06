@@ -123,7 +123,7 @@ async function startCustomerSession(customer) {
 async function requireCustomer(req, res) {
   const customer = await db.readCustomerBySession(tokenFrom(req));
   if (customer) return customer;
-  send(res, 401, { error: "Your private archive session has expired. Sign in again." });
+  send(res, 401, { error: "Sign in to your private archive to continue." });
   return null;
 }
 
@@ -308,8 +308,9 @@ async function handle(req, res) {
   }
 
   if (req.method === "POST" && pathname === "/api/orders") {
-    const signedInCustomer = await db.readCustomerBySession(tokenFrom(req));
-    const order = await createOrder(await readJson(req, 64 * 1024), signedInCustomer && signedInCustomer.id);
+    const signedInCustomer = await requireCustomer(req, res);
+    if (!signedInCustomer) return;
+    const order = await createOrder(await readJson(req, 64 * 1024), signedInCustomer.id);
     return send(res, 201, { order });
   }
 

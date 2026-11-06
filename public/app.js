@@ -27,6 +27,7 @@ let authMessage = "";
 let catalogFilter = "All";
 let catalogSort = "featured";
 let quickAddSlug = "";
+const checkoutAuthPendingKey = "qbCheckoutAuthPending";
 const orderStatuses = ["Placed", "Confirmed", "Packed", "Shipped", "Completed", "Cancelled"];
 
 function readCart() {
@@ -311,10 +312,11 @@ function renderProduct(slug) {
 }
 
 function checkoutSteps(active) {
+  const steps = [["account", "Account"], ["details", "Details"], ["payment", "Demo payment"], ["complete", "Confirmation"]];
   return '<ol class="acquisition-steps" aria-label="Checkout progress">' +
-    [["details", "Details"], ["payment", "Demo payment"], ["complete", "Confirmation"]].map(function (step, index) {
+    steps.map(function (step, index) {
       const state = step[0] === active ? " active" :
-        (["details", "payment", "complete"].indexOf(step[0]) < ["details", "payment", "complete"].indexOf(active) ? " complete" : "");
+        (steps.findIndex(function (item) { return item[0] === step[0]; }) < steps.findIndex(function (item) { return item[0] === active; }) ? " complete" : "");
       return '<li class="' + state.trim() + '"' + (step[0] === active ? ' aria-current="step"' : "") + '><span>0' + (index + 1) + '</span>' + step[1] + '</li>';
     }).join("") + '</ol>';
 }
@@ -336,6 +338,12 @@ function customerValue(name) {
   return escapeHtml(checkoutCustomer[name] || accountValue || "");
 }
 
+function renderCheckoutAccount() {
+  return '<main class="checkout-page"><div class="page">' + checkoutSteps("account") +
+    '<div class="checkout-heading"><span class="mono section-label">CHECKOUT · ACCOUNT REQUIRED</span><h1>Keep your<br>place.</h1><p>Create an archive account or sign in to continue. You can browse and add items before signing in; every order must belong to an account.</p></div>' +
+    '<div class="checkout-layout"><section class="checkout-account-gate"><span class="mono section-label">YOUR BAG IS SAVED</span><h2>Continue to checkout.</h2><p>Your selected artifacts will be waiting after you sign in.</p><div class="checkout-account-actions"><a class="button button-dark" href="#signup">Create account <span class="arrow">↗</span></a><a class="button button-light" href="#login">I already have an account</a></div><p class="checkout-account-note">Guest checkout is unavailable. Sign in or create an account to place an order.</p></section>' + checkoutSummary(cart, cartTotal(), false) + '</div></div></main>';
+}
+
 function renderCheckout() {
   if (checkoutOrder) {
     return '<main class="checkout-page"><div class="page">' + checkoutSteps("complete") +
@@ -345,9 +353,20 @@ function renderCheckout() {
   }
 
   if (!cart.length) {
-    return '<main class="checkout-page"><div class="page"><section class="checkout-empty"><span class="mono section-label">ACQUISITION</span><h1>Your bag is quiet.</h1><p>Choose an artifact before beginning the demo acquisition.</p><a class="button button-dark" href="#archive">Explore the archive <span class="arrow">↗</span></a></section></div></main>';
+    sessionStorage.removeItem(checkoutAuthPendingKey);
+    return '<main class="checkout-page"><div class="page"><section class="checkout-empty"><span class="mono section-label">CHECKOUT</span><h1>Your bag is quiet.</h1><p>Choose an artifact before continuing to checkout.</p><a class="button button-dark" href="#artifacts">Shop artifacts <span class="arrow">↗</span></a></section></div></main>';
   }
 
+  if (customerLoading) {
+    return '<main class="checkout-page"><div class="page">' + checkoutSteps("account") + '<section class="checkout-account-gate checkout-account-loading"><span class="mono section-label">PRIVATE ARCHIVE</span><h1>Checking your archive…</h1><p>Your bag is saved while we confirm your sign-in.</p></section></div></main>';
+  }
+
+  if (!customer) {
+    sessionStorage.setItem(checkoutAuthPendingKey, "true");
+    return renderCheckoutAccount();
+  }
+
+  sessionStorage.removeItem(checkoutAuthPendingKey);
   const subtotal = cartTotal();
   if (checkoutStep === "payment") {
     return '<main class="checkout-page"><div class="page">' + checkoutSteps("payment") +
@@ -356,7 +375,7 @@ function renderCheckout() {
         '<div class="payment-copy"><span class="mono section-label">DUMMY QR · NOT PAYABLE</span><h2>No money moves here.</h2><p>This screen demonstrates the payment step without connecting to UPI, a bank, or a payment gateway.</p>' +
         '<dl class="delivery-note"><div><dt>For</dt><dd>' + customerValue("name") + '</dd></div><div><dt>Delivery</dt><dd>' + customerValue("city") + ' · ' + customerValue("postalCode") + '</dd></div></dl>' +
         '<label class="demo-ack"><input type="checkbox" data-demo-ack> <span>I understand this is a demonstration and no payment will be made.</span></label><div class="checkout-message" role="status">' + escapeHtml(checkoutMessage) + '</div>' +
-        '<div class="checkout-actions"><button class="button button-light" type="button" data-back-details>Back</button><button class="button button-dark" type="button" data-confirm-demo>Confirm demo payment <span class="arrow">↗</span></button></div></div></section>' +
+        '<div class="checkout-actions"><button class="button button-light" type="button" data-back-details>Back</button><button class="button button-dark" type="button" data-confirm-demo>Confirm demo order <span class="arrow">↗</span></button></div></div></section>' +
         checkoutSummary(cart, subtotal, false) + '</div></div></main>';
   }
 
@@ -506,8 +525,8 @@ function renderCart() {
   }).join("");
   const total = cartTotal();
   return '<button class="cart-backdrop" type="button" aria-label="Close bag" data-cart-close></button><aside class="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-title"><div class="cart-head"><h2 id="cart-title">Your bag <span class="mono">(' + cartQuantity() + ')</span></h2><button class="icon-button" type="button" data-cart-close aria-label="Close bag">×</button></div>' +
-    '<div class="cart-items">' + (lines || '<div class="cart-empty">Nothing in your bag yet.<br>Find a piece that feels like you.</div>') + '</div>' +
-    (cart.length ? '<div class="cart-summary"><div class="cart-total"><span>Demo subtotal</span><strong>' + money(total) + '</strong></div><button type="button" class="button button-dark" data-demo-checkout>Begin acquisition <span class="arrow">↗</span></button><small>Dummy QR · no real payment is requested</small></div>' : "") +
+    '<div class="cart-items">' + (lines || '<div class="cart-empty">Nothing in your bag yet.<br>Find a piece that feels like you.<a href="#artifacts">Shop artifacts ↗</a></div>') + '</div>' +
+    (cart.length ? '<div class="cart-summary"><div class="cart-total"><span>Demo subtotal</span><strong>' + money(total) + '</strong></div><button type="button" class="button button-dark" data-demo-checkout>Continue to checkout <span class="arrow">↗</span></button><small>Sign in or create an account to place an order.</small></div>' : "") +
   '</aside>';
 }
 
@@ -725,7 +744,7 @@ function bindEvents() {
     } catch (error) {
       checkoutMessage = error.message;
       confirmDemo.disabled = false;
-      confirmDemo.innerHTML = 'Confirm demo payment <span class="arrow">↗</span>';
+      confirmDemo.innerHTML = 'Confirm demo order <span class="arrow">↗</span>';
       const message = document.querySelector(".checkout-message");
       if (message) message.textContent = checkoutMessage;
     }
@@ -759,7 +778,9 @@ function bindEvents() {
       customerLoading = false;
       sessionStorage.setItem("qbCustomerToken", customerToken);
       authMessage = "";
-      location.hash = "#account";
+      const returnToCheckout = sessionStorage.getItem(checkoutAuthPendingKey) === "true";
+      sessionStorage.removeItem(checkoutAuthPendingKey);
+      location.hash = returnToCheckout ? "#checkout" : "#account";
     } catch (error) {
       authMessage = error.message;
       render();
@@ -1173,6 +1194,7 @@ async function loadCustomerSession() {
 
 window.addEventListener("hashchange", function () {
   const route = currentRoute();
+  if (!["checkout", "login", "signup"].includes(route[0])) sessionStorage.removeItem(checkoutAuthPendingKey);
   cartOpen = false;
   render();
   if (route[0] === "belief") {
