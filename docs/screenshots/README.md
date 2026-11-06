@@ -18,6 +18,10 @@ These screenshots show the demonstration's main paths on desktop and mobile. `sc
 | `08-acquisition-demo.jpg` | Mobile demo bag after adding a size |
 | `09-studio-series.jpg` | Studio Series editor |
 | `10-studio-new-series.jpg` | Add Series form in Studio, before saving |
+| `11-checkout-details-mobile.jpg` | Mobile delivery-details step and order summary |
+| `12-demo-payment-mobile.jpg` | Clearly labelled dummy QR payment step |
+| `13-order-confirmation-mobile.jpg` | Neon-backed demonstration order confirmation |
+| `14-studio-orders.jpg` | Studio order ledger and fulfilment controls |
 
 Regenerate with Python Playwright installed and the site key kept in the ignored `.studio-key` file:
 
@@ -25,4 +29,4 @@ Regenerate with Python Playwright installed and the site key kept in the ignored
 python scripts/capture-screenshots.py --base-url https://quiet-battles-demo.vercel.app --studio-key-file .studio-key
 ```
 
-The capture script also opens all five Chapter Chambers and checks that the bag and Studio are reachable. It captures pages from the supplied base URL, so use the hosted URL for final submission evidence.
+The capture script also opens all five Chapter Chambers, completes and deletes a demonstration order, updates its status in Studio, and checks the bag and responsive layouts. It captures pages from the supplied base URL, so use the hosted URL for final submission evidence.

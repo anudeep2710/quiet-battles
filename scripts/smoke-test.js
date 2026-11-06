@@ -46,7 +46,34 @@ async function main() {
   const auth = { "Content-Type": "application/json", Authorization: "Bearer " + login.body.token };
   const original = initial.body;
   let changed = false;
+  let orderId = "";
   try {
+    const createdOrder = await jsonRequest("/api/orders", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        customer: {
+          name: "Assessment Visitor", email: "visitor@example.com", phone: "+91 90000 00000",
+          address: "1 Demo Street", city: "Bengaluru", postalCode: "560001"
+        },
+        items: [{ slug: initial.body.products[0].slug, size: "M", qty: 1 }],
+        demoAcknowledged: true
+      })
+    });
+    assert.equal(createdOrder.response.status, 201, JSON.stringify(createdOrder.body));
+    orderId = createdOrder.body.order.id;
+    assert.match(createdOrder.body.order.orderNumber, /^QB-\d{8}-[A-F0-9]{6}$/);
+    assert.equal(createdOrder.body.order.subtotal, initial.body.products[0].price);
+    assert.equal(createdOrder.body.order.paymentMethod, "demo_qr");
+
+    const orderList = await jsonRequest("/api/admin/orders", { headers: auth });
+    assert.equal(orderList.response.status, 200);
+    assert.ok(orderList.body.orders.some((order) => order.id === orderId));
+    const orderUpdate = await jsonRequest("/api/admin/orders/" + orderId, {
+      method: "PATCH", headers: auth, body: JSON.stringify({ status: "Confirmed" })
+    });
+    assert.equal(orderUpdate.response.status, 200, JSON.stringify(orderUpdate.body));
+    assert.equal(orderUpdate.body.order.status, "Confirmed");
+
     const temporary = structuredClone(original);
     temporary.seriesList[0].chapters[0].title = "Verification edit";
     temporary.seriesList.push({
@@ -89,6 +116,12 @@ async function main() {
     assert.equal(image.headers.get("content-type"), "image/png");
     assert.ok((await image.arrayBuffer()).byteLength > 60);
   } finally {
+    if (orderId) {
+      const removedOrder = await jsonRequest("/api/admin/orders/" + orderId, {
+        method: "DELETE", headers: { Authorization: "Bearer " + login.body.token }
+      });
+      assert.equal(removedOrder.response.status, 200, JSON.stringify(removedOrder.body));
+    }
     if (changed) {
       const restored = await jsonRequest("/api/admin/content", {
         method: "PUT", headers: auth, body: JSON.stringify(original)
@@ -105,7 +138,9 @@ async function main() {
     method: "PUT", headers: auth, body: JSON.stringify(original)
   });
   assert.equal(afterLogout.response.status, 401);
-  console.log("Smoke test passed: site, Neon reads/writes, Studio login/logout, media upload.");
+  const ordersAfterLogout = await jsonRequest("/api/admin/orders", { headers: auth });
+  assert.equal(ordersAfterLogout.response.status, 401);
+  console.log("Smoke test passed: site, Neon reads/writes, checkout order lifecycle, Studio order controls, login/logout, and media upload.");
 }
 
 main().catch((error) => {

@@ -9,6 +9,7 @@ const db = require("./db");
 const PUBLIC_DIR = path.join(__dirname, "public");
 const PORT = Number(process.env.PORT || 4173);
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+const ORDER_STATUSES = new Set(["Placed", "Confirmed", "Packed", "Shipped", "Completed", "Cancelled"]);
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -156,6 +157,53 @@ function validImageBytes(mime, bytes) {
   return false;
 }
 
+function validOrderRequest(value) {
+  if (!isObject(value) || !isObject(value.customer) || !Array.isArray(value.items) ||
+      value.items.length < 1 || value.items.length > 20 || value.demoAcknowledged !== true) return false;
+  const customer = value.customer;
+  if (!["name", "email", "phone", "address", "city", "postalCode"].every((key) =>
+      validText(customer[key], key === "address" ? 500 : 160) && customer[key].trim())) return false;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email) ||
+      !/^[+()\-\s0-9]{6,24}$/.test(customer.phone) ||
+      !/^[a-zA-Z0-9\-\s]{3,14}$/.test(customer.postalCode)) return false;
+  if (customer.website) return false;
+  return value.items.every((item) => isObject(item) &&
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item.slug || "") &&
+    validText(item.size, 30) && item.size.trim() &&
+    Number.isInteger(item.qty) && item.qty >= 1 && item.qty <= 10);
+}
+
+async function createOrder(body) {
+  if (!validOrderRequest(body)) throw requestError("Check the customer details, bag items, and demo-payment acknowledgement.");
+  const content = await db.readContent();
+  const products = new Map(content.products.map((product) => [product.slug, product]));
+  const items = body.items.map((line) => {
+    const product = products.get(line.slug);
+    if (!product || !product.sizes.includes(line.size)) {
+      throw requestError("One of the selected products or sizes is no longer available.");
+    }
+    return {
+      slug: product.slug,
+      name: product.name,
+      image: product.image,
+      size: line.size,
+      qty: line.qty,
+      unitPrice: product.price,
+      lineTotal: product.price * line.qty
+    };
+  });
+  const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
+  const customer = {
+    name: body.customer.name.trim(),
+    email: body.customer.email.trim().toLowerCase(),
+    phone: body.customer.phone.trim(),
+    address: body.customer.address.trim(),
+    city: body.customer.city.trim(),
+    postalCode: body.customer.postalCode.trim()
+  };
+  return db.createOrder(customer, items, subtotal);
+}
+
 async function handle(req, res) {
   const url = new URL(req.url, "http://localhost");
   const pathname = decodeURIComponent(url.pathname);
@@ -169,6 +217,11 @@ async function handle(req, res) {
     const content = await db.readContent();
     if (!content) return send(res, 503, { error: "The archive has not been initialized." });
     return send(res, 200, content);
+  }
+
+  if (req.method === "POST" && pathname === "/api/orders") {
+    const order = await createOrder(await readJson(req, 64 * 1024));
+    return send(res, 201, { order });
   }
 
   const mediaMatch = /^\/api\/media\/([a-f0-9-]{36})$/.exec(pathname);
@@ -196,6 +249,27 @@ async function handle(req, res) {
   if (req.method === "POST" && pathname === "/api/admin/logout") {
     await db.deleteSession(tokenFrom(req));
     return send(res, 200, { ok: true });
+  }
+
+  if (req.method === "GET" && pathname === "/api/admin/orders") {
+    if (!await requireAdmin(req, res)) return;
+    return send(res, 200, { orders: await db.readOrders() });
+  }
+
+  const orderMatch = /^\/api\/admin\/orders\/([a-f0-9-]{36})$/.exec(pathname);
+  if (orderMatch && req.method === "PATCH") {
+    if (!await requireAdmin(req, res)) return;
+    const body = await readJson(req, 4096);
+    if (!ORDER_STATUSES.has(body.status)) return send(res, 400, { error: "Choose a valid order status." });
+    const order = await db.updateOrderStatus(orderMatch[1], body.status);
+    return order ? send(res, 200, { order }) : send(res, 404, { error: "Order not found." });
+  }
+
+  if (orderMatch && req.method === "DELETE") {
+    if (!await requireAdmin(req, res)) return;
+    const removed = await db.deleteOrder(orderMatch[1]);
+    return removed ? send(res, 200, { ok: true, orderNumber: removed.order_number }) :
+      send(res, 404, { error: "Order not found." });
   }
 
   if (req.method === "PUT" && pathname === "/api/admin/content") {

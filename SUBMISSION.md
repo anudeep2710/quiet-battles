@@ -6,7 +6,7 @@
 
 https://quiet-battles-demo.vercel.app
 
-The demo follows the brand path from the homepage to The Archive, a Series, a Chapter Chamber, its sample artifact, and the demo bag. It includes five complete sample stories, a responsive layout, and a Neon-backed Studio.
+The demo follows the brand path from the homepage to The Archive, a Series, a Chapter Chamber, its sample artifact, and Acquisition. It includes five complete sample stories, a responsive layout, a dummy-QR checkout that records demonstration orders, and a Neon-backed Studio.
 
 ## Source code and local run instructions
 
@@ -18,7 +18,7 @@ Reviewers will need access to the private repository or the source ZIP.
 
 ## Screenshots and demonstration evidence
 
-The screenshot index is [docs/screenshots/README.md](docs/screenshots/README.md). It includes desktop and mobile views of the homepage and product, Archive, Series 01, Chapter Chambers, the demo bag, and Studio. The capture script can reproduce them with Playwright.
+The screenshot index is [docs/screenshots/README.md](docs/screenshots/README.md). It includes desktop and mobile views of the homepage and product, Archive, Series 01, Chapter Chambers, bag, delivery form, dummy QR, order confirmation, and Studio order ledger. The capture script can reproduce them with Playwright.
 
 ## Technologies
 
@@ -34,17 +34,17 @@ No site template, frontend framework, CMS plugin, or paid UI plugin was used. Op
 
 The schema, fields, and relationships are documented in [docs/database-schema.md](docs/database-schema.md). Studio at `/#admin` can edit brand and homepage content; add, edit, and remove Series and Chapters; manage products; and upload images. Image uploads up to 2 MB are stored in Neon for this demo.
 
-The Studio key is kept outside source control. Enter it privately during the review; do not include it in the submission.
+The Studio key is kept outside source control. Enter it privately during the review; do not include it in the submission. Studio also includes an Orders ledger for reviewing customer details and item snapshots, updating fulfilment status, refreshing records, and deleting demonstration orders.
 
 ## Architecture
 
-Visitors load static files from Vercel. The browser requests published content from a Node API, which reads Neon. Studio edits use a protected API session and write content to Neon. The selected size and bag are stored in the visitor's browser.
+Visitors load static files from Vercel. The browser requests published content from a Node API, which reads Neon. The selected size and bag are stored in the visitor's browser. Checkout submits customer and bag data to the API; the server validates current products and prices before writing the demonstration order to Neon. Studio edits and order operations use a protected API session.
 
 ## Demonstration boundaries
 
 All stories, garment details, product price, and some photography are sample material. The product illustrations are original SVG concepts. Chapters 02–05 link to the sample Series 01 artifact to demonstrate the journey; only Chapter 01 owns that sample product record. The client can replace these links and content through Studio.
 
-The bag does not create an order or process payment. Stock control, order management, shipping, returns, customer accounts, and payment integration are outside the prototype. The current inner pages use hash-based URLs, so production SEO requires crawlable routes and page-specific server metadata.
+The acquisition flow creates a demonstration order and exposes it in Studio. The displayed QR is deliberately non-payable: it does not connect to UPI, a bank, or a payment gateway, and confirming it does not prove payment. Stock reservation, shipping calculation, tax, returns, customer accounts, transactional messages, and live payment verification remain outside the prototype. The current inner pages use hash-based URLs, so production SEO requires crawlable routes and page-specific server metadata.
 
 ## Indicative full-project estimate
 

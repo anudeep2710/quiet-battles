@@ -11,9 +11,9 @@ The demo contains one featured Series, five complete sample Chapter stories, one
 ```text
 Vercel static site ──→ browser JavaScript ──→ Node.js JSON API ──→ Neon Postgres
           │                    │                    ↑
-          │                    └── demo bag in localStorage
+          │                    └── bag in localStorage ──→ dummy-QR checkout ──→ orders
           └── images and fonts                       │
-Studio editor ── protected API session ──────────────┘
+Studio editor and order desk ── protected API session ──────────────┘
 Studio image upload ────────────────────────────────→ Neon media_assets
 ```
 
@@ -23,7 +23,7 @@ The public site is served from `public/`. `server.js` exposes the JSON API for l
 
 - **HTML, CSS, and browser JavaScript** keep a small assessment prototype fast to load and straightforward to explain.
 - **Node.js** provides server-side content validation, image checks, and Studio authentication.
-- **Neon Postgres** stores ordered Series, Chapters, products, uploaded demo images, and hashed Studio sessions. It provides durable data across local and hosted versions.
+- **Neon Postgres** stores ordered Series, Chapters, products, uploaded demo images, demonstration orders, and hashed Studio sessions. It provides durable data across local and hosted versions.
 - **Vercel** serves the static site and runs the API function. The connected GitHub repository can deploy commits to the staging site.
 
 The data model supports multiple Series, with Chapters belonging to a Series and products linked to a Chapter. Studio can add, edit, and remove these records. The public Archive and Series routes read all Series from the same content API. The initial database setup also migrates the previous single-Series demo content.
@@ -32,13 +32,15 @@ The data model supports multiple Series, with Chapters belonging to a Series and
 
 The homepage introduces the brand and points into The Archive. The Archive presents Series entries; Series 01 opens five Chapter Chambers. Each Chamber includes its own image, complete sample story, related artifact entry, and a link to the next Chapter. The artifact page shows front and back SVG illustrations, a sample INR price, size selection, product details, and an Add to Bag interaction. The bag is stored in the visitor's browser.
 
+Acquisition collects sample delivery details and presents a visibly labelled dummy QR. After the visitor acknowledges that no payment occurs, the API validates each product and size, recalculates prices from Neon, and records an order with a server-generated reference. The confirmation page displays that reference. No UPI address, bank account, payment credential, or gateway is involved.
+
 Chapters 02–05 currently link to the Series 01 sample hoodie to demonstrate the route. The product record belongs to Chapter 01; Studio can replace these relationships once the client supplies the real garment-to-story map.
 
 ## Content Studio
 
-Studio uses an environment-held access key. Successful sign-in creates a random four-hour token; Neon stores only its SHA-256 hash. Protected requests require the token. Studio can manage homepage copy, multiple Series, Chapters and product details; PNG, JPEG, and WebP uploads are checked by file signature and limited to 2 MB. Saves validate slugs and cross-links and write the content in a database transaction.
+Studio uses an environment-held access key. Successful sign-in creates a random four-hour token; Neon stores only its SHA-256 hash. Protected requests require the token. Studio can manage homepage copy, multiple Series, Chapters, product details, and the demonstration order ledger. Staff can review order snapshots, change fulfilment status, refresh the list, and delete demo records. PNG, JPEG, and WebP uploads are checked by file signature and limited to 2 MB. Content saves validate slugs and cross-links and write in a database transaction.
 
-This is suitable for an assessment demo. A production content team should use named staff accounts, role-based access, an audit log, and a dedicated media service instead of storing image bytes in Postgres.
+This is suitable for an assessment demo. A production operation should use named staff accounts, role-based access, an audit log, inventory reservations, payment-provider webhooks, rate limiting, transactional messaging, and a dedicated media service instead of storing image bytes in Postgres.
 
 ## Performance, accessibility, and search
 

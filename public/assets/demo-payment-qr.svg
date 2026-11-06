@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 420" role="img" aria-labelledby="title description">
+  <title id="title">Dummy payment QR code</title>
+  <description id="description">A decorative non-payable QR pattern for the QUIET BATTLES checkout demonstration.</description>
+  <rect width="360" height="420" fill="#f4f2eb"/>
+  <rect x="22" y="22" width="316" height="316" fill="#191a18"/>
+  <g fill="#f4f2eb">
+    <path d="M42 42h84v84H42zm18 18v48h48V60zM234 42h84v84h-84zm18 18v48h48V60zM42 234h84v84H42zm18 18v48h48v-48z"/>
+    <path d="M150 42h18v18h-18zm36 0h18v36h-18zm-36 54h36v18h-36zm54 0h18v54h-18zm-72 36h18v36h-18zm36 0h18v18h-18zm72 18h36v18h-36zm54 0h24v36h-24zm-162 36h36v18h-36zm54-18h36v54h-36zm72 18h18v18h-18zm36 18h54v18h-54zm-162 18h18v36h-18zm36 18h54v18h-54zm72 0h18v54h-18zm36 0h36v18h-36zm54 0h18v36h-18zm-144 36h36v18h-36zm72 18h36v18h-36zm54-18h18v54h-18zm36 18h36v18h-36zm-144 36h18v18h-18zm36 0h54v18h-54zm108 0h54v18h-54z"/>
+  </g>
+  <rect x="112" y="150" width="136" height="60" fill="#a25442"/>
+  <text x="180" y="177" fill="#f4f2eb" font-family="Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle" letter-spacing="3">DEMO</text>
+  <text x="180" y="197" fill="#f4f2eb" font-family="Arial, sans-serif" font-size="9" text-anchor="middle" letter-spacing="2">NOT PAYABLE</text>
+  <text x="180" y="372" fill="#191a18" font-family="monospace" font-size="13" text-anchor="middle" letter-spacing="2">QUIET BATTLES™</text>
+  <text x="180" y="398" fill="#a25442" font-family="monospace" font-size="11" text-anchor="middle" letter-spacing="2">NO MONEY IS TRANSFERRED</text>
+</svg>

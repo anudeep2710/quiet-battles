@@ -10,7 +10,10 @@ The setup script `scripts/init-db.js` creates the tables and migrates the earlie
 | `products` | `sort_order`, `slug`, `name`, `category`, `description`, `price`, `image`, `secondary_image`, `sizes`, `details`, `chapter_slug` | Garment artifact details. Product slugs are unique; price is a nonnegative integer in INR. |
 | `media_assets` | `id`, `mime_type`, `base64_data`, `created_at` | PNG, JPEG, and WebP demo uploads, capped at 2 MB each. |
 | `admin_sessions` | `token_hash`, `expires_at` | Four-hour Studio sessions. The raw random token is never stored in the database. |
+| `orders` | `id`, `order_number`, `customer`, `items`, `subtotal`, `payment_method`, `payment_status`, `status`, timestamps | Demonstration checkout records, item snapshots, and admin-managed fulfilment status. |
 
 The application validates that Series and Chapter slugs are unique, each Chapter belongs to an existing Series, every Chapter points to an existing product, and each product points to an existing Chapter. These relationships are checked by the API when saving the full content document. The demo currently has one Series, five Chapters, and one sample product.
 
-Studio writes content in a Postgres transaction. Media upload and retrieval use a UUID. A production system should move media to object storage and may model the content and product relationships with explicit foreign keys and revision history.
+Checkout reprices every submitted item from the current product catalogue, validates its size, and stores an item snapshot rather than trusting browser prices. Order IDs are UUIDs and the public reference uses a date plus a random suffix. Studio can list orders, change their fulfilment status, and remove demonstration records. No actual payment credential or transaction is stored.
+
+Studio writes content in a Postgres transaction. Media upload and retrieval use a UUID. A production system should move media to object storage, add explicit inventory and shipping models, and may model the content relationships with foreign keys and revision history.
