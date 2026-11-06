@@ -8,6 +8,8 @@ public/uploads/*
 .env*
 !.env.example
 node_modules/
+__pycache__/
+*.pyc
 .studio-key
 .share-link.json
 .share-body.json
