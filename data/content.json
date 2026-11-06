@@ -94,6 +94,7 @@
     {
       "slug": "soft-armor-hoodie",
       "name": "The Soft Armor Hoodie",
+      "kind": "Layers",
       "category": "SERIES 01 · CHAPTER 01",
       "description": "A quiet layer for the days that ask a little more of you. Roomy through the body, soft at the edges, and made to move at your pace.",
       "price": 4800,
@@ -106,6 +107,7 @@
     {
       "slug": "carry-light-overshirt",
       "name": "The Carry Light Overshirt",
+      "kind": "Layers",
       "category": "SERIES 01 · CHAPTER 02",
       "description": "A structured outer layer for what cannot be set down all at once. Generous through the body, grounded in weight, and built with room to move.",
       "price": 5200,
@@ -118,6 +120,7 @@
     {
       "slug": "quiet-form-tee",
       "name": "The Quiet Form Tee",
+      "kind": "Essentials",
       "category": "SERIES 01 · CHAPTER 03",
       "description": "An easy everyday shape for the relief of being known. Soft against the skin, deliberately unhurried, and cut to meet you where you are.",
       "price": 2200,
@@ -130,6 +133,7 @@
     {
       "slug": "still-point-cap",
       "name": "The Still Point Cap",
+      "kind": "Objects",
       "category": "SERIES 01 · CHAPTER 04",
       "description": "A small shade for keeping your own pace. Quietly marked, softly structured, and made for the space between arriving and beginning again.",
       "price": 1800,
@@ -138,6 +142,58 @@
       "sizes": ["ONE SIZE"],
       "details": ["Low-profile six-panel form", "Washed cotton canvas", "Adjustable brass closure"],
       "chapterSlug": "staying-tender"
+    },
+    {
+      "slug": "quiet-hours-crewneck",
+      "name": "The Quiet Hours Crewneck",
+      "kind": "Layers",
+      "category": "SERIES 01 · CHAPTER 05",
+      "description": "A soft-weight crew for the hour after everything settles. Cut with a dropped shoulder and a little extra room for returning to yourself.",
+      "price": 4200,
+      "image": "/assets/quiet-hours-crewneck.svg",
+      "secondaryImage": "/assets/quiet-hours-crewneck-back.svg",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "details": ["Relaxed dropped-shoulder fit", "Heavyweight loopback cotton", "Raised tonal archive mark"],
+      "chapterSlug": "after-the-noise"
+    },
+    {
+      "slug": "grounded-trouser",
+      "name": "The Grounded Trouser",
+      "kind": "Bottoms",
+      "category": "SERIES 01 · CHAPTER 02",
+      "description": "A wide, steady trouser for moving without hurry. Structured at the waist, easy through the leg, and designed to hold its shape.",
+      "price": 4600,
+      "image": "/assets/grounded-trouser.svg",
+      "secondaryImage": "/assets/grounded-trouser-back.svg",
+      "sizes": ["26", "28", "30", "32", "34", "36"],
+      "details": ["Relaxed straight leg", "Garment-washed cotton twill", "Internal drawcord and belt loops"],
+      "chapterSlug": "the-weight-you-carry"
+    },
+    {
+      "slug": "open-door-tote",
+      "name": "The Open Door Tote",
+      "kind": "Objects",
+      "category": "SERIES 01 · CHAPTER 03",
+      "description": "A carry-all for the ordinary things that make a day possible. Open at the top, reinforced where it matters, and quietly marked.",
+      "price": 1600,
+      "image": "/assets/open-door-tote.svg",
+      "secondaryImage": "/assets/open-door-tote-back.svg",
+      "sizes": ["ONE SIZE"],
+      "details": ["Reinforced cotton canvas", "Internal key pocket", "Long shoulder straps"],
+      "chapterSlug": "letting-someone-in"
+    },
+    {
+      "slug": "return-home-long-sleeve",
+      "name": "The Return Home Long Sleeve",
+      "kind": "Essentials",
+      "category": "SERIES 01 · CHAPTER 05",
+      "description": "A close, familiar layer for finding your way back. Weighty jersey, generous sleeves, and a reminder placed where your hand can reach it.",
+      "price": 2800,
+      "image": "/assets/return-home-long-sleeve.svg",
+      "secondaryImage": "/assets/return-home-long-sleeve-back.svg",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "details": ["Relaxed unisex shape", "240 GSM cotton jersey", "Screen-printed sleeve message"],
+      "chapterSlug": "after-the-noise"
     }
   ]
 }

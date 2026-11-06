@@ -31,7 +31,8 @@ const schema = [
   "CREATE TABLE IF NOT EXISTS series (sort_order INTEGER PRIMARY KEY, slug TEXT NOT NULL UNIQUE, number TEXT NOT NULL, title TEXT NOT NULL, subtitle TEXT NOT NULL, description TEXT NOT NULL, image TEXT NOT NULL)",
   "CREATE TABLE IF NOT EXISTS chapters (sort_order INTEGER PRIMARY KEY, series_slug TEXT NOT NULL DEFAULT 'the-gentle-armor', number TEXT NOT NULL, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, excerpt TEXT NOT NULL, image TEXT NOT NULL, product_slug TEXT NOT NULL, story JSONB NOT NULL)",
   "ALTER TABLE chapters ADD COLUMN IF NOT EXISTS series_slug TEXT NOT NULL DEFAULT 'the-gentle-armor'",
-  "CREATE TABLE IF NOT EXISTS products (sort_order INTEGER PRIMARY KEY, slug TEXT NOT NULL UNIQUE, name TEXT NOT NULL, category TEXT NOT NULL, description TEXT NOT NULL, price INTEGER NOT NULL CHECK (price >= 0), image TEXT NOT NULL, secondary_image TEXT NOT NULL DEFAULT '', sizes JSONB NOT NULL, details JSONB NOT NULL, chapter_slug TEXT NOT NULL)",
+  "CREATE TABLE IF NOT EXISTS products (sort_order INTEGER PRIMARY KEY, slug TEXT NOT NULL UNIQUE, name TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'Layers', category TEXT NOT NULL, description TEXT NOT NULL, price INTEGER NOT NULL CHECK (price >= 0), image TEXT NOT NULL, secondary_image TEXT NOT NULL DEFAULT '', sizes JSONB NOT NULL, details JSONB NOT NULL, chapter_slug TEXT NOT NULL)",
+  "ALTER TABLE products ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'Layers'",
   "ALTER TABLE products ADD COLUMN IF NOT EXISTS secondary_image TEXT NOT NULL DEFAULT ''",
   "CREATE TABLE IF NOT EXISTS media_assets (id UUID PRIMARY KEY, mime_type TEXT NOT NULL, base64_data TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())",
   "CREATE TABLE IF NOT EXISTS admin_sessions (token_hash TEXT PRIMARY KEY, expires_at TIMESTAMPTZ NOT NULL)",
@@ -68,7 +69,7 @@ async function readContent() {
     sql.query("SELECT brand, hero, introduction, series FROM site_settings WHERE id = 1"),
     sql.query("SELECT slug, number, title, subtitle, description, image FROM series ORDER BY sort_order"),
     sql.query("SELECT series_slug, number, slug, title, excerpt, image, product_slug, story FROM chapters ORDER BY sort_order"),
-    sql.query("SELECT slug, name, category, description, price, image, secondary_image, sizes, details, chapter_slug FROM products ORDER BY sort_order")
+    sql.query("SELECT slug, name, kind, category, description, price, image, secondary_image, sizes, details, chapter_slug FROM products ORDER BY sort_order")
   ], { readOnly: true });
   const settings = settingsRows[0];
   if (!settings) return null;
@@ -90,7 +91,7 @@ async function readContent() {
     introduction: settings.introduction,
     seriesList,
     products: productRows.map((row) => ({
-      slug: row.slug, name: row.name, category: row.category,
+      slug: row.slug, name: row.name, kind: row.kind, category: row.category,
       description: row.description, price: row.price, image: row.image,
       secondaryImage: row.secondary_image,
       sizes: row.sizes, details: row.details, chapterSlug: row.chapter_slug
@@ -129,8 +130,8 @@ async function writeContent(value) {
   });
   value.products.forEach((product, index) => {
     queries.push(sql.query(
-      "INSERT INTO products (sort_order, slug, name, category, description, price, image, secondary_image, sizes, details, chapter_slug) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11)",
-      [index, product.slug, product.name, product.category, product.description, product.price, product.image, product.secondaryImage || "", JSON.stringify(product.sizes), JSON.stringify(product.details), product.chapterSlug]
+      "INSERT INTO products (sort_order, slug, name, kind, category, description, price, image, secondary_image, sizes, details, chapter_slug) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11::jsonb, $12)",
+      [index, product.slug, product.name, product.kind, product.category, product.description, product.price, product.image, product.secondaryImage || "", JSON.stringify(product.sizes), JSON.stringify(product.details), product.chapterSlug]
     ));
   });
   await sql.transaction(queries);

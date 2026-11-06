@@ -175,7 +175,8 @@ function validContent(value) {
   }
   const productSlugs = new Set();
   for (const product of value.products) {
-    if (!isObject(product) || !["name", "category", "description", "chapterSlug"].every((k) => validText(product[k])) ||
+    if (!isObject(product) || !["name", "kind", "category", "description", "chapterSlug"].every((k) => validText(product[k])) ||
+        !product.kind.trim() || product.kind.length > 40 ||
         !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(product.slug || "") ||
         productSlugs.has(product.slug) || !validImage(product.image) ||
         (product.secondaryImage && !validImage(product.secondaryImage)) ||

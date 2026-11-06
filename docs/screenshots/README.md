@@ -6,7 +6,7 @@ These screenshots show the demonstration's main paths on desktop and mobile. `sc
 | --- | --- |
 | `01-home-desktop.jpg` | Homepage and featured Series |
 | `02-archive-desktop.jpg` | The Archive |
-| `15-artifacts-desktop.jpg` | Four-product Artifact catalogue |
+| `15-artifacts-desktop.jpg` | Eight-product Artifact catalogue with filters and sorting |
 | `03-series-desktop.jpg` | Series 01 and its five Chapters |
 | `04-chamber-the-first-quiet.jpg` | Chapter 01 Chamber and linked Artifact |
 | `04-chamber-the-weight-you-carry.jpg` | Chapter 02 Chamber |
@@ -15,6 +15,7 @@ These screenshots show the demonstration's main paths on desktop and mobile. `sc
 | `04-chamber-after-the-noise.jpg` | Chapter 05 Chamber |
 | `05-artifact-desktop.jpg` | Product details, two views, size selection |
 | `06-home-mobile.jpg` | Mobile homepage |
+| `22-artifacts-mobile.jpg` | Mobile two-column Artifact catalogue |
 | `07-artifact-mobile.jpg` | Mobile product page |
 | `08-acquisition-demo.jpg` | Mobile demo bag after adding a size |
 | `09-studio-series.jpg` | Studio Series editor |
@@ -36,4 +37,4 @@ Regenerate with Python Playwright installed and the site key kept in the ignored
 python scripts/capture-screenshots.py --base-url https://quiet-battles-demo.vercel.app --studio-key-file .studio-key
 ```
 
-The capture script also opens all five Chapter Chambers and four Artifacts, creates a temporary customer, completes and deletes its demonstration order, deletes the temporary account, updates the order status in Studio, and checks the bag and responsive layouts. It captures pages from the supplied base URL, so use the hosted URL for final submission evidence.
+The capture script also opens all five Chapter Chambers and eight Artifacts, creates a temporary customer, completes and deletes its demonstration order, deletes the temporary account, updates the order status in Studio, and checks the bag and responsive layouts. It captures pages from the supplied base URL, so use the hosted URL for final submission evidence.

@@ -6,7 +6,7 @@
 
 https://quiet-battles-demo.vercel.app
 
-The demo follows the brand path from the homepage to The Archive, a Series, a Chapter Chamber, its artifact, and Acquisition. It includes five complete sample stories, four products with original front/back artwork, customer sign-up/sign-in, a private order archive, a responsive dummy-QR checkout that records demonstration orders, and a Neon-backed Studio.
+The demo follows the brand path from the homepage to The Archive, a Series, a Chapter Chamber, its artifact, and Acquisition. It includes five complete sample stories, eight products with original front/back artwork, category filters, sorting, quick add, customer sign-up/sign-in, a private order archive, a responsive dummy-QR checkout that records demonstration orders, and a Neon-backed Studio.
 
 ## Source code and local run instructions
 
@@ -26,7 +26,7 @@ The screenshot index is [docs/screenshots/README.md](docs/screenshots/README.md)
 - Backend: Node.js API, run locally by `server.js` and deployed as a Vercel Function.
 - Database: Neon Postgres through `@neondatabase/serverless`.
 - Hosting and source: Vercel and GitHub.
-- External services and assets: Unsplash sample photography, Google Fonts, five original images generated with OpenAI image generation, and eight original local SVG garment views.
+- External services and assets: Unsplash sample photography, Google Fonts, five original images generated with OpenAI image generation, and sixteen original local SVG garment views.
 
 No site template, frontend framework, CMS plugin, or paid UI plugin was used. OpenAI Codex assisted with implementation and documentation; Playwright was used for browser checks and screenshot capture. These tools are disclosed for the technical evaluation.
 

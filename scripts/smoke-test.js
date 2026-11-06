@@ -26,9 +26,10 @@ async function main() {
   assert.equal(initial.response.status, 200);
   assert.equal(initial.body.seriesList.length, 1);
   assert.equal(initial.body.seriesList[0].chapters.length, 5);
-  assert.equal(initial.body.products.length, 4);
+  assert.equal(initial.body.products.length, 8);
   assert.deepEqual(initial.body.products.map((product) => product.slug), [
-    "soft-armor-hoodie", "carry-light-overshirt", "quiet-form-tee", "still-point-cap"
+    "soft-armor-hoodie", "carry-light-overshirt", "quiet-form-tee", "still-point-cap",
+    "quiet-hours-crewneck", "grounded-trouser", "open-door-tote", "return-home-long-sleeve"
   ]);
   assert.equal(initial.body.products[0].secondaryImage, "/assets/soft-armor-back.svg");
   for (const product of initial.body.products) {
@@ -132,7 +133,7 @@ async function main() {
       }]
     });
     temporary.products.push({
-      slug: "verification-piece", name: "Verification Piece", category: "TEST",
+      slug: "verification-piece", name: "Verification Piece", kind: "Layers", category: "TEST",
       description: "Temporary verification product.", price: 100,
       image: "/assets/soft-armor.svg", sizes: ["M"], details: ["Sample"],
       chapterSlug: "verification-chapter"
@@ -147,8 +148,8 @@ async function main() {
     assert.equal(updated.body.seriesList[0].chapters.length, 5);
     assert.equal(updated.body.seriesList[0].chapters[0].title, "Verification edit");
     assert.equal(updated.body.seriesList[1].chapters[0].slug, "verification-chapter");
-    assert.equal(updated.body.products.length, 5);
-    assert.equal(updated.body.products[4].slug, "verification-piece");
+    assert.equal(updated.body.products.length, 9);
+    assert.equal(updated.body.products[8].slug, "verification-piece");
 
     const imageBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==";
     const upload = await jsonRequest("/api/admin/upload", {
@@ -210,7 +211,7 @@ async function main() {
   assert.equal(ordersAfterLogout.response.status, 401);
   const customersAfterLogout = await jsonRequest("/api/admin/customers", { headers: auth });
   assert.equal(customersAfterLogout.response.status, 401);
-  console.log("Smoke test passed: site, four-product catalogue, customer accounts, linked order history, Neon reads/writes, Studio controls, login/logout, and media upload.");
+  console.log("Smoke test passed: site, eight-product catalogue, customer accounts, linked order history, Neon reads/writes, Studio controls, login/logout, and media upload.");
 }
 
 main().catch((error) => {

@@ -24,6 +24,9 @@ let customer = null;
 let customerOrders = [];
 let customerLoading = Boolean(customerToken);
 let authMessage = "";
+let catalogFilter = "All";
+let catalogSort = "featured";
+let quickAddSlug = "";
 const orderStatuses = ["Placed", "Confirmed", "Packed", "Shipped", "Completed", "Cancelled"];
 
 function readCart() {
@@ -38,6 +41,16 @@ function readCart() {
 
 function saveCart() {
   localStorage.setItem("qbCart", JSON.stringify(cart));
+}
+
+function addProductToCart(product, size) {
+  const existing = cart.find(function (item) { return item.slug === product.slug && item.size === size; });
+  if (existing) existing.qty += 1;
+  else cart.push({ slug: product.slug, name: product.name, image: product.image, size: size, price: Number(product.price), qty: 1 });
+  checkoutOrder = null;
+  checkoutStep = "details";
+  saveCart();
+  cartOpen = true;
 }
 
 function escapeHtml(value) {
@@ -175,15 +188,48 @@ function renderArchive() {
     '<section class="page archive-list">' + entries + '</section></main>';
 }
 
-function renderArtifacts() {
-  const cards = content.products.map(function (product, index) {
-    const chapter = getChapter(product.chapterSlug);
-    return '<article class="artifact-card">' +
-      '<a class="artifact-image" href="#product/' + escapeHtml(product.slug) + '"><img src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + '" loading="' + (index < 2 ? 'eager' : 'lazy') + '"><span class="mono">ARTIFACT ' + String(index + 1).padStart(2, "0") + '</span></a>' +
-      '<div class="artifact-card-copy"><span class="mono section-label">' + escapeHtml(product.category) + '</span><h2><a href="#product/' + escapeHtml(product.slug) + '">' + escapeHtml(product.name) + '</a></h2><p>' + escapeHtml(product.description) + '</p><div><strong>' + money(product.price) + '</strong><a class="card-link" href="#chapter/' + escapeHtml(chapter.slug) + '">Read ' + escapeHtml(chapter.title) + ' <span class="arrow">↗</span></a></div></div>' +
-    '</article>';
+function catalogCard(product, index) {
+  const originalIndex = content.products.indexOf(product);
+  const quickOpen = quickAddSlug === product.slug;
+  const sizes = product.sizes.map(function (size) {
+    return '<button type="button" data-quick-size="' + escapeHtml(size) + '" data-quick-product="' + escapeHtml(product.slug) + '">' + escapeHtml(size) + '</button>';
   }).join("");
-  return '<main><section class="artifact-hero"><div class="page"><span class="mono section-label">THE OBJECTS WE KEEP</span><h1 class="page-title">Artifacts for<br>ordinary courage.</h1><p class="lead">Four pieces drawn from the first five chapters. Each one begins with a story before it becomes something to wear.</p></div></section><section class="page artifact-grid">' + cards + '</section></main>';
+  return '<article class="catalog-card" data-product-kind="' + escapeHtml(product.kind) + '">' +
+    '<div class="catalog-media"><a href="#product/' + escapeHtml(product.slug) + '" aria-label="View ' + escapeHtml(product.name) + '"><img class="catalog-front" src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + ' front view" loading="' + (index < 4 ? 'eager' : 'lazy') + '">' +
+      (product.secondaryImage ? '<img class="catalog-back" src="' + escapeHtml(product.secondaryImage) + '" alt="' + escapeHtml(product.name) + ' back view" loading="lazy">' : '') + '</a>' +
+      '<div class="catalog-badges"><span>' + escapeHtml(product.kind) + '</span>' + (originalIndex >= 4 ? '<span class="new-badge">New drop</span>' : '') + '</div>' +
+      '<button class="quick-add-trigger" type="button" data-quick-open="' + escapeHtml(product.slug) + '" aria-expanded="' + String(quickOpen) + '">' + (quickOpen ? 'Close' : 'Quick add') + ' <span aria-hidden="true">' + (quickOpen ? '−' : '+') + '</span></button>' +
+      '<div class="quick-add-panel' + (quickOpen ? ' open' : '') + '" aria-hidden="' + String(!quickOpen) + '"' + (quickOpen ? '' : ' inert') + '><div><span class="mono">Choose size</span><a href="#product/' + escapeHtml(product.slug) + '">View details ↗</a></div><div class="quick-size-grid">' + sizes + '</div></div>' +
+    '</div>' +
+    '<div class="catalog-card-meta"><div><span class="mono">' + escapeHtml(product.category) + '</span><h2><a href="#product/' + escapeHtml(product.slug) + '">' + escapeHtml(product.name) + '</a></h2></div><strong>' + money(product.price) + '</strong></div>' +
+  '</article>';
+}
+
+function renderArtifacts() {
+  const kinds = ["All"].concat(Array.from(new Set(content.products.map(function (product) { return product.kind; }))));
+  let products = content.products.filter(function (product) { return catalogFilter === "All" || product.kind === catalogFilter; });
+  products = products.slice();
+  if (catalogSort === "price-low") products.sort(function (a, b) { return a.price - b.price; });
+  else if (catalogSort === "price-high") products.sort(function (a, b) { return b.price - a.price; });
+  else if (catalogSort === "newest") products.reverse();
+  const filterButtons = kinds.map(function (kind) {
+    return '<button type="button" data-catalog-filter="' + escapeHtml(kind) + '" aria-pressed="' + String(catalogFilter === kind) + '">' + escapeHtml(kind) + '</button>';
+  }).join("");
+  let cards = "";
+  products.forEach(function (product, index) {
+    cards += catalogCard(product, index);
+    if (index === 3 && products.length > 4) {
+      cards += '<aside class="catalog-interlude"><div><span class="mono">FIELD NOTE / 005</span><blockquote>Rest is not the end of the story. It is how the story continues.</blockquote><a href="#chapter/after-the-noise">Read After the Noise <span class="arrow">↗</span></a></div><img src="/assets/chapter-weight-you-carry.webp" alt="A quiet portrait from The Gentle Armor series" loading="lazy"></aside>';
+    }
+  });
+  const heroProduct = content.products[4] || content.products[0];
+  const productCount = content.products.length;
+  const chapterCount = content.seriesList.reduce(function (total, series) { return total + series.chapters.length; }, 0);
+  const heroIndex = String(content.products.indexOf(heroProduct) + 1).padStart(2, "0");
+  const indexMax = String(productCount).padStart(2, "0");
+  return '<main class="shop-page"><section class="shop-hero"><div class="shop-hero-copy"><span class="mono">SERIES 01 · COMPLETE ARTIFACT INDEX</span><h1>Wear what<br>stayed.</h1><p>' + productCount + ' objects for the private work of continuing. Begin with the story, or choose the shape you need today.</p><div><button class="button shop-primary" type="button" data-scroll-catalogue>Shop the drop <span class="arrow">↓</span></button><a href="#series/the-gentle-armor">Read the Series</a></div></div><div class="shop-hero-visual"><img src="' + escapeHtml(content.seriesList[0].image) + '" alt="The Gentle Armor campaign portrait" fetchpriority="high"><a class="floating-artifact" href="#product/' + escapeHtml(heroProduct.slug) + '"><img src="' + escapeHtml(heroProduct.image) + '" alt="' + escapeHtml(heroProduct.name) + '"><span><b>New · Artifact ' + heroIndex + '</b>' + escapeHtml(heroProduct.name) + ' · ' + money(heroProduct.price) + '</span></a><span class="shop-index">01—' + indexMax + '</span></div></section>' +
+    '<div class="drop-ticker" aria-label="Collection information"><div><span>' + productCount + ' artifacts</span><span>' + chapterCount + ' chapters</span><span>Front + back views</span><span>Dummy QR checkout</span><span>' + productCount + ' artifacts</span><span>' + chapterCount + ' chapters</span><span>Front + back views</span><span>Dummy QR checkout</span></div></div>' +
+    '<section class="catalogue" id="catalogue"><header class="catalogue-head page"><div><span class="mono section-label">THE COMPLETE DROP</span><h2>All artifacts</h2><p><strong>' + products.length + '</strong> of ' + content.products.length + ' objects</p></div><div class="catalogue-controls"><nav class="catalog-filters" aria-label="Filter artifacts">' + filterButtons + '</nav><label class="catalog-sort"><span>Sort</span><select data-catalog-sort><option value="featured"' + (catalogSort === 'featured' ? ' selected' : '') + '>Featured</option><option value="newest"' + (catalogSort === 'newest' ? ' selected' : '') + '>Newest</option><option value="price-low"' + (catalogSort === 'price-low' ? ' selected' : '') + '>Price: low to high</option><option value="price-high"' + (catalogSort === 'price-high' ? ' selected' : '') + '>Price: high to low</option></select></label></div></header><div class="catalog-grid">' + (cards || '<div class="catalog-empty">No artifacts in this category yet.</div>') + '</div></section></main>';
 }
 
 function customerOrderCards() {
@@ -251,6 +297,9 @@ function renderProduct(slug) {
   const chapter = getChapter(product.chapterSlug);
   const series = getChapterSeries(chapter);
   const selection = sizeSelection[product.slug] || "";
+  const related = content.products.filter(function (item) { return item.slug !== product.slug; }).sort(function (a, b) {
+    return Number(b.kind === product.kind) - Number(a.kind === product.kind);
+  }).slice(0, 3);
   return '<main class="page product-page"><nav class="breadcrumbs" aria-label="Breadcrumbs"><a href="#home">Home</a><span>/</span><a href="#archive">Archive</a><span>/</span><a href="#series/' + escapeHtml(series.slug) + '">' + escapeHtml(series.number) + '</a><span>/</span><a href="#chapter/' + escapeHtml(chapter.slug) + '">' + escapeHtml(chapter.number) + '</a><span>/</span><span>Artifact</span></nav>' +
     '<div class="product-detail-layout"><div class="product-gallery"><figure class="gallery-frame"><img src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + ' front view" fetchpriority="high"></figure>' +
     (product.secondaryImage ? '<figure class="gallery-frame"><img src="' + escapeHtml(product.secondaryImage) + '" alt="' + escapeHtml(product.name) + ' back or detail view" loading="lazy"></figure>' : "") + '</div>' +
@@ -258,7 +307,7 @@ function renderProduct(slug) {
     '<div class="size-label"><span>Choose your size</span><button class="size-guide" type="button" data-size-guide>Size guide</button></div><div class="size-options">' + product.sizes.map(function (size) { return '<button class="size-option' + (selection === size ? " selected" : "") + '" type="button" data-size="' + escapeHtml(size) + '" data-product="' + escapeHtml(product.slug) + '" aria-pressed="' + (selection === size) + '">' + escapeHtml(size) + '</button>'; }).join("") + '</div><div class="size-help" id="size-help" aria-live="polite"></div>' +
     '<button class="button button-dark" type="button" data-add="' + escapeHtml(product.slug) + '">Add to bag <span class="arrow">↗</span></button><p class="shipping-note">DEMO ACQUISITION · DUMMY QR · NO REAL PAYMENT</p>' +
     '<div class="accordions"><details class="accordion" open><summary>About the piece</summary><p>' + escapeHtml(product.description) + '</p></details><details class="accordion"><summary>Details and care</summary><ul>' + product.details.map(function (detail) { return "<li>" + escapeHtml(detail) + "</li>"; }).join("") + '<li>Care information is sample copy for this prototype.</li></ul></details><details class="accordion"><summary>From the archive</summary><p>This piece accompanies <a href="#chapter/' + escapeHtml(product.chapterSlug) + '"><u>' + escapeHtml(getChapter(product.chapterSlug).title) + '</u></a>.</p></details></div>' +
-    '</section></div></main>';
+    '</section></div><section class="related-products"><header><span class="mono section-label">KEEP EXPLORING</span><h2>Carry it together.</h2><a href="#artifacts">View all ' + content.products.length + ' artifacts <span class="arrow">↗</span></a></header><div class="related-grid">' + related.map(function (item, index) { return catalogCard(item, index); }).join("") + '</div></section></main>';
 }
 
 function checkoutSteps(active) {
@@ -410,6 +459,7 @@ function adminDashboard() {
     return '<article class="admin-product"><div class="admin-row-title"><h3>Product ' + String(index + 1).padStart(2, "0") + '</h3><button class="remove-button" type="button" data-remove-product="' + index + '">Remove product</button></div>' +
       '<div class="admin-grid">' +
         field("Product name", "products." + index + ".name", product.name) +
+        field("Product type", "products." + index + ".kind", product.kind) +
         field("URL slug", "products." + index + ".slug", product.slug) +
         field("Category line", "products." + index + ".category", product.category) +
         field("Price in INR", "products." + index + ".price", product.price, { type: "number" }) +
@@ -552,6 +602,38 @@ function bindEvents() {
       render();
     });
   });
+  document.querySelectorAll("[data-catalog-filter]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      catalogFilter = button.dataset.catalogFilter;
+      quickAddSlug = "";
+      render();
+    });
+  });
+  const scrollCatalogue = document.querySelector("[data-scroll-catalogue]");
+  if (scrollCatalogue) scrollCatalogue.addEventListener("click", function () {
+    const catalogue = document.getElementById("catalogue");
+    if (catalogue) catalogue.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  const catalogSortSelect = document.querySelector("[data-catalog-sort]");
+  if (catalogSortSelect) catalogSortSelect.addEventListener("change", function () {
+    catalogSort = catalogSortSelect.value;
+    quickAddSlug = "";
+    render();
+  });
+  document.querySelectorAll("[data-quick-open]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      quickAddSlug = quickAddSlug === button.dataset.quickOpen ? "" : button.dataset.quickOpen;
+      render();
+    });
+  });
+  document.querySelectorAll("[data-quick-size]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      const product = getProduct(button.dataset.quickProduct);
+      addProductToCart(product, button.dataset.quickSize);
+      quickAddSlug = "";
+      render();
+    });
+  });
   document.querySelectorAll("[data-size]").forEach(function (button) {
     button.addEventListener("click", function () {
       sizeSelection[button.dataset.product] = button.dataset.size;
@@ -573,13 +655,7 @@ function bindEvents() {
         if (help) help.textContent = "Choose a size to add this piece to your bag.";
         return;
       }
-      const existing = cart.find(function (item) { return item.slug === product.slug && item.size === size; });
-      if (existing) existing.qty += 1;
-      else cart.push({ slug: product.slug, name: product.name, image: product.image, size: size, price: Number(product.price), qty: 1 });
-      checkoutOrder = null;
-      checkoutStep = "details";
-      saveCart();
-      cartOpen = true;
+      addProductToCart(product, size);
       render();
     });
   });
@@ -852,7 +928,7 @@ function bindEvents() {
   });
   document.querySelectorAll("[data-add-product]").forEach(function (button) {
     button.addEventListener("click", function () {
-      content.products.push({ slug: "new-piece-" + Date.now(), name: "New field piece", category: getSeries().number, description: "", price: 0, image: "/assets/soft-armor.svg", secondaryImage: "", sizes: ["XS", "S", "M", "L", "XL"], details: [], chapterSlug: getSeries().chapters[0].slug });
+      content.products.push({ slug: "new-piece-" + Date.now(), name: "New field piece", kind: "Layers", category: getSeries().number, description: "", price: 0, image: "/assets/soft-armor.svg", secondaryImage: "", sizes: ["XS", "S", "M", "L", "XL"], details: [], chapterSlug: getSeries().chapters[0].slug });
       render();
       document.querySelector('[data-tab="products"]').click();
     });

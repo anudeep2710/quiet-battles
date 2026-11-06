@@ -4,7 +4,7 @@
 
 The updated overview establishes the path **QUIET BATTLES™ → The Archive → Series → Chapters → Chapter Chamber → Artifact → Acquisition**. The implementation uses an editorial story experience with a sample bag interaction rather than treating the homepage as a product grid.
 
-The demo contains one featured Series, five complete sample Chapter stories, four linked artifacts, customer accounts with private order history, and a private content Studio. The client permits temporary imagery. The brand direction, copy, product specifications, and prices remain assumptions pending approval.
+The demo contains one featured Series, five complete sample Chapter stories, eight linked artifacts, customer accounts with private order history, and a private content Studio. The client permits temporary imagery. The brand direction, copy, product specifications, and prices remain assumptions pending approval.
 
 ## Architecture
 
@@ -31,7 +31,7 @@ The data model supports multiple Series, with Chapters belonging to a Series and
 
 ## Visitor experience
 
-The homepage introduces the brand and points into The Archive. The Archive presents Series entries; Series 01 opens five Chapter Chambers. Each Chamber includes its own image, complete sample story, related artifact entry, and a link to the next Chapter. The Artifacts wall presents four garments, and each product page shows front and back SVG illustrations, a sample INR price, size selection, product details, and an Add to Bag interaction. The bag is stored in the visitor's browser.
+The homepage introduces the brand and points into The Archive. The Archive presents Series entries; Series 01 opens five Chapter Chambers. Each Chamber includes its own image, complete sample story, related artifact entry, and a link to the next Chapter. The campaign-led Artifacts catalogue presents eight garments and objects with product-type filters, sorting, front/back previews, quick size selection, and an editorial story break. Each product page shows front and back SVG illustrations, a sample INR price, size selection, product details, related artifacts, and an Add to Bag interaction. The bag is stored in the visitor's browser.
 
 Customers can create a private archive, sign in and out, and see their own demo acquisition history. Passwords are salted and derived with Node's scrypt implementation; Neon stores the derived hash rather than the password. Random seven-day customer tokens are stored only as SHA-256 hashes. The raw token stays in the browser session and is revoked on sign-out.
 
@@ -59,7 +59,7 @@ See [README.md](README.md) for Node.js requirements and commands. Run `npm run d
 
 ## Asset and tool disclosure
 
-The design uses five original editorial concept images generated with OpenAI image generation, supplementary Unsplash sample photography, and eight locally authored SVG garment views. Typography loads from Google Fonts. No website template, UI framework, CMS plugin, or paid UI plugin was used.
+The design uses five original editorial concept images generated with OpenAI image generation, supplementary Unsplash sample photography, and sixteen locally authored SVG garment views. Typography loads from Google Fonts. No website template, UI framework, CMS plugin, or paid UI plugin was used.
 
 OpenAI Codex assisted with implementation, documentation, and code review. Playwright was used for browser checks and to capture the submission screenshots. These tools should be disclosed during the interview, and the developer should be ready to explain the code and trade-offs.
 

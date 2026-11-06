@@ -1,6 +1,6 @@
 # QUIET BATTLES™ — Website Development Demo
 
-A working full-stack assessment prototype for the QUIET BATTLES™ brief. It includes a cinematic homepage, responsive navigation, a multi-series Archive, Series 01 — THE GENTLE ARMOR™, five complete Chapter Chambers, four chapter-linked artifacts with front and back views, customer sign-up and sign-in, a private order archive, an end-to-end demo acquisition, and a Neon-backed Studio for managing content, products, customers, images, and orders.
+A working full-stack assessment prototype for the QUIET BATTLES™ brief. It includes a cinematic homepage, responsive navigation, a multi-series Archive, Series 01 — THE GENTLE ARMOR™, five complete Chapter Chambers, eight chapter-linked artifacts with front and back views, customer sign-up and sign-in, a private order archive, an end-to-end demo acquisition, and a Neon-backed Studio for managing content, products, customers, images, and orders.
 
 **Assessment deadline:** 11 November 2026, 6:00 PM IST.
 
@@ -27,12 +27,12 @@ Requirements: Node.js 24.15 or newer, npm, and a Neon Postgres database.
 
 1. Install packages with npm install.
 2. Set DATABASE_URL and QB_ADMIN_KEY in an ignored .env.local file. QB_ADMIN_KEY must be at least 16 characters.
-3. Run npm run db:init. It creates or migrates the tables and seeds the sample brand, one Series, five Chapters, and four products if the site is empty.
+3. Run npm run db:init. It creates or migrates the tables and seeds the sample brand, one Series, five Chapters, and eight products if the site is empty.
 4. Start the site with npm run dev and open http://127.0.0.1:4173.
 
 For the linked Vercel project, run npx vercel env pull .env.local after linking to download its development connection variables. The current Studio key is kept in the ignored .studio-key file in this workspace. Never commit either file.
 
-Run npm run test:smoke while the local server is running on port 4174. The smoke check exercises the four-product catalogue, customer sign-up/sign-in/sign-out, account-linked checkout, the private order archive, Studio customer and order controls, content writes, image upload and cleanup. It restores the original content and deletes its temporary account and order before exiting.
+Run npm run test:smoke while the local server is running on port 4174. The smoke check exercises the eight-product catalogue, customer sign-up/sign-in/sign-out, account-linked checkout, the private order archive, Studio customer and order controls, content writes, image upload and cleanup. It restores the original content and deletes its temporary account and order before exiting.
 
 ## Maintain the site
 
@@ -58,7 +58,7 @@ Database tables:
 | site_settings | Brand, hero, introduction, and featured Series compatibility data |
 | series | Ordered Series metadata and image |
 | chapters | Series link, chapter order, slug, story, image, linked product |
-| products | Product details, price in INR, sizes, linked chapter |
+| products | Product type, details, price in INR, sizes, linked chapter |
 | media_assets | Uploaded image type and bytes |
 | admin_sessions | Hashed Studio token and expiration |
 | customers | Customer profile, normalized email, salted scrypt password hash |
@@ -97,7 +97,7 @@ Studio saves use one Neon transaction. SQL parameters are bound by the Neon serv
 - Backend: Node.js HTTP API, deployed as a Vercel Node Function.
 - Database: Neon Postgres, accessed with @neondatabase/serverless.
 - Hosting: Vercel. The connected GitHub repository deploys new pushes.
-- Images: five original editorial concepts generated with OpenAI image generation, supplementary sample photography from Unsplash, and eight original local SVG garment views.
+- Images: five original editorial concepts generated with OpenAI image generation, supplementary sample photography from Unsplash, and sixteen original local SVG garment views.
 - Fonts: Barlow Condensed, DM Sans, and IBM Plex Mono loaded from Google Fonts.
 - Development assistance: OpenAI Codex helped implement, document, and review this prototype. Playwright was used to check the browser experience and capture screenshots. GitHub hosts the source.
 

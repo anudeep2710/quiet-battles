@@ -68,8 +68,9 @@ def main():
         assert page.locator(".archive-item").count() >= 1
         capture(page, output_dir, "02-archive-desktop.jpg")
 
-        open_route(page, args.base_url, "artifacts", ".artifact-grid")
-        assert page.locator(".artifact-card").count() == 4
+        open_route(page, args.base_url, "artifacts", ".catalog-grid")
+        assert page.locator(".catalog-card").count() == 8
+        assert page.locator("[data-catalog-filter]").count() == 5
         capture(page, output_dir, "15-artifacts-desktop.jpg")
 
         open_route(page, args.base_url, "series/the-gentle-armor", ".chapter-list")
@@ -96,6 +97,10 @@ def main():
         mobile_page.on("pageerror", lambda error: errors.append(str(error)))
         open_route(mobile_page, args.base_url, "home", ".hero")
         capture(mobile_page, output_dir, "06-home-mobile.jpg", full_page=False)
+
+        open_route(mobile_page, args.base_url, "artifacts", ".catalog-grid")
+        assert mobile_page.locator(".catalog-card").count() == 8
+        capture(mobile_page, output_dir, "22-artifacts-mobile.jpg")
 
         open_route(mobile_page, args.base_url, "product/soft-armor-hoodie", ".product-info")
         capture(mobile_page, output_dir, "07-artifact-mobile.jpg")
@@ -179,7 +184,7 @@ def main():
         browser.close()
 
     print(f"Captured {len(list(output_dir.glob('*.jpg')))} screenshots in {output_dir}.")
-    print("Browser checks passed: five Chambers, four Artifacts, customer account, demo bag, dummy-QR checkout, linked Neon order, responsive widths, and Studio management.")
+    print("Browser checks passed: five Chambers, eight Artifacts, customer account, demo bag, dummy-QR checkout, linked Neon order, responsive widths, and Studio management.")
 
 
 if __name__ == "__main__":
