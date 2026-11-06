@@ -15,7 +15,15 @@ let checkoutMessage = "";
 let adminOrders = [];
 let adminOrdersLoaded = false;
 let adminOrdersLoading = false;
+let adminCustomers = [];
+let adminCustomersLoaded = false;
+let adminCustomersLoading = false;
 let adminActiveTab = "brand";
+let customerToken = sessionStorage.getItem("qbCustomerToken") || "";
+let customer = null;
+let customerOrders = [];
+let customerLoading = Boolean(customerToken);
+let authMessage = "";
 const orderStatuses = ["Placed", "Confirmed", "Packed", "Shipped", "Completed", "Cancelled"];
 
 function readCart() {
@@ -83,6 +91,8 @@ function getProduct(slug) {
 }
 
 function renderHeader() {
+  const accountLabel = customer ? "My archive" : "Sign in";
+  const accountHref = customer ? "#account" : "#login";
   return '<div class="topline">A quieter kind of strength · ' + escapeHtml(content.seriesList[0].number) + ' now open</div>' +
     '<header class="site-header"><div class="nav-wrap">' +
       '<a class="wordmark" href="#home" aria-label="Quiet Battles home">' + escapeHtml(content.brand.name) + '<sup>™</sup></a>' +
@@ -90,9 +100,11 @@ function renderHeader() {
       '<nav class="nav-links" id="main-nav" aria-label="Main navigation">' +
         navLink("The archive", "#archive") +
         navLink(content.seriesList[0].number, "#series/" + escapeHtml(content.seriesList[0].slug)) +
+        navLink("Artifacts", "#artifacts") +
         navLink("Our note", "#belief") +
+        '<a class="mobile-account-link" href="' + accountHref + '">' + accountLabel + '</a>' +
       '</nav>' +
-      '<div class="nav-actions"><a href="#admin">Studio</a><button class="cart-trigger" type="button" data-cart-open>Bag <span class="cart-count">(' + cartQuantity() + ')</span></button></div>' +
+      '<div class="nav-actions"><a href="' + accountHref + '">' + accountLabel + '</a><a class="studio-link" href="#admin">Studio</a><button class="cart-trigger" type="button" data-cart-open>Bag <span class="cart-count">(' + cartQuantity() + ')</span></button></div>' +
     '</div></header>';
 }
 
@@ -101,7 +113,7 @@ function renderFooter() {
     '<div class="footer-main">' +
       '<h2>For what<br>you carry.</h2>' +
       '<p class="footer-note">' + escapeHtml(content.brand.intro) + '</p>' +
-      '<div class="footer-links"><a href="#archive">Explore the archive</a><a href="#series/' + escapeHtml(getSeries().slug) + '">' + escapeHtml(getSeries().title) + '</a><a href="#admin">Studio access</a></div>' +
+      '<div class="footer-links"><a href="#archive">Explore the archive</a><a href="#artifacts">Meet the artifacts</a><a href="' + (customer ? '#account' : '#login') + '">' + (customer ? 'My private archive' : 'Sign in') + '</a><a href="#admin">Studio access</a></div>' +
     '</div>' +
     '<div class="footer-bottom"><span>© 2026 ' + escapeHtml(content.brand.name) + '™</span><span>' + escapeHtml(content.brand.tagline) + '</span><span>Independent demo experience</span></div>' +
   '</div></footer>';
@@ -161,6 +173,48 @@ function renderArchive() {
   }).join("");
   return '<main><section class="archive-hero"><div class="page"><span class="mono section-label">THE QUIET BATTLES ARCHIVE</span><h1 class="page-title">Stories to<br>wear with you.</h1><p class="lead">A growing collection of chapters, objects, and small reminders for the lives we are living between the lines.</p></div></section>' +
     '<section class="page archive-list">' + entries + '</section></main>';
+}
+
+function renderArtifacts() {
+  const cards = content.products.map(function (product, index) {
+    const chapter = getChapter(product.chapterSlug);
+    return '<article class="artifact-card">' +
+      '<a class="artifact-image" href="#product/' + escapeHtml(product.slug) + '"><img src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + '" loading="' + (index < 2 ? 'eager' : 'lazy') + '"><span class="mono">ARTIFACT ' + String(index + 1).padStart(2, "0") + '</span></a>' +
+      '<div class="artifact-card-copy"><span class="mono section-label">' + escapeHtml(product.category) + '</span><h2><a href="#product/' + escapeHtml(product.slug) + '">' + escapeHtml(product.name) + '</a></h2><p>' + escapeHtml(product.description) + '</p><div><strong>' + money(product.price) + '</strong><a class="card-link" href="#chapter/' + escapeHtml(chapter.slug) + '">Read ' + escapeHtml(chapter.title) + ' <span class="arrow">↗</span></a></div></div>' +
+    '</article>';
+  }).join("");
+  return '<main><section class="artifact-hero"><div class="page"><span class="mono section-label">THE OBJECTS WE KEEP</span><h1 class="page-title">Artifacts for<br>ordinary courage.</h1><p class="lead">Four pieces drawn from the first five chapters. Each one begins with a story before it becomes something to wear.</p></div></section><section class="page artifact-grid">' + cards + '</section></main>';
+}
+
+function customerOrderCards() {
+  if (!customerOrders.length) {
+    return '<div class="account-empty"><span class="mono section-label">ACQUISITION LEDGER · 0</span><h2>Nothing recorded yet.</h2><p>When you complete a demo acquisition while signed in, it will be kept here.</p><a class="button button-dark" href="#artifacts">Meet the artifacts <span class="arrow">↗</span></a></div>';
+  }
+  return customerOrders.map(function (order) {
+    const lines = (order.items || []).map(function (item) {
+      return '<div class="account-order-line"><img src="' + escapeHtml(item.image) + '" alt=""><span><strong>' + escapeHtml(item.name) + '</strong><small>Size ' + escapeHtml(item.size) + ' · Qty ' + item.qty + '</small></span><b>' + money(item.lineTotal) + '</b></div>';
+    }).join("");
+    return '<article class="account-order"><header><div><span class="mono">' + escapeHtml(order.orderNumber) + '</span><h3>' + escapeHtml(orderDate(order.createdAt)) + '</h3></div><span class="order-badge">' + escapeHtml(order.status) + '</span></header>' + lines + '<footer><span>Dummy QR · ' + escapeHtml(order.paymentStatus) + '</span><strong>' + money(order.subtotal) + '</strong></footer></article>';
+  }).join("");
+}
+
+function renderAccount() {
+  if (customerLoading) {
+    return '<main class="account-page"><div class="page account-loading"><span class="mono section-label">PRIVATE ARCHIVE</span><h1>Finding your thread…</h1></div></main>';
+  }
+  if (!customer) return renderAuth("login");
+  const firstName = customer.name.trim().split(/\s+/)[0];
+  return '<main class="account-page"><section class="page account-heading"><div><span class="mono section-label">PRIVATE ARCHIVE · ' + escapeHtml(orderDate(customer.createdAt)) + '</span><h1>Welcome back,<br>' + escapeHtml(firstName) + '.</h1><p>What you chose, when you chose it, and the chapters that travelled with you.</p></div><aside><span class="mono">ARCHIVE HOLDER</span><strong>' + escapeHtml(customer.name) + '</strong><a href="mailto:' + escapeHtml(customer.email) + '">' + escapeHtml(customer.email) + '</a><button class="text-button" type="button" data-customer-logout>Sign out</button></aside></section><section class="page account-ledger"><div class="account-ledger-head"><div><span class="mono section-label">YOUR ACQUISITIONS</span><h2>Objects with<br>a date attached.</h2></div><a class="button button-light" href="#artifacts">View all artifacts</a></div>' + customerOrderCards() + '</section></main>';
+}
+
+function renderAuth(mode) {
+  if (customer) return renderAccount();
+  const signup = mode === "signup";
+  return '<main class="auth-page"><section class="auth-visual"><div><span class="mono section-label">A PRIVATE PLACE IN THE ARCHIVE</span><blockquote>“Keep a record of what carried you.”</blockquote><p>Your account connects demo acquisitions to one quiet, personal ledger.</p></div></section><section class="auth-panel"><form class="auth-form" id="customer-auth" data-auth-mode="' + (signup ? 'signup' : 'login') + '"><span class="mono section-label">' + (signup ? 'OPEN YOUR ARCHIVE' : 'RETURN TO YOUR ARCHIVE') + '</span><h1>' + (signup ? 'Begin<br>quietly.' : 'Welcome<br>back.') + '</h1><p>' + (signup ? 'Create a private archive for your demonstration acquisitions.' : 'Sign in to revisit your acquisition history.') + '</p>' +
+    (signup ? '<label><span>Your name</span><input name="name" autocomplete="name" minlength="2" maxlength="80" required></label>' : '') +
+    '<label><span>Email</span><input name="email" type="email" autocomplete="email" maxlength="254" required></label><label><span>Password</span><input name="password" type="password" autocomplete="' + (signup ? 'new-password' : 'current-password') + '" minlength="8" maxlength="128" required></label>' +
+    (signup ? '<label><span>Confirm password</span><input name="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></label>' : '') +
+    '<div class="auth-message" role="status">' + escapeHtml(authMessage) + '</div><button class="button button-dark" type="submit">' + (signup ? 'Create private archive' : 'Sign in') + ' <span class="arrow">↗</span></button><p class="auth-switch">' + (signup ? 'Already have an archive? <a href="#login">Sign in</a>' : 'New here? <a href="#signup">Create your archive</a>') + '</p><small>Assessment demo only. Use demonstration details, not a password you use elsewhere.</small></form></section></main>';
 }
 
 function renderSeries(slug) {
@@ -229,7 +283,8 @@ function checkoutSummary(items, subtotal, snapshot) {
 }
 
 function customerValue(name) {
-  return escapeHtml(checkoutCustomer[name] || "");
+  const accountValue = customer && (name === "name" || name === "email") ? customer[name] : "";
+  return escapeHtml(checkoutCustomer[name] || accountValue || "");
 }
 
 function renderCheckout() {
@@ -237,7 +292,7 @@ function renderCheckout() {
     return '<main class="checkout-page"><div class="page">' + checkoutSteps("complete") +
       '<section class="confirmation-chamber"><span class="confirmation-mark" aria-hidden="true">✓</span><span class="mono section-label">ACQUISITION RECORDED · DEMONSTRATION</span><h1>Your artifact<br>has a place.</h1><p>A demo order was saved to Neon and is now visible in Studio. No money was requested or transferred.</p>' +
       '<div class="confirmation-receipt"><span>Order reference</span><strong>' + escapeHtml(checkoutOrder.orderNumber) + '</strong><span>Status</span><strong>' + escapeHtml(checkoutOrder.status) + '</strong><span>Demo subtotal</span><strong>' + money(checkoutOrder.subtotal) + '</strong></div>' +
-      '<a class="button button-dark" href="#archive">Return to the archive <span class="arrow">↗</span></a></section></div></main>';
+      (customer ? '<div class="confirmation-actions"><a class="button button-dark" href="#account">View my private archive <span class="arrow">↗</span></a><a class="button button-light" href="#artifacts">Return to artifacts</a></div>' : '<a class="button button-dark" href="#archive">Return to the archive <span class="arrow">↗</span></a>') + '</section></div></main>';
   }
 
   if (!cart.length) {
@@ -315,6 +370,15 @@ function adminOrderCards() {
   }).join("");
 }
 
+function adminCustomerCards() {
+  if (adminCustomersLoading) return '<div class="admin-card admin-empty"><h2>Opening the customer archive…</h2></div>';
+  if (!adminCustomersLoaded) return '<div class="admin-card admin-empty"><h2>Customer archive</h2><p>Customer accounts will appear here after Studio connects to Neon.</p></div>';
+  if (!adminCustomers.length) return '<div class="admin-card admin-empty"><span class="mono section-label">CUSTOMER ARCHIVE · 0</span><h2>No private archives yet.</h2><p>Create a demonstration account from the storefront to test this workflow.</p></div>';
+  return '<div class="admin-customer-list">' + adminCustomers.map(function (item) {
+    return '<article class="admin-card admin-customer-record"><div><span class="mono section-label">ARCHIVE HOLDER · ' + escapeHtml(orderDate(item.createdAt)) + '</span><h2>' + escapeHtml(item.name) + '</h2><a href="mailto:' + escapeHtml(item.email) + '">' + escapeHtml(item.email) + '</a></div><div class="customer-record-meta"><strong>' + Number(item.orderCount || 0) + '</strong><span>linked demo order' + (Number(item.orderCount || 0) === 1 ? '' : 's') + '</span></div><button class="remove-button" type="button" data-delete-customer="' + escapeHtml(item.id) + '">Delete demo account</button></article>';
+  }).join("") + '</div>';
+}
+
 function adminDashboard() {
   const seriesForms = content.seriesList.map(function (series, seriesIndex) {
     const chapterForms = series.chapters.map(function (chapter, index) {
@@ -361,12 +425,12 @@ function adminDashboard() {
 
   function activeClass(name) { return adminActiveTab === name ? " active" : ""; }
   function selected(name) { return adminActiveTab === name ? "true" : "false"; }
-  const savebar = adminActiveTab === "orders" ? "" :
+  const savebar = ["orders", "customers"].includes(adminActiveTab) ? "" :
     '<div class="admin-savebar"><span>Remember to save your changes before leaving this page.</span><div class="admin-actions"><span class="admin-status" id="admin-status" role="status">' + escapeHtml(adminMessage) + '</span><button class="button" type="submit">Save changes <span class="arrow">↗</span></button></div></div>';
 
   return '<div class="admin-shell"><div class="page">' +
-    '<div class="admin-top"><div><span class="mono section-label">QUIET BATTLES · CONTENT & ORDER DESK</span><h1>Studio</h1></div><div><p>Content, media, and demo orders are saved to Neon Postgres.</p><button class="button button-light" type="button" data-logout>Sign out</button></div></div>' +
-    '<div class="admin-tabs" role="tablist"><button class="admin-tab' + activeClass("brand") + '" type="button" data-tab="brand" role="tab" aria-selected="' + selected("brand") + '">Brand & home</button><button class="admin-tab' + activeClass("series") + '" type="button" data-tab="series" role="tab" aria-selected="' + selected("series") + '">Series & chapters</button><button class="admin-tab' + activeClass("products") + '" type="button" data-tab="products" role="tab" aria-selected="' + selected("products") + '">Products</button><button class="admin-tab' + activeClass("orders") + '" type="button" data-tab="orders" role="tab" aria-selected="' + selected("orders") + '">Orders <span>(' + adminOrders.length + ')</span></button></div>' +
+    '<div class="admin-top"><div><span class="mono section-label">QUIET BATTLES · CONTENT & ORDER DESK</span><h1>Studio</h1></div><div><p>Content, media, customer accounts, and demo orders are saved to Neon Postgres.</p><button class="button button-light" type="button" data-logout>Sign out</button></div></div>' +
+    '<div class="admin-tabs" role="tablist"><button class="admin-tab' + activeClass("brand") + '" type="button" data-tab="brand" role="tab" aria-selected="' + selected("brand") + '">Brand & home</button><button class="admin-tab' + activeClass("series") + '" type="button" data-tab="series" role="tab" aria-selected="' + selected("series") + '">Series & chapters</button><button class="admin-tab' + activeClass("products") + '" type="button" data-tab="products" role="tab" aria-selected="' + selected("products") + '">Products</button><button class="admin-tab' + activeClass("orders") + '" type="button" data-tab="orders" role="tab" aria-selected="' + selected("orders") + '">Orders <span>(' + adminOrders.length + ')</span></button><button class="admin-tab' + activeClass("customers") + '" type="button" data-tab="customers" role="tab" aria-selected="' + selected("customers") + '">Customers <span>(' + adminCustomers.length + ')</span></button></div>' +
     '<form id="admin-form">' +
       '<section class="admin-panel' + activeClass("brand") + '" data-panel="brand"><div class="admin-card"><h2>Brand introduction</h2><div class="admin-grid">' +
         field("Brand name", "brand.name", content.brand.name) +
@@ -380,7 +444,8 @@ function adminDashboard() {
       '</div><div class="admin-card"><h2>Our note</h2><div class="admin-grid">' + field("Section label", "introduction.eyebrow", content.introduction.eyebrow) + field("Heading", "introduction.title", content.introduction.title) + '</div>' + field("Copy", "introduction.copy", content.introduction.copy, { textarea: true }) + '</div></section>' +
       '<section class="admin-panel' + activeClass("series") + '" data-panel="series"><div class="admin-row-title"><h2>Archive Series · ' + content.seriesList.length + '</h2><button class="button button-dark" type="button" data-add-series>Add series</button></div>' + seriesForms + '</section>' +
       '<section class="admin-panel' + activeClass("products") + '" data-panel="products"><div class="admin-card"><div class="admin-row-title"><h2>Product catalogue · ' + content.products.length + '</h2><button class="button button-light" type="button" data-add-product>Add product</button></div>' + productForms + '</div></section>' +
-      '<section class="admin-panel' + activeClass("orders") + '" data-panel="orders"><div class="admin-row-title"><div><span class="mono section-label">NEON ORDER RECORDS</span><h2>Order ledger · ' + adminOrders.length + '</h2></div><button class="button button-light" type="button" data-refresh-orders>Refresh orders</button></div><div class="admin-status order-admin-status" role="status">' + escapeHtml(adminMessage) + '</div>' + adminOrderCards() + '</section>' + savebar +
+      '<section class="admin-panel' + activeClass("orders") + '" data-panel="orders"><div class="admin-row-title"><div><span class="mono section-label">NEON ORDER RECORDS</span><h2>Order ledger · ' + adminOrders.length + '</h2></div><button class="button button-light" type="button" data-refresh-orders>Refresh orders</button></div><div class="admin-status order-admin-status" role="status">' + escapeHtml(adminMessage) + '</div>' + adminOrderCards() + '</section>' +
+      '<section class="admin-panel' + activeClass("customers") + '" data-panel="customers"><div class="admin-row-title"><div><span class="mono section-label">NEON CUSTOMER RECORDS</span><h2>Private archives · ' + adminCustomers.length + '</h2></div><button class="button button-light" type="button" data-refresh-customers>Refresh customers</button></div><div class="admin-status customer-admin-status" role="status">' + escapeHtml(adminMessage) + '</div>' + adminCustomerCards() + '</section>' + savebar +
     '</form></div></div>';
 }
 
@@ -420,15 +485,23 @@ function render() {
   const route = currentRoute();
   let main;
   if (route[0] === "archive") main = renderArchive();
+  else if (route[0] === "artifacts") main = renderArtifacts();
   else if (route[0] === "series") main = renderSeries(route[1]);
   else if (route[0] === "chapter") main = renderChapter(route[1]);
   else if (route[0] === "product") main = renderProduct(route[1]);
   else if (route[0] === "checkout") main = renderCheckout();
+  else if (route[0] === "login") main = renderAuth("login");
+  else if (route[0] === "signup") main = renderAuth("signup");
+  else if (route[0] === "account") main = renderAccount();
   else if (route[0] === "admin") main = '<main>' + (adminToken ? adminDashboard() : '<div class="admin-shell"><div class="page">' + adminLogin() + '</div></div>') + '</main>';
   else main = renderHome();
   root.innerHTML = renderHeader() + main + renderFooter() + renderCart() + renderNotice();
   const pageTitle = route[0] === "admin" ? "Studio" :
     route[0] === "checkout" ? "Acquisition" :
+    route[0] === "artifacts" ? "Artifacts" :
+    route[0] === "login" ? "Sign In" :
+    route[0] === "signup" ? "Create Your Archive" :
+    route[0] === "account" ? "My Private Archive" :
     route[0] === "archive" ? "The Archive" :
     route[0] === "series" ? getSeries(route[1]).title :
     route[0] === "chapter" ? getChapter(route[1]).title :
@@ -553,9 +626,11 @@ function bindEvents() {
     confirmDemo.textContent = "Recording acquisition…";
     checkoutMessage = "";
     try {
+      const orderHeaders = { "Content-Type": "application/json" };
+      if (customerToken) orderHeaders.Authorization = "Bearer " + customerToken;
       const response = await fetch("/api/orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: orderHeaders,
         body: JSON.stringify({
           customer: checkoutCustomer,
           items: cart.map(function (item) { return { slug: item.slug, size: item.size, qty: item.qty }; }),
@@ -565,6 +640,7 @@ function bindEvents() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "The demonstration order could not be recorded.");
       checkoutOrder = result.order;
+      if (customer) customerOrders = [result.order].concat(customerOrders.filter(function (order) { return order.id !== result.order.id; }));
       checkoutStep = "complete";
       cart = [];
       saveCart();
@@ -577,6 +653,54 @@ function bindEvents() {
       const message = document.querySelector(".checkout-message");
       if (message) message.textContent = checkoutMessage;
     }
+  });
+
+  const customerAuth = document.getElementById("customer-auth");
+  if (customerAuth) customerAuth.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    const mode = customerAuth.dataset.authMode;
+    const values = Object.fromEntries(new FormData(customerAuth));
+    if (mode === "signup" && values.password !== values.confirmPassword) {
+      authMessage = "The two passwords do not match.";
+      const message = customerAuth.querySelector(".auth-message");
+      if (message) message.textContent = authMessage;
+      return;
+    }
+    const button = customerAuth.querySelector('button[type="submit"]');
+    button.disabled = true;
+    button.textContent = mode === "signup" ? "Opening your archive…" : "Finding your archive…";
+    authMessage = "";
+    try {
+      const response = await fetch("/api/auth/" + mode, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: values.name, email: values.email, password: values.password })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Your private archive could not be opened.");
+      customerToken = result.token;
+      customer = result.customer;
+      customerOrders = result.orders || [];
+      customerLoading = false;
+      sessionStorage.setItem("qbCustomerToken", customerToken);
+      authMessage = "";
+      location.hash = "#account";
+    } catch (error) {
+      authMessage = error.message;
+      render();
+    }
+  });
+
+  const customerLogout = document.querySelector("[data-customer-logout]");
+  if (customerLogout) customerLogout.addEventListener("click", async function () {
+    customerLogout.disabled = true;
+    if (customerToken) await fetch("/api/auth/logout", { method: "POST", headers: { Authorization: "Bearer " + customerToken } }).catch(function () {});
+    customerToken = "";
+    customer = null;
+    customerOrders = [];
+    customerLoading = false;
+    sessionStorage.removeItem("qbCustomerToken");
+    authMessage = "You have signed out of your private archive.";
+    location.hash = "#login";
   });
 
   const login = document.getElementById("admin-login");
@@ -592,6 +716,8 @@ function bindEvents() {
       sessionStorage.setItem("qbAdminToken", adminToken);
       adminOrders = [];
       adminOrdersLoaded = false;
+      adminCustomers = [];
+      adminCustomersLoaded = false;
       adminActiveTab = "brand";
       adminMessage = "Studio opened.";
       render();
@@ -608,6 +734,8 @@ function bindEvents() {
     sessionStorage.removeItem("qbAdminToken");
     adminOrders = [];
     adminOrdersLoaded = false;
+    adminCustomers = [];
+    adminCustomersLoaded = false;
     adminActiveTab = "brand";
     adminMessage = "You have signed out.";
     render();
@@ -625,8 +753,9 @@ function bindEvents() {
         panel.classList.toggle("active", panel.dataset.panel === tab.dataset.tab);
       });
       const savebar = document.querySelector(".admin-savebar");
-      if (savebar) savebar.classList.toggle("hide", adminActiveTab === "orders");
+      if (savebar) savebar.classList.toggle("hide", ["orders", "customers"].includes(adminActiveTab));
       if (adminActiveTab === "orders" && !adminOrdersLoaded && !adminOrdersLoading) loadAdminOrders();
+      if (adminActiveTab === "customers" && !adminCustomersLoaded && !adminCustomersLoading) loadAdminCustomers();
     });
   });
 
@@ -634,6 +763,11 @@ function bindEvents() {
   if (refreshOrders) refreshOrders.addEventListener("click", function () {
     adminOrdersLoaded = false;
     loadAdminOrders();
+  });
+  const refreshCustomers = document.querySelector("[data-refresh-customers]");
+  if (refreshCustomers) refreshCustomers.addEventListener("click", function () {
+    adminCustomersLoaded = false;
+    loadAdminCustomers();
   });
   document.querySelectorAll("[data-update-order]").forEach(function (button) {
     button.addEventListener("click", function () {
@@ -644,6 +778,11 @@ function bindEvents() {
   document.querySelectorAll("[data-delete-order]").forEach(function (button) {
     button.addEventListener("click", function () {
       if (window.confirm("Delete this demonstration order from Neon?")) deleteAdminOrder(button.dataset.deleteOrder, button);
+    });
+  });
+  document.querySelectorAll("[data-delete-customer]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      if (window.confirm("Delete this demonstration customer account? Linked orders will remain in the order ledger.")) deleteAdminCustomer(button.dataset.deleteCustomer, button);
     });
   });
 
@@ -739,7 +878,8 @@ function bindEvents() {
   });
   const adminForm = document.getElementById("admin-form");
   if (adminForm) adminForm.addEventListener("submit", saveAdminContent);
-  if (currentRoute()[0] === "admin" && adminToken && !adminOrdersLoaded && !adminOrdersLoading) loadAdminOrders();
+  if (currentRoute()[0] === "admin" && adminToken && adminActiveTab === "orders" && !adminOrdersLoaded && !adminOrdersLoading) loadAdminOrders();
+  if (currentRoute()[0] === "admin" && adminToken && adminActiveTab === "customers" && !adminCustomersLoaded && !adminCustomersLoading) loadAdminCustomers();
 }
 
 async function loadAdminOrders() {
@@ -764,6 +904,50 @@ async function loadAdminOrders() {
   } finally {
     adminOrdersLoading = false;
     render();
+  }
+}
+
+async function loadAdminCustomers() {
+  if (!adminToken || adminCustomersLoading) return;
+  adminCustomersLoading = true;
+  try {
+    const response = await fetch("/api/admin/customers", { headers: { Authorization: "Bearer " + adminToken } });
+    const result = await response.json();
+    if (!response.ok) {
+      if (response.status === 401) {
+        adminToken = "";
+        sessionStorage.removeItem("qbAdminToken");
+      }
+      throw new Error(result.error || "Customers could not be loaded.");
+    }
+    adminCustomers = result.customers;
+    adminCustomersLoaded = true;
+    adminMessage = adminCustomers.length ? "Customer archive updated." : "No demonstration customer accounts yet.";
+  } catch (error) {
+    adminCustomersLoaded = true;
+    adminMessage = error.message;
+  } finally {
+    adminCustomersLoading = false;
+    render();
+  }
+}
+
+async function deleteAdminCustomer(id, button) {
+  button.disabled = true;
+  try {
+    const response = await fetch("/api/admin/customers/" + encodeURIComponent(id), {
+      method: "DELETE", headers: { Authorization: "Bearer " + adminToken }
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "The demonstration account could not be deleted.");
+    adminCustomers = adminCustomers.filter(function (item) { return item.id !== id; });
+    adminMessage = result.email + " deleted from the customer archive.";
+    render();
+  } catch (error) {
+    adminMessage = error.message;
+    button.disabled = false;
+    const status = document.querySelector(".customer-admin-status");
+    if (status) status.textContent = adminMessage;
   }
 }
 
@@ -882,6 +1066,35 @@ async function saveAdminContent(event) {
   }
 }
 
+async function loadCustomerSession() {
+  if (!customerToken) {
+    customerLoading = false;
+    return;
+  }
+  customerLoading = true;
+  try {
+    const response = await fetch("/api/auth/me", { headers: { Authorization: "Bearer " + customerToken } });
+    const result = await response.json();
+    if (!response.ok) {
+      if (response.status === 401) {
+        customerToken = "";
+        sessionStorage.removeItem("qbCustomerToken");
+      }
+      throw new Error(result.error || "Your private archive could not be opened.");
+    }
+    customer = result.customer;
+    customerOrders = result.orders || [];
+    authMessage = "";
+  } catch (error) {
+    customer = null;
+    customerOrders = [];
+    authMessage = error.message;
+  } finally {
+    customerLoading = false;
+    render();
+  }
+}
+
 window.addEventListener("hashchange", function () {
   const route = currentRoute();
   cartOpen = false;
@@ -905,7 +1118,7 @@ window.addEventListener("keydown", function (event) {
 
 fetch("/api/content")
   .then(function (response) { if (!response.ok) throw new Error("The content service is unavailable."); return response.json(); })
-  .then(function (data) { content = data; render(); })
+  .then(function (data) { content = data; render(); if (customerToken) loadCustomerSession(); else customerLoading = false; })
   .catch(function () {
     root.innerHTML = '<main class="page" style="padding:80px 0"><span class="mono">The archive is offline.</span><p>Please try again shortly.</p></main>';
   });

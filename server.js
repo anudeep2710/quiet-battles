@@ -10,6 +10,7 @@ const PUBLIC_DIR = path.join(__dirname, "public");
 const PORT = Number(process.env.PORT || 4173);
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const ORDER_STATUSES = new Set(["Placed", "Confirmed", "Packed", "Shipped", "Completed", "Cancelled"]);
+const CUSTOMER_SESSION_MS = 7 * 24 * 60 * 60 * 1000;
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -84,6 +85,46 @@ function safeEqual(a, b) {
   const left = Buffer.from(String(a));
   const right = Buffer.from(String(b));
   return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
+
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function validEmail(value) {
+  return value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function validCustomerCredentials(body, includeName) {
+  if (!isObject(body)) return false;
+  const email = normalizeEmail(body.email);
+  if (!validEmail(email) || typeof body.password !== "string" ||
+      body.password.length < 8 || body.password.length > 128) return false;
+  return !includeName || (typeof body.name === "string" && body.name.trim().length >= 2 && body.name.trim().length <= 80);
+}
+
+function derivePassword(password, salt) {
+  return crypto.scryptSync(password, salt, 64).toString("hex");
+}
+
+function passwordMatches(password, salt, expected) {
+  const actual = Buffer.from(derivePassword(password, salt), "hex");
+  const stored = Buffer.from(String(expected || ""), "hex");
+  return actual.length === stored.length && crypto.timingSafeEqual(actual, stored);
+}
+
+async function startCustomerSession(customer) {
+  const token = crypto.randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + CUSTOMER_SESSION_MS);
+  await db.createCustomerSession(token, customer.id, expiresAt);
+  return { token, expiresAt: expiresAt.toISOString() };
+}
+
+async function requireCustomer(req, res) {
+  const customer = await db.readCustomerBySession(tokenFrom(req));
+  if (customer) return customer;
+  send(res, 401, { error: "Your private archive session has expired. Sign in again." });
+  return null;
 }
 
 function isObject(value) {
@@ -173,7 +214,7 @@ function validOrderRequest(value) {
     Number.isInteger(item.qty) && item.qty >= 1 && item.qty <= 10);
 }
 
-async function createOrder(body) {
+async function createOrder(body, customerId) {
   if (!validOrderRequest(body)) throw requestError("Check the customer details, bag items, and demo-payment acknowledgement.");
   const content = await db.readContent();
   const products = new Map(content.products.map((product) => [product.slug, product]));
@@ -201,7 +242,7 @@ async function createOrder(body) {
     city: body.customer.city.trim(),
     postalCode: body.customer.postalCode.trim()
   };
-  return db.createOrder(customer, items, subtotal);
+  return db.createOrder(customer, items, subtotal, customerId);
 }
 
 async function handle(req, res) {
@@ -219,8 +260,55 @@ async function handle(req, res) {
     return send(res, 200, content);
   }
 
+  if (req.method === "POST" && pathname === "/api/auth/signup") {
+    const body = await readJson(req, 16 * 1024);
+    if (!validCustomerCredentials(body, true)) {
+      return send(res, 400, { error: "Enter your name, a valid email, and a password of at least 8 characters." });
+    }
+    const email = normalizeEmail(body.email);
+    if (await db.findCustomerByEmail(email)) {
+      return send(res, 409, { error: "An archive already exists for that email. Sign in instead." });
+    }
+    const salt = crypto.randomBytes(16).toString("hex");
+    let customer;
+    try {
+      customer = await db.createCustomer(body.name.trim(), email, derivePassword(body.password, salt), salt);
+    } catch (error) {
+      if (error.code === "23505") return send(res, 409, { error: "An archive already exists for that email. Sign in instead." });
+      throw error;
+    }
+    const session = await startCustomerSession(customer);
+    return send(res, 201, { customer, orders: [], token: session.token, expiresAt: session.expiresAt });
+  }
+
+  if (req.method === "POST" && pathname === "/api/auth/login") {
+    const body = await readJson(req, 16 * 1024);
+    if (!validCustomerCredentials(body, false)) {
+      return send(res, 400, { error: "Enter a valid email and password." });
+    }
+    const record = await db.findCustomerByEmail(normalizeEmail(body.email));
+    if (!record || !passwordMatches(body.password, record.password_salt, record.password_hash)) {
+      return send(res, 401, { error: "The email or password is not correct." });
+    }
+    const customer = { id: record.id, name: record.name, email: record.email, createdAt: record.created_at };
+    const session = await startCustomerSession(customer);
+    return send(res, 200, { customer, orders: await db.readCustomerOrders(customer.id), token: session.token, expiresAt: session.expiresAt });
+  }
+
+  if (req.method === "GET" && pathname === "/api/auth/me") {
+    const customer = await requireCustomer(req, res);
+    if (!customer) return;
+    return send(res, 200, { customer, orders: await db.readCustomerOrders(customer.id) });
+  }
+
+  if (req.method === "POST" && pathname === "/api/auth/logout") {
+    await db.deleteCustomerSession(tokenFrom(req));
+    return send(res, 200, { ok: true });
+  }
+
   if (req.method === "POST" && pathname === "/api/orders") {
-    const order = await createOrder(await readJson(req, 64 * 1024));
+    const signedInCustomer = await db.readCustomerBySession(tokenFrom(req));
+    const order = await createOrder(await readJson(req, 64 * 1024), signedInCustomer && signedInCustomer.id);
     return send(res, 201, { order });
   }
 
@@ -254,6 +342,19 @@ async function handle(req, res) {
   if (req.method === "GET" && pathname === "/api/admin/orders") {
     if (!await requireAdmin(req, res)) return;
     return send(res, 200, { orders: await db.readOrders() });
+  }
+
+  if (req.method === "GET" && pathname === "/api/admin/customers") {
+    if (!await requireAdmin(req, res)) return;
+    return send(res, 200, { customers: await db.readCustomers() });
+  }
+
+  const customerMatch = /^\/api\/admin\/customers\/([a-f0-9-]{36})$/.exec(pathname);
+  if (customerMatch && req.method === "DELETE") {
+    if (!await requireAdmin(req, res)) return;
+    const removed = await db.deleteCustomer(customerMatch[1]);
+    return removed ? send(res, 200, { ok: true, email: removed.email }) :
+      send(res, 404, { error: "Customer not found." });
   }
 
   const orderMatch = /^\/api\/admin\/orders\/([a-f0-9-]{36})$/.exec(pathname);

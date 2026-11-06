@@ -6,6 +6,7 @@ These screenshots show the demonstration's main paths on desktop and mobile. `sc
 | --- | --- |
 | `01-home-desktop.jpg` | Homepage and featured Series |
 | `02-archive-desktop.jpg` | The Archive |
+| `15-artifacts-desktop.jpg` | Four-product Artifact catalogue |
 | `03-series-desktop.jpg` | Series 01 and its five Chapters |
 | `04-chamber-the-first-quiet.jpg` | Chapter 01 Chamber and linked Artifact |
 | `04-chamber-the-weight-you-carry.jpg` | Chapter 02 Chamber |
@@ -22,6 +23,12 @@ These screenshots show the demonstration's main paths on desktop and mobile. `sc
 | `12-demo-payment-mobile.jpg` | Clearly labelled dummy QR payment step |
 | `13-order-confirmation-mobile.jpg` | Neon-backed demonstration order confirmation |
 | `14-studio-orders.jpg` | Studio order ledger and fulfilment controls |
+| `16-signin-desktop.jpg` | Branded customer sign-in page |
+| `17-signup-desktop.jpg` | Customer archive registration page |
+| `18-signup-mobile.jpg` | Mobile sign-up form with demo details |
+| `19-account-empty-mobile.jpg` | New private archive before an acquisition |
+| `20-account-order-mobile.jpg` | Private archive with its linked demo order |
+| `21-studio-customers.jpg` | Studio customer account management |
 
 Regenerate with Python Playwright installed and the site key kept in the ignored `.studio-key` file:
 
@@ -29,4 +36,4 @@ Regenerate with Python Playwright installed and the site key kept in the ignored
 python scripts/capture-screenshots.py --base-url https://quiet-battles-demo.vercel.app --studio-key-file .studio-key
 ```
 
-The capture script also opens all five Chapter Chambers, completes and deletes a demonstration order, updates its status in Studio, and checks the bag and responsive layouts. It captures pages from the supplied base URL, so use the hosted URL for final submission evidence.
+The capture script also opens all five Chapter Chambers and four Artifacts, creates a temporary customer, completes and deletes its demonstration order, deletes the temporary account, updates the order status in Studio, and checks the bag and responsive layouts. It captures pages from the supplied base URL, so use the hosted URL for final submission evidence.

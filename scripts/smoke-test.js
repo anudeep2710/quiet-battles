@@ -26,11 +26,18 @@ async function main() {
   assert.equal(initial.response.status, 200);
   assert.equal(initial.body.seriesList.length, 1);
   assert.equal(initial.body.seriesList[0].chapters.length, 5);
-  assert.equal(initial.body.products.length, 1);
+  assert.equal(initial.body.products.length, 4);
+  assert.deepEqual(initial.body.products.map((product) => product.slug), [
+    "soft-armor-hoodie", "carry-light-overshirt", "quiet-form-tee", "still-point-cap"
+  ]);
   assert.equal(initial.body.products[0].secondaryImage, "/assets/soft-armor-back.svg");
-  const alternateImage = await fetch(base + initial.body.products[0].secondaryImage);
-  assert.equal(alternateImage.status, 200);
-  assert.match(await alternateImage.text(), /back view/i);
+  for (const product of initial.body.products) {
+    const frontImage = await fetch(base + product.image);
+    const alternateImage = await fetch(base + product.secondaryImage);
+    assert.equal(frontImage.status, 200, product.image);
+    assert.equal(alternateImage.status, 200, product.secondaryImage);
+    assert.match(await alternateImage.text(), /back view/i);
+  }
 
   const denied = await jsonRequest("/api/admin/login", {
     method: "POST", headers: { "Content-Type": "application/json" },
@@ -47,9 +54,42 @@ async function main() {
   const original = initial.body;
   let changed = false;
   let orderId = "";
+  let customerId = "";
+  let customerToken = "";
+  const customerEmail = "smoke." + Date.now() + "@example.com";
   try {
-    const createdOrder = await jsonRequest("/api/orders", {
+    const signup = await jsonRequest("/api/auth/signup", {
       method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Archive Visitor", email: customerEmail, password: "quiet-demo-2026" })
+    });
+    assert.equal(signup.response.status, 201, JSON.stringify(signup.body));
+    customerId = signup.body.customer.id;
+    customerToken = signup.body.token;
+    assert.match(customerToken, /^[a-f0-9]{64}$/);
+
+    const duplicate = await jsonRequest("/api/auth/signup", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Archive Visitor", email: customerEmail.toUpperCase(), password: "quiet-demo-2026" })
+    });
+    assert.equal(duplicate.response.status, 409);
+
+    const badCustomerLogin = await jsonRequest("/api/auth/login", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: customerEmail, password: "wrong-password" })
+    });
+    assert.equal(badCustomerLogin.response.status, 401);
+
+    const me = await jsonRequest("/api/auth/me", { headers: { Authorization: "Bearer " + customerToken } });
+    assert.equal(me.response.status, 200);
+    assert.equal(me.body.customer.email, customerEmail);
+    assert.deepEqual(me.body.orders, []);
+
+    const customerList = await jsonRequest("/api/admin/customers", { headers: auth });
+    assert.equal(customerList.response.status, 200);
+    assert.ok(customerList.body.customers.some((item) => item.id === customerId && item.orderCount === 0));
+
+    const createdOrder = await jsonRequest("/api/orders", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + customerToken },
       body: JSON.stringify({
         customer: {
           name: "Assessment Visitor", email: "visitor@example.com", phone: "+91 90000 00000",
@@ -64,6 +104,11 @@ async function main() {
     assert.match(createdOrder.body.order.orderNumber, /^QB-\d{8}-[A-F0-9]{6}$/);
     assert.equal(createdOrder.body.order.subtotal, initial.body.products[0].price);
     assert.equal(createdOrder.body.order.paymentMethod, "demo_qr");
+    assert.equal(createdOrder.body.order.customerId, customerId);
+
+    const meWithOrder = await jsonRequest("/api/auth/me", { headers: { Authorization: "Bearer " + customerToken } });
+    assert.equal(meWithOrder.response.status, 200);
+    assert.ok(meWithOrder.body.orders.some((order) => order.id === orderId));
 
     const orderList = await jsonRequest("/api/admin/orders", { headers: auth });
     assert.equal(orderList.response.status, 200);
@@ -102,8 +147,8 @@ async function main() {
     assert.equal(updated.body.seriesList[0].chapters.length, 5);
     assert.equal(updated.body.seriesList[0].chapters[0].title, "Verification edit");
     assert.equal(updated.body.seriesList[1].chapters[0].slug, "verification-chapter");
-    assert.equal(updated.body.products.length, 2);
-    assert.equal(updated.body.products[1].slug, "verification-piece");
+    assert.equal(updated.body.products.length, 5);
+    assert.equal(updated.body.products[4].slug, "verification-piece");
 
     const imageBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==";
     const upload = await jsonRequest("/api/admin/upload", {
@@ -115,6 +160,23 @@ async function main() {
     assert.equal(image.status, 200);
     assert.equal(image.headers.get("content-type"), "image/png");
     assert.ok((await image.arrayBuffer()).byteLength > 60);
+
+    const customerLogout = await jsonRequest("/api/auth/logout", {
+      method: "POST", headers: { Authorization: "Bearer " + customerToken }
+    });
+    assert.equal(customerLogout.response.status, 200);
+    const customerAfterLogout = await jsonRequest("/api/auth/me", {
+      headers: { Authorization: "Bearer " + customerToken }
+    });
+    assert.equal(customerAfterLogout.response.status, 401);
+
+    const customerLogin = await jsonRequest("/api/auth/login", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: customerEmail, password: "quiet-demo-2026" })
+    });
+    assert.equal(customerLogin.response.status, 200);
+    customerToken = customerLogin.body.token;
+    assert.ok(customerLogin.body.orders.some((order) => order.id === orderId));
   } finally {
     if (orderId) {
       const removedOrder = await jsonRequest("/api/admin/orders/" + orderId, {
@@ -128,6 +190,12 @@ async function main() {
       });
       assert.equal(restored.response.status, 200);
     }
+    if (customerId) {
+      const removedCustomer = await jsonRequest("/api/admin/customers/" + customerId, {
+        method: "DELETE", headers: { Authorization: "Bearer " + login.body.token }
+      });
+      assert.equal(removedCustomer.response.status, 200, JSON.stringify(removedCustomer.body));
+    }
     const logout = await jsonRequest("/api/admin/logout", {
       method: "POST", headers: { Authorization: "Bearer " + login.body.token }
     });
@@ -140,7 +208,9 @@ async function main() {
   assert.equal(afterLogout.response.status, 401);
   const ordersAfterLogout = await jsonRequest("/api/admin/orders", { headers: auth });
   assert.equal(ordersAfterLogout.response.status, 401);
-  console.log("Smoke test passed: site, Neon reads/writes, checkout order lifecycle, Studio order controls, login/logout, and media upload.");
+  const customersAfterLogout = await jsonRequest("/api/admin/customers", { headers: auth });
+  assert.equal(customersAfterLogout.response.status, 401);
+  console.log("Smoke test passed: site, four-product catalogue, customer accounts, linked order history, Neon reads/writes, Studio controls, login/logout, and media upload.");
 }
 
 main().catch((error) => {

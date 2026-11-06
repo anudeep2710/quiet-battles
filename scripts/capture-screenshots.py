@@ -68,6 +68,10 @@ def main():
         assert page.locator(".archive-item").count() >= 1
         capture(page, output_dir, "02-archive-desktop.jpg")
 
+        open_route(page, args.base_url, "artifacts", ".artifact-grid")
+        assert page.locator(".artifact-card").count() == 4
+        capture(page, output_dir, "15-artifacts-desktop.jpg")
+
         open_route(page, args.base_url, "series/the-gentle-armor", ".chapter-list")
         assert page.locator(".chapter-card").count() == 5
         capture(page, output_dir, "03-series-desktop.jpg")
@@ -80,6 +84,12 @@ def main():
         open_route(page, args.base_url, "product/soft-armor-hoodie", ".product-info")
         assert page.locator(".product-gallery img").count() == 2
         capture(page, output_dir, "05-artifact-desktop.jpg")
+
+        open_route(page, args.base_url, "login", ".auth-form")
+        capture(page, output_dir, "16-signin-desktop.jpg", full_page=False)
+
+        open_route(page, args.base_url, "signup", ".auth-form")
+        capture(page, output_dir, "17-signup-desktop.jpg", full_page=False)
 
         mobile = browser.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=1)
         mobile_page = mobile.new_page()
@@ -95,10 +105,21 @@ def main():
         assert "soft armor hoodie" in mobile_page.locator(".cart-drawer").inner_text().lower()
         capture(mobile_page, output_dir, "08-acquisition-demo.jpg", full_page=False)
 
+        customer_email = f"screenshots.{int(time.time() * 1000)}@example.com"
+        open_route(mobile_page, args.base_url, "signup", "#customer-auth")
+        mobile_page.locator('input[name="name"]').fill("Playwright Visitor")
+        mobile_page.locator('input[name="email"]').fill(customer_email)
+        mobile_page.locator('input[name="password"]').fill("quiet-demo-2026")
+        mobile_page.locator('input[name="confirmPassword"]').fill("quiet-demo-2026")
+        capture(mobile_page, output_dir, "18-signup-mobile.jpg", full_page=False)
+        mobile_page.locator("#customer-auth button").click()
+        mobile_page.locator(".account-page").wait_for(timeout=20_000)
+        capture(mobile_page, output_dir, "19-account-empty-mobile.jpg")
+        mobile_page.locator("[data-cart-open]").click()
         mobile_page.locator("[data-demo-checkout]").click()
         mobile_page.locator("#checkout-details").wait_for()
-        mobile_page.locator('input[name="name"]').fill("Playwright Visitor")
-        mobile_page.locator('input[name="email"]').fill("playwright@example.com")
+        assert mobile_page.locator('input[name="name"]').input_value() == "Playwright Visitor"
+        assert mobile_page.locator('input[name="email"]').input_value() == customer_email
         mobile_page.locator('input[name="phone"]').fill("+91 90000 00000")
         mobile_page.locator('input[name="city"]').fill("Bengaluru")
         mobile_page.locator('textarea[name="address"]').fill("1 Demo Archive Lane")
@@ -116,6 +137,9 @@ def main():
         assert order_number.startswith("QB-")
         assert mobile_page.locator("[data-cart-open]").inner_text().strip().endswith("(0)")
         capture(mobile_page, output_dir, "13-order-confirmation-mobile.jpg")
+        mobile_page.locator('.confirmation-actions a[href="#account"]').click()
+        mobile_page.locator(".account-order", has_text=order_number).wait_for(timeout=20_000)
+        capture(mobile_page, output_dir, "20-account-order-mobile.jpg")
 
         if args.studio_key_file:
             studio_key = args.studio_key_file.read_text(encoding="utf8").strip()
@@ -135,7 +159,7 @@ def main():
             page.locator('[data-tab="orders"]').click()
             order_card = page.locator(".admin-order", has_text=order_number)
             order_card.wait_for(timeout=20_000)
-            assert "playwright@example.com" in order_card.inner_text().lower()
+            assert customer_email in order_card.inner_text().lower()
             capture(page, output_dir, "14-studio-orders.jpg", full_page=False)
             order_card.locator("[data-order-status]").select_option("Confirmed")
             order_card.locator("[data-update-order]").click()
@@ -143,13 +167,19 @@ def main():
             page.on("dialog", lambda dialog: dialog.accept())
             page.locator(".admin-order", has_text=order_number).locator("[data-delete-order]").click()
             page.locator(".admin-order", has_text=order_number).wait_for(state="detached", timeout=20_000)
+            page.locator('[data-tab="customers"]').click()
+            customer_card = page.locator(".admin-customer-record", has_text=customer_email)
+            customer_card.wait_for(timeout=20_000)
+            capture(page, output_dir, "21-studio-customers.jpg", full_page=False)
+            customer_card.locator("[data-delete-customer]").click()
+            customer_card.wait_for(state="detached", timeout=20_000)
             page.locator("[data-logout]").click()
 
         assert not errors, f"Browser errors: {errors}"
         browser.close()
 
     print(f"Captured {len(list(output_dir.glob('*.jpg')))} screenshots in {output_dir}.")
-    print("Browser checks passed: five Chambers, Artifact, demo bag, dummy-QR checkout, Neon order creation, responsive widths, and Studio order management.")
+    print("Browser checks passed: five Chambers, four Artifacts, customer account, demo bag, dummy-QR checkout, linked Neon order, responsive widths, and Studio management.")
 
 
 if __name__ == "__main__":

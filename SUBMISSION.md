@@ -6,7 +6,7 @@
 
 https://quiet-battles-demo.vercel.app
 
-The demo follows the brand path from the homepage to The Archive, a Series, a Chapter Chamber, its sample artifact, and Acquisition. It includes five complete sample stories, a responsive layout, a dummy-QR checkout that records demonstration orders, and a Neon-backed Studio.
+The demo follows the brand path from the homepage to The Archive, a Series, a Chapter Chamber, its artifact, and Acquisition. It includes five complete sample stories, four products with original front/back artwork, customer sign-up/sign-in, a private order archive, a responsive dummy-QR checkout that records demonstration orders, and a Neon-backed Studio.
 
 ## Source code and local run instructions
 
@@ -18,7 +18,7 @@ Reviewers will need access to the private repository or the source ZIP.
 
 ## Screenshots and demonstration evidence
 
-The screenshot index is [docs/screenshots/README.md](docs/screenshots/README.md). It includes desktop and mobile views of the homepage and product, Archive, Series 01, Chapter Chambers, bag, delivery form, dummy QR, order confirmation, and Studio order ledger. The capture script can reproduce them with Playwright.
+The screenshot index is [docs/screenshots/README.md](docs/screenshots/README.md). It includes desktop and mobile views of the homepage and product, Archive, artifact catalogue, Series 01, Chapter Chambers, sign-in/sign-up, customer order archive, bag, delivery form, dummy QR, order confirmation, and Studio order/customer ledgers. The capture script can reproduce them with Playwright.
 
 ## Technologies
 
@@ -26,7 +26,7 @@ The screenshot index is [docs/screenshots/README.md](docs/screenshots/README.md)
 - Backend: Node.js API, run locally by `server.js` and deployed as a Vercel Function.
 - Database: Neon Postgres through `@neondatabase/serverless`.
 - Hosting and source: Vercel and GitHub.
-- External services and assets: Unsplash sample photography, Google Fonts, five original images generated with OpenAI image generation, and original local SVG garment illustrations.
+- External services and assets: Unsplash sample photography, Google Fonts, five original images generated with OpenAI image generation, and eight original local SVG garment views.
 
 No site template, frontend framework, CMS plugin, or paid UI plugin was used. OpenAI Codex assisted with implementation and documentation; Playwright was used for browser checks and screenshot capture. These tools are disclosed for the technical evaluation.
 
@@ -34,17 +34,17 @@ No site template, frontend framework, CMS plugin, or paid UI plugin was used. Op
 
 The schema, fields, and relationships are documented in [docs/database-schema.md](docs/database-schema.md). Studio at `/#admin` can edit brand and homepage content; add, edit, and remove Series and Chapters; manage products; and upload images. Image uploads up to 2 MB are stored in Neon for this demo.
 
-The Studio key is kept outside source control. Enter it privately during the review; do not include it in the submission. Studio also includes an Orders ledger for reviewing customer details and item snapshots, updating fulfilment status, refreshing records, and deleting demonstration orders.
+The Studio key is kept outside source control. Enter it privately during the review; do not include it in the submission. Studio also includes an Orders ledger for reviewing delivery details and item snapshots, updating fulfilment status, refreshing records, and deleting demonstration orders. Its Customers tab lists customer accounts, linked-order counts, and demo-account deletion controls.
 
 ## Architecture
 
-Visitors load static files from Vercel. The browser requests published content from a Node API, which reads Neon. The selected size and bag are stored in the visitor's browser. Checkout submits customer and bag data to the API; the server validates current products and prices before writing the demonstration order to Neon. Studio edits and order operations use a protected API session.
+Visitors load static files from Vercel. The browser requests published content from a Node API, which reads Neon. The selected size and bag are stored in the visitor's browser. Customer passwords are salted and hashed server-side; only hashed session tokens are stored in Neon. Checkout submits delivery and bag data to the API; the server validates current products and prices before writing the demonstration order, linked to the signed-in customer when present. Studio edits and order/customer operations use a separate protected API session.
 
 ## Demonstration boundaries
 
-All stories, garment details, product price, and some photography are sample material. The product illustrations are original SVG concepts. Chapters 02–05 link to the sample Series 01 artifact to demonstrate the journey; only Chapter 01 owns that sample product record. The client can replace these links and content through Studio.
+All stories, garment details, product prices, and some photography are sample material. The product illustrations are original SVG concepts. Chapters 01–04 each link to a distinct artifact; Chapter 05 returns to the Soft Armor Hoodie. The client can replace these relationships and content through Studio.
 
-The acquisition flow creates a demonstration order and exposes it in Studio. The displayed QR is deliberately non-payable: it does not connect to UPI, a bank, or a payment gateway, and confirming it does not prove payment. Stock reservation, shipping calculation, tax, returns, customer accounts, transactional messages, and live payment verification remain outside the prototype. The current inner pages use hash-based URLs, so production SEO requires crawlable routes and page-specific server metadata.
+The acquisition flow creates a demonstration order and exposes it in Studio. The displayed QR is deliberately non-payable: it does not connect to UPI, a bank, or a payment gateway, and confirming it does not prove payment. Customer accounts and private order history work in the prototype. Email verification, password recovery, login throttling, stock reservation, shipping calculation, tax, returns, transactional messages, and live payment verification remain outside it. The current inner pages use hash-based URLs, so production SEO requires crawlable routes and page-specific server metadata.
 
 ## Indicative full-project estimate
 

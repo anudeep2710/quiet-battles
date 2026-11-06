@@ -35,7 +35,11 @@ const schema = [
   "ALTER TABLE products ADD COLUMN IF NOT EXISTS secondary_image TEXT NOT NULL DEFAULT ''",
   "CREATE TABLE IF NOT EXISTS media_assets (id UUID PRIMARY KEY, mime_type TEXT NOT NULL, base64_data TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())",
   "CREATE TABLE IF NOT EXISTS admin_sessions (token_hash TEXT PRIMARY KEY, expires_at TIMESTAMPTZ NOT NULL)",
+  "CREATE TABLE IF NOT EXISTS customers (id UUID PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL, password_salt TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())",
+  "CREATE TABLE IF NOT EXISTS customer_sessions (token_hash TEXT PRIMARY KEY, customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE, expires_at TIMESTAMPTZ NOT NULL)",
   "CREATE TABLE IF NOT EXISTS orders (id UUID PRIMARY KEY, order_number TEXT NOT NULL UNIQUE, customer JSONB NOT NULL, items JSONB NOT NULL, subtotal INTEGER NOT NULL CHECK (subtotal >= 0), payment_method TEXT NOT NULL DEFAULT 'demo_qr', payment_status TEXT NOT NULL DEFAULT 'Demo confirmed', status TEXT NOT NULL DEFAULT 'Placed', created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now())",
+  "ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id UUID REFERENCES customers(id) ON DELETE SET NULL",
+  "CREATE INDEX IF NOT EXISTS orders_customer_id_created_at_idx ON orders (customer_id, created_at DESC)",
   "CREATE INDEX IF NOT EXISTS orders_created_at_idx ON orders (created_at DESC)"
 ];
 
@@ -174,14 +178,14 @@ async function deleteSession(token) {
   await getClient().query("DELETE FROM admin_sessions WHERE token_hash = $1", [hash]);
 }
 
-async function createOrder(customer, items, subtotal) {
+async function createOrder(customer, items, subtotal, customerId) {
   const id = crypto.randomUUID();
   const date = new Date().toISOString().slice(0, 10).replaceAll("-", "");
   const suffix = crypto.randomBytes(3).toString("hex").toUpperCase();
   const orderNumber = "QB-" + date + "-" + suffix;
   const rows = await getClient().query(
-    "INSERT INTO orders (id, order_number, customer, items, subtotal) VALUES ($1::uuid, $2, $3::jsonb, $4::jsonb, $5) RETURNING id, order_number, customer, items, subtotal, payment_method, payment_status, status, created_at, updated_at",
-    [id, orderNumber, JSON.stringify(customer), JSON.stringify(items), subtotal]
+    "INSERT INTO orders (id, order_number, customer_id, customer, items, subtotal) VALUES ($1::uuid, $2, $3::uuid, $4::jsonb, $5::jsonb, $6) RETURNING id, order_number, customer_id, customer, items, subtotal, payment_method, payment_status, status, created_at, updated_at",
+    [id, orderNumber, customerId || null, JSON.stringify(customer), JSON.stringify(items), subtotal]
   );
   return mapOrder(rows[0]);
 }
@@ -190,6 +194,7 @@ function mapOrder(row) {
   return {
     id: row.id,
     orderNumber: row.order_number,
+    customerId: row.customer_id || null,
     customer: row.customer,
     items: row.items,
     subtotal: row.subtotal,
@@ -203,14 +208,14 @@ function mapOrder(row) {
 
 async function readOrders() {
   const rows = await getClient().query(
-    "SELECT id, order_number, customer, items, subtotal, payment_method, payment_status, status, created_at, updated_at FROM orders ORDER BY created_at DESC LIMIT 250"
+    "SELECT id, order_number, customer_id, customer, items, subtotal, payment_method, payment_status, status, created_at, updated_at FROM orders ORDER BY created_at DESC LIMIT 250"
   );
   return rows.map(mapOrder);
 }
 
 async function updateOrderStatus(id, status) {
   const rows = await getClient().query(
-    "UPDATE orders SET status = $2, updated_at = now() WHERE id = $1::uuid RETURNING id, order_number, customer, items, subtotal, payment_method, payment_status, status, created_at, updated_at",
+    "UPDATE orders SET status = $2, updated_at = now() WHERE id = $1::uuid RETURNING id, order_number, customer_id, customer, items, subtotal, payment_method, payment_status, status, created_at, updated_at",
     [id, status]
   );
   return rows[0] ? mapOrder(rows[0]) : null;
@@ -224,6 +229,80 @@ async function deleteOrder(id) {
   return rows[0] || null;
 }
 
+function mapCustomer(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    createdAt: row.created_at,
+    orderCount: row.order_count === undefined ? undefined : Number(row.order_count)
+  };
+}
+
+async function createCustomer(name, email, passwordHash, passwordSalt) {
+  const rows = await getClient().query(
+    "INSERT INTO customers (id, name, email, password_hash, password_salt) VALUES ($1::uuid, $2, $3, $4, $5) RETURNING id, name, email, created_at",
+    [crypto.randomUUID(), name, email, passwordHash, passwordSalt]
+  );
+  return mapCustomer(rows[0]);
+}
+
+async function findCustomerByEmail(email) {
+  const rows = await getClient().query(
+    "SELECT id, name, email, password_hash, password_salt, created_at FROM customers WHERE email = $1",
+    [email]
+  );
+  return rows[0] || null;
+}
+
+async function createCustomerSession(token, customerId, expiresAt) {
+  const hash = crypto.createHash("sha256").update(token).digest("hex");
+  const sql = getClient();
+  await sql.transaction([
+    sql.query("DELETE FROM customer_sessions WHERE expires_at < now()"),
+    sql.query("INSERT INTO customer_sessions (token_hash, customer_id, expires_at) VALUES ($1, $2::uuid, $3)", [hash, customerId, expiresAt.toISOString()])
+  ]);
+}
+
+async function readCustomerBySession(token) {
+  if (!/^[a-f0-9]{64}$/.test(token)) return null;
+  const hash = crypto.createHash("sha256").update(token).digest("hex");
+  const rows = await getClient().query(
+    "SELECT c.id, c.name, c.email, c.created_at FROM customer_sessions s JOIN customers c ON c.id = s.customer_id WHERE s.token_hash = $1 AND s.expires_at > now()",
+    [hash]
+  );
+  return rows[0] ? mapCustomer(rows[0]) : null;
+}
+
+async function deleteCustomerSession(token) {
+  if (!/^[a-f0-9]{64}$/.test(token)) return;
+  const hash = crypto.createHash("sha256").update(token).digest("hex");
+  await getClient().query("DELETE FROM customer_sessions WHERE token_hash = $1", [hash]);
+}
+
+async function readCustomerOrders(customerId) {
+  const rows = await getClient().query(
+    "SELECT id, order_number, customer_id, customer, items, subtotal, payment_method, payment_status, status, created_at, updated_at FROM orders WHERE customer_id = $1::uuid ORDER BY created_at DESC",
+    [customerId]
+  );
+  return rows.map(mapOrder);
+}
+
+async function readCustomers() {
+  const rows = await getClient().query(
+    "SELECT c.id, c.name, c.email, c.created_at, COUNT(o.id) AS order_count FROM customers c LEFT JOIN orders o ON o.customer_id = c.id GROUP BY c.id ORDER BY c.created_at DESC LIMIT 250"
+  );
+  return rows.map(mapCustomer);
+}
+
+async function deleteCustomer(id) {
+  const rows = await getClient().query(
+    "DELETE FROM customers WHERE id = $1::uuid RETURNING email",
+    [id]
+  );
+  return rows[0] || null;
+}
+
 async function ping() {
   await getClient().query("SELECT 1");
 }
@@ -231,5 +310,7 @@ async function ping() {
 module.exports = {
   initializeDatabase, readContent, writeContent, saveMedia, readMedia,
   createSession, hasSession, deleteSession, createOrder, readOrders,
-  updateOrderStatus, deleteOrder, ping
+  updateOrderStatus, deleteOrder, createCustomer, findCustomerByEmail,
+  createCustomerSession, readCustomerBySession, deleteCustomerSession,
+  readCustomerOrders, readCustomers, deleteCustomer, ping
 };

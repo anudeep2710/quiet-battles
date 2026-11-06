@@ -42,7 +42,7 @@
         "title": "The Weight You Carry",
         "excerpt": "There is no visible measure for what a person has carried to get here.",
         "image": "/assets/chapter-weight-you-carry.webp",
-        "productSlug": "soft-armor-hoodie",
+        "productSlug": "carry-light-overshirt",
         "story": [
           "There are things we carry without a handle. A conversation we keep replaying. The work of holding a family together. The effort of looking composed when we feel anything but. None of it appears in a photograph, yet it changes the way we move through a room.",
           "We do not need to make those weights beautiful to acknowledge them. Some days strength looks like asking for help. Some days it is setting one thing down, even for an hour, and discovering the world does not fall apart.",
@@ -55,7 +55,7 @@
         "title": "Letting Someone In",
         "excerpt": "A little room for another person can be its own kind of bravery.",
         "image": "/assets/chapter-letting-someone-in.webp",
-        "productSlug": "soft-armor-hoodie",
+        "productSlug": "quiet-form-tee",
         "story": [
           "A door can stay closed for so long that we forget it has a handle on both sides. We learn to say we are fine before anyone has finished asking. It works, for a while. It keeps the day moving.",
           "Then someone stays. They listen without trying to repair the whole story. We let one honest sentence into the room, and the room becomes a little larger. That is not a grand transformation. It is a beginning that belongs to both people.",
@@ -68,7 +68,7 @@
         "title": "Staying Tender",
         "excerpt": "Softness is not the absence of a boundary. It is knowing what you are protecting.",
         "image": "/assets/hero-editorial.webp",
-        "productSlug": "soft-armor-hoodie",
+        "productSlug": "still-point-cap",
         "story": [
           "Tenderness is often mistaken for an open door. But a tender person can choose where they stand, what they give, and when they need space. A boundary can be an act of care, too.",
           "We imagined gentle armor as something you could move inside. It has room for feeling and room for refusal. It does not ask you to harden before you are taken seriously.",
@@ -102,6 +102,42 @@
       "sizes": ["XS", "S", "M", "L", "XL"],
       "details": ["Relaxed, easy fit", "Midweight brushed cotton blend", "Designed for everyday layering"],
       "chapterSlug": "the-first-quiet"
+    },
+    {
+      "slug": "carry-light-overshirt",
+      "name": "The Carry Light Overshirt",
+      "category": "SERIES 01 · CHAPTER 02",
+      "description": "A structured outer layer for what cannot be set down all at once. Generous through the body, grounded in weight, and built with room to move.",
+      "price": 5200,
+      "image": "/assets/carry-light-overshirt.svg",
+      "secondaryImage": "/assets/carry-light-overshirt-back.svg",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "details": ["Relaxed overshirt silhouette", "Midweight cotton twill", "Two front utility pockets"],
+      "chapterSlug": "the-weight-you-carry"
+    },
+    {
+      "slug": "quiet-form-tee",
+      "name": "The Quiet Form Tee",
+      "category": "SERIES 01 · CHAPTER 03",
+      "description": "An easy everyday shape for the relief of being known. Soft against the skin, deliberately unhurried, and cut to meet you where you are.",
+      "price": 2200,
+      "image": "/assets/quiet-form-tee.svg",
+      "secondaryImage": "/assets/quiet-form-tee-back.svg",
+      "sizes": ["XS", "S", "M", "L", "XL"],
+      "details": ["Boxy unisex fit", "Heavyweight combed cotton", "Water-based chest print"],
+      "chapterSlug": "letting-someone-in"
+    },
+    {
+      "slug": "still-point-cap",
+      "name": "The Still Point Cap",
+      "category": "SERIES 01 · CHAPTER 04",
+      "description": "A small shade for keeping your own pace. Quietly marked, softly structured, and made for the space between arriving and beginning again.",
+      "price": 1800,
+      "image": "/assets/still-point-cap.svg",
+      "secondaryImage": "/assets/still-point-cap-back.svg",
+      "sizes": ["ONE SIZE"],
+      "details": ["Low-profile six-panel form", "Washed cotton canvas", "Adjustable brass closure"],
+      "chapterSlug": "staying-tender"
     }
   ]
 }

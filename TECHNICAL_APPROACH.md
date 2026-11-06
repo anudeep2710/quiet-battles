@@ -4,7 +4,7 @@
 
 The updated overview establishes the path **QUIET BATTLES™ → The Archive → Series → Chapters → Chapter Chamber → Artifact → Acquisition**. The implementation uses an editorial story experience with a sample bag interaction rather than treating the homepage as a product grid.
 
-The demo contains one featured Series, five complete sample Chapter stories, one linked sample hoodie, and a private content Studio. The client permits temporary imagery. The brand direction, copy, product specifications, and price remain assumptions pending approval.
+The demo contains one featured Series, five complete sample Chapter stories, four linked artifacts, customer accounts with private order history, and a private content Studio. The client permits temporary imagery. The brand direction, copy, product specifications, and prices remain assumptions pending approval.
 
 ## Architecture
 
@@ -13,7 +13,8 @@ Vercel static site ──→ browser JavaScript ──→ Node.js JSON API ─�
           │                    │                    ↑
           │                    └── bag in localStorage ──→ dummy-QR checkout ──→ orders
           └── images and fonts                       │
-Studio editor and order desk ── protected API session ──────────────┘
+Customer archive ── hashed account session ──→ customer-linked orders
+Studio editor, order and customer desk ── protected API session ────┘
 Studio image upload ────────────────────────────────→ Neon media_assets
 ```
 
@@ -23,24 +24,26 @@ The public site is served from `public/`. `server.js` exposes the JSON API for l
 
 - **HTML, CSS, and browser JavaScript** keep a small assessment prototype fast to load and straightforward to explain.
 - **Node.js** provides server-side content validation, image checks, and Studio authentication.
-- **Neon Postgres** stores ordered Series, Chapters, products, uploaded demo images, demonstration orders, and hashed Studio sessions. It provides durable data across local and hosted versions.
+- **Neon Postgres** stores ordered Series, Chapters, products, uploaded demo images, customer profiles, demonstration orders, and hashed customer/Studio sessions. It provides durable data across local and hosted versions.
 - **Vercel** serves the static site and runs the API function. The connected GitHub repository can deploy commits to the staging site.
 
 The data model supports multiple Series, with Chapters belonging to a Series and products linked to a Chapter. Studio can add, edit, and remove these records. The public Archive and Series routes read all Series from the same content API. The initial database setup also migrates the previous single-Series demo content.
 
 ## Visitor experience
 
-The homepage introduces the brand and points into The Archive. The Archive presents Series entries; Series 01 opens five Chapter Chambers. Each Chamber includes its own image, complete sample story, related artifact entry, and a link to the next Chapter. The artifact page shows front and back SVG illustrations, a sample INR price, size selection, product details, and an Add to Bag interaction. The bag is stored in the visitor's browser.
+The homepage introduces the brand and points into The Archive. The Archive presents Series entries; Series 01 opens five Chapter Chambers. Each Chamber includes its own image, complete sample story, related artifact entry, and a link to the next Chapter. The Artifacts wall presents four garments, and each product page shows front and back SVG illustrations, a sample INR price, size selection, product details, and an Add to Bag interaction. The bag is stored in the visitor's browser.
 
-Acquisition collects sample delivery details and presents a visibly labelled dummy QR. After the visitor acknowledges that no payment occurs, the API validates each product and size, recalculates prices from Neon, and records an order with a server-generated reference. The confirmation page displays that reference. No UPI address, bank account, payment credential, or gateway is involved.
+Customers can create a private archive, sign in and out, and see their own demo acquisition history. Passwords are salted and derived with Node's scrypt implementation; Neon stores the derived hash rather than the password. Random seven-day customer tokens are stored only as SHA-256 hashes. The raw token stays in the browser session and is revoked on sign-out.
 
-Chapters 02–05 currently link to the Series 01 sample hoodie to demonstrate the route. The product record belongs to Chapter 01; Studio can replace these relationships once the client supplies the real garment-to-story map.
+Acquisition collects sample delivery details and presents a visibly labelled dummy QR. After the visitor acknowledges that no payment occurs, the API validates each product and size, recalculates prices from Neon, and records an order with a server-generated reference. A signed-in checkout receives the customer's database ID; guest checkout remains available. The confirmation page displays the reference and the account page displays linked orders. No UPI address, bank account, payment credential, or gateway is involved.
+
+Chapters 01–04 each link to a distinct artifact: the Soft Armor Hoodie, Carry Light Overshirt, Quiet Form Tee, and Still Point Cap. Chapter 05 returns to the hoodie. Studio can replace these relationships once the client supplies the final garment-to-story map.
 
 ## Content Studio
 
-Studio uses an environment-held access key. Successful sign-in creates a random four-hour token; Neon stores only its SHA-256 hash. Protected requests require the token. Studio can manage homepage copy, multiple Series, Chapters, product details, and the demonstration order ledger. Staff can review order snapshots, change fulfilment status, refresh the list, and delete demo records. PNG, JPEG, and WebP uploads are checked by file signature and limited to 2 MB. Content saves validate slugs and cross-links and write in a database transaction.
+Studio uses an environment-held access key. Successful sign-in creates a random four-hour token; Neon stores only its SHA-256 hash. Protected requests require the token. Studio can manage homepage copy, multiple Series, Chapters, product details, customer accounts, and the demonstration order ledger. Staff can review order snapshots, change fulfilment status, refresh lists, delete demo orders, and remove demo customer accounts while retaining their orders. PNG, JPEG, and WebP uploads are checked by file signature and limited to 2 MB. Content saves validate slugs and cross-links and write in a database transaction.
 
-This is suitable for an assessment demo. A production operation should use named staff accounts, role-based access, an audit log, inventory reservations, payment-provider webhooks, rate limiting, transactional messaging, and a dedicated media service instead of storing image bytes in Postgres.
+This is suitable for an assessment demo. A production operation should add email verification, password reset, login throttling, secure recovery and privacy workflows, named staff accounts, role-based access, an audit log, inventory reservations, payment-provider webhooks, transactional messaging, and a dedicated media service instead of storing image bytes in Postgres.
 
 ## Performance, accessibility, and search
 
@@ -48,7 +51,7 @@ This is suitable for an assessment demo. A production operation should use named
 - Layouts have been checked at desktop and 390-pixel mobile widths. Buttons and links have visible keyboard focus, and reduced-motion preferences are respected.
 - The homepage includes a page description, Open Graph text, a favicon, semantic headings, and descriptive image text.
 - Pages currently use hash-based navigation. Production should adopt crawlable URLs, page-specific server metadata, a sitemap, optimized image variants, and analytics.
-- Demo content endpoints are public by design. Admin updates require a Studio session; SQL values are parameterized.
+- Demo content endpoints are public by design. Customer history requires a customer session, admin updates require a separate Studio session, and SQL values are parameterized.
 
 ## Local setup
 
@@ -56,7 +59,7 @@ See [README.md](README.md) for Node.js requirements and commands. Run `npm run d
 
 ## Asset and tool disclosure
 
-The design uses five original editorial concept images generated with OpenAI image generation, supplementary Unsplash sample photography, and two locally authored SVG garment illustrations. Typography loads from Google Fonts. No website template, UI framework, CMS plugin, or paid UI plugin was used.
+The design uses five original editorial concept images generated with OpenAI image generation, supplementary Unsplash sample photography, and eight locally authored SVG garment views. Typography loads from Google Fonts. No website template, UI framework, CMS plugin, or paid UI plugin was used.
 
 OpenAI Codex assisted with implementation, documentation, and code review. Playwright was used for browser checks and to capture the submission screenshots. These tools should be disclosed during the interview, and the developer should be ready to explain the code and trade-offs.
 
