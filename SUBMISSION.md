@@ -18,7 +18,7 @@ Reviewers will need access to the private repository or the source ZIP.
 
 ## Screenshots and demonstration evidence
 
-The screenshot index is [docs/screenshots/README.md](docs/screenshots/README.md). It includes desktop and mobile views of the homepage and product, Archive, artifact catalogue, Series 01, Chapter Chambers, sign-in/sign-up, customer order archive, bag, delivery form, dummy QR, order confirmation, and Studio order/customer ledgers. The capture script can reproduce them with Playwright.
+The screenshot index is [docs/screenshots/README.md](docs/screenshots/README.md). It includes desktop and mobile views of the homepage and product, Archive, artifact catalogue, Series 01, Chapter Chambers, sign-in/sign-up, customer order archive, bag, delivery form, dummy QR, order confirmation, and Studio order controls. The capture script can reproduce them with Playwright.
 
 ## Technologies
 

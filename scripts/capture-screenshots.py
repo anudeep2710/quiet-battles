@@ -1,12 +1,13 @@
-"""Capture assessment screenshots and check the core visitor journey.
+"""Capture assessment screenshots and optionally run the mutating demo journey.
 
+Default target is local. Remote targets and customer/order mutations require explicit flags.
 Optional tooling: pip install playwright && playwright install chromium
-Run: python scripts/capture-screenshots.py --base-url https://quiet-battles-demo.vercel.app
 """
 
 import argparse
 import time
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from playwright.sync_api import expect, sync_playwright
 
@@ -45,12 +46,82 @@ def capture(page, output_dir, filename, full_page=True):
     )
 
 
+def capture_locator(locator, output_dir, filename):
+    locator.screenshot(
+        path=str(output_dir / filename),
+        type="jpeg",
+        quality=78,
+    )
+
+
+def cleanup_demo_records(page, base_url, studio_key, customer_email):
+    """Delete only the generated demo customer's orders and account."""
+    if not customer_email or not studio_key:
+        return
+
+    page.goto(f"{base_url}/", wait_until="domcontentloaded")
+    result = page.evaluate(
+        """async ({ key, email }) => {
+          const login = await fetch('/api/admin/login', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key })
+          });
+          if (!login.ok) throw new Error('Studio cleanup login failed.');
+          const { token } = await login.json();
+          const headers = { Authorization: 'Bearer ' + token };
+          const [ordersResponse, customersResponse] = await Promise.all([
+            fetch('/api/admin/orders', { headers }),
+            fetch('/api/admin/customers', { headers })
+          ]);
+          if (!ordersResponse.ok || !customersResponse.ok) throw new Error('Studio cleanup lookup failed.');
+          const [{ orders }, { customers }] = await Promise.all([
+            ordersResponse.json(), customersResponse.json()
+          ]);
+          const orderIds = orders.filter(order =>
+            String(order.customer?.email || '').toLowerCase() === email.toLowerCase()
+          ).map(order => order.id);
+          const customerIds = customers.filter(customer =>
+            String(customer.email || '').toLowerCase() === email.toLowerCase()
+          ).map(customer => customer.id);
+          for (const id of orderIds) {
+            const response = await fetch('/api/admin/orders/' + encodeURIComponent(id), {
+              method: 'DELETE', headers
+            });
+            if (!response.ok && response.status !== 404) throw new Error('Studio order cleanup failed.');
+          }
+          for (const id of customerIds) {
+            const response = await fetch('/api/admin/customers/' + encodeURIComponent(id), {
+              method: 'DELETE', headers
+            });
+            if (!response.ok && response.status !== 404) throw new Error('Studio account cleanup failed.');
+          }
+          await fetch('/api/admin/logout', { method: 'POST', headers }).catch(() => {});
+          return { orders: orderIds.length, customers: customerIds.length };
+        }""",
+        {"key": studio_key, "email": customer_email},
+    )
+    print(f"Cleaned up {result['orders']} generated order(s) and {result['customers']} generated account(s).")
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--base-url", default="https://quiet-battles-demo.vercel.app")
+    parser.add_argument("--base-url", default="http://127.0.0.1:4173")
     parser.add_argument("--output-dir", default="docs/screenshots")
     parser.add_argument("--studio-key-file", type=Path)
+    parser.add_argument("--allow-remote-target", action="store_true", help="Allow read-only screenshots from a non-local target.")
+    parser.add_argument("--allow-demo-mutations", action="store_true", help="Create and then delete one synthetic demo account and order; requires a Studio key file.")
     args = parser.parse_args()
+    parsed_url = urlsplit(args.base_url)
+    if parsed_url.scheme not in {"http", "https"} or not parsed_url.hostname or parsed_url.username or parsed_url.password:
+        parser.error("--base-url must be an http(s) URL without embedded credentials.")
+    is_loopback = parsed_url.hostname.lower() in {"127.0.0.1", "localhost", "::1"}
+    if not is_loopback and not args.allow_remote_target:
+        parser.error("A non-local target requires --allow-remote-target.")
+    if args.allow_demo_mutations and not args.studio_key_file:
+        parser.error("--allow-demo-mutations requires --studio-key-file so generated records can be removed.")
+    if args.studio_key_file and not args.allow_demo_mutations:
+        parser.error("--studio-key-file is only used with --allow-demo-mutations.")
+    args.base_url = args.base_url.rstrip("/")
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     errors = []
@@ -110,89 +181,105 @@ def main():
         assert "soft armor hoodie" in mobile_page.locator(".cart-drawer").inner_text().lower()
         capture(mobile_page, output_dir, "08-acquisition-demo.jpg", full_page=False)
 
-        customer_email = f"screenshots.{int(time.time() * 1000)}@example.com"
         mobile_page.locator("[data-demo-checkout]").click()
         mobile_page.locator(".checkout-account-gate").wait_for(timeout=20_000)
         assert "guest checkout is unavailable" in mobile_page.locator(".checkout-account-gate").inner_text().lower()
         capture(mobile_page, output_dir, "23-checkout-account-gate-mobile.jpg")
-        mobile_page.locator('.checkout-account-actions a[href="#signup"]').click()
-        mobile_page.locator('#customer-auth[data-auth-mode="signup"]').wait_for(timeout=20_000)
-        mobile_page.locator('input[name="name"]').fill("Playwright Visitor")
-        mobile_page.locator('input[name="email"]').fill(customer_email)
-        mobile_page.locator('input[name="password"]').fill("quiet-demo-2026")
-        mobile_page.locator('input[name="confirmPassword"]').fill("quiet-demo-2026")
-        capture(mobile_page, output_dir, "18-signup-mobile.jpg", full_page=False)
-        mobile_page.locator("#customer-auth button").click()
-        mobile_page.locator("#checkout-details").wait_for(timeout=20_000)
-        assert mobile_page.url.endswith("#checkout")
-        assert "(1)" in mobile_page.locator("[data-cart-open]").inner_text()
-        mobile_page.locator(".menu-toggle").click()
-        mobile_page.locator('.mobile-account-link[href="#account"]').click()
-        mobile_page.locator(".account-page").wait_for(timeout=20_000)
-        capture(mobile_page, output_dir, "19-account-empty-mobile.jpg")
-        open_route(mobile_page, args.base_url, "checkout", "#checkout-details")
-        assert mobile_page.locator('input[name="name"]').input_value() == "Playwright Visitor"
-        assert mobile_page.locator('input[name="email"]').input_value() == customer_email
-        mobile_page.locator('input[name="phone"]').fill("+91 90000 00000")
-        mobile_page.locator('input[name="city"]').fill("Bengaluru")
-        mobile_page.locator('textarea[name="address"]').fill("1 Demo Archive Lane")
-        mobile_page.locator('input[name="postalCode"]').fill("560001")
-        capture(mobile_page, output_dir, "11-checkout-details-mobile.jpg")
-        mobile_page.locator("#checkout-details button").click()
-        mobile_page.locator(".payment-chamber").wait_for()
-        assert "not payable" in mobile_page.locator(".payment-chamber").inner_text().lower()
-        assert mobile_page.locator('.qr-frame img[alt*="Dummy QR"]').count() == 1
-        capture(mobile_page, output_dir, "12-demo-payment-mobile.jpg")
-        mobile_page.locator("[data-demo-ack]").check()
-        mobile_page.locator("[data-confirm-demo]").click()
-        mobile_page.locator(".confirmation-chamber").wait_for(timeout=20_000)
-        order_number = mobile_page.locator(".confirmation-receipt strong").first.inner_text()
-        assert order_number.startswith("QB-")
-        assert mobile_page.locator("[data-cart-open]").inner_text().strip().endswith("(0)")
-        capture(mobile_page, output_dir, "13-order-confirmation-mobile.jpg")
-        mobile_page.locator('.confirmation-actions a[href="#account"]').click()
-        mobile_page.locator(".account-order", has_text=order_number).wait_for(timeout=20_000)
-        capture(mobile_page, output_dir, "20-account-order-mobile.jpg")
 
-        if args.studio_key_file:
+        if args.allow_demo_mutations:
+            customer_email = f"screenshots.{int(time.time() * 1000)}@example.com"
             studio_key = args.studio_key_file.read_text(encoding="utf8").strip()
-            open_route(page, args.base_url, "admin", "#admin-login")
-            page.locator('input[name="key"]').fill(studio_key)
-            page.locator("#admin-login button").click()
-            page.locator("#admin-form").wait_for(timeout=20_000)
-            page.locator('[data-tab="series"]').click()
-            assert page.locator("[data-add-series]").is_visible()
-            capture(page, output_dir, "09-studio-series.jpg", full_page=False)
-            page.locator("[data-add-series]").click()
-            new_series = page.locator('.admin-panel[data-panel="series"] .admin-card').last
-            assert "untitled series" in new_series.inner_text().lower()
-            new_series.evaluate("element => element.scrollIntoView({block: 'start'})")
-            page.wait_for_timeout(250)
-            capture(page, output_dir, "10-studio-new-series.jpg", full_page=False)
-            page.locator('[data-tab="orders"]').click()
-            order_card = page.locator(".admin-order", has_text=order_number)
-            order_card.wait_for(timeout=20_000)
-            assert customer_email in order_card.inner_text().lower()
-            capture(page, output_dir, "14-studio-orders.jpg", full_page=False)
-            order_card.locator("[data-order-status]").select_option("Confirmed")
-            order_card.locator("[data-update-order]").click()
-            expect(page.locator(".admin-order", has_text=order_number).locator(".order-badge")).to_have_text("Confirmed", timeout=20_000)
-            page.on("dialog", lambda dialog: dialog.accept())
-            page.locator(".admin-order", has_text=order_number).locator("[data-delete-order]").click()
-            page.locator(".admin-order", has_text=order_number).wait_for(state="detached", timeout=20_000)
-            page.locator('[data-tab="customers"]').click()
-            customer_card = page.locator(".admin-customer-record", has_text=customer_email)
-            customer_card.wait_for(timeout=20_000)
-            capture(page, output_dir, "21-studio-customers.jpg", full_page=False)
-            customer_card.locator("[data-delete-customer]").click()
-            customer_card.wait_for(state="detached", timeout=20_000)
-            page.locator("[data-logout]").click()
+            try:
+                mobile_page.locator('.checkout-account-actions a[href="#signup"]').click()
+                mobile_page.locator('#customer-auth[data-auth-mode="signup"]').wait_for(timeout=20_000)
+                mobile_page.locator('input[name="name"]').fill("Playwright Visitor")
+                mobile_page.locator('input[name="email"]').fill(customer_email)
+                mobile_page.locator('input[name="password"]').fill("quiet-demo-2026")
+                mobile_page.locator('input[name="confirmPassword"]').fill("quiet-demo-2026")
+                capture(mobile_page, output_dir, "18-signup-mobile.jpg", full_page=False)
+                mobile_page.locator("#customer-auth button").click()
+                mobile_page.locator("#checkout-details").wait_for(timeout=20_000)
+                assert mobile_page.url.endswith("#checkout")
+                assert "(1)" in mobile_page.locator("[data-cart-open]").inner_text()
+                mobile_page.locator(".menu-toggle").click()
+                mobile_page.locator('.mobile-account-link[href="#account"]').click()
+                mobile_page.locator(".account-page").wait_for(timeout=20_000)
+                capture(mobile_page, output_dir, "19-account-empty-mobile.jpg")
+                open_route(mobile_page, args.base_url, "checkout", "#checkout-details")
+                assert mobile_page.locator('input[name="name"]').input_value() == "Playwright Visitor"
+                assert mobile_page.locator('input[name="email"]').input_value() == customer_email
+                mobile_page.locator('input[name="phone"]').fill("+91 90000 00000")
+                mobile_page.locator('input[name="city"]').fill("Bengaluru")
+                mobile_page.locator('textarea[name="address"]').fill("1 Demo Archive Lane")
+                mobile_page.locator('input[name="postalCode"]').fill("560001")
+                capture(mobile_page, output_dir, "11-checkout-details-mobile.jpg")
+                mobile_page.locator("#checkout-details button").click()
+                mobile_page.locator(".payment-chamber").wait_for()
+                assert "not payable" in mobile_page.locator(".payment-chamber").inner_text().lower()
+                assert mobile_page.locator('.qr-frame img[alt*="Dummy QR"]').count() == 1
+                capture(mobile_page, output_dir, "12-demo-payment-mobile.jpg")
+                mobile_page.locator("[data-demo-ack]").check()
+                mobile_page.locator("[data-confirm-demo]").click()
+                mobile_page.locator(".confirmation-chamber").wait_for(timeout=20_000)
+                order_number = mobile_page.locator(".confirmation-receipt strong").first.inner_text()
+                assert order_number.startswith("QB-")
+                assert mobile_page.locator("[data-cart-open]").inner_text().strip().endswith("(0)")
+                capture(mobile_page, output_dir, "13-order-confirmation-mobile.jpg")
+                mobile_page.locator('.confirmation-actions a[href="#account"]').click()
+                mobile_page.locator(".account-order", has_text=order_number).wait_for(timeout=20_000)
+                capture(mobile_page, output_dir, "20-account-order-mobile.jpg")
+
+                open_route(page, args.base_url, "admin", "#admin-login")
+                page.locator('input[name="key"]').fill(studio_key)
+                page.locator("#admin-login button").click()
+                page.locator("#admin-form").wait_for(timeout=20_000)
+                page.locator('[data-tab="series"]').click()
+                assert page.locator("[data-add-series]").is_visible()
+                capture(page, output_dir, "09-studio-series.jpg", full_page=False)
+                page.locator("[data-add-series]").click()
+                new_series = page.locator('.admin-panel[data-panel="series"] .admin-card').last
+                assert "untitled series" in new_series.inner_text().lower()
+                new_series.evaluate("element => element.scrollIntoView({block: 'start'})")
+                page.wait_for_timeout(250)
+                capture(page, output_dir, "10-studio-new-series.jpg", full_page=False)
+                page.locator('[data-tab="orders"]').click()
+                order_card = page.locator(".admin-order", has_text=order_number)
+                order_card.wait_for(timeout=20_000)
+                assert customer_email in order_card.inner_text().lower()
+                capture_locator(order_card, output_dir, "14-studio-orders.jpg")
+                order_card.locator("[data-order-status]").select_option("Confirmed")
+                order_card.locator("[data-update-order]").click()
+                expect(page.locator(".admin-order", has_text=order_number).locator(".order-badge")).to_have_text("Confirmed", timeout=20_000)
+                page.on("dialog", lambda dialog: dialog.accept())
+                page.locator(".admin-order", has_text=order_number).locator("[data-delete-order]").click()
+                page.locator(".admin-order", has_text=order_number).wait_for(state="detached", timeout=20_000)
+                page.locator('[data-tab="customers"]').click()
+                customer_card = page.locator(".admin-customer-record", has_text=customer_email)
+                customer_card.wait_for(timeout=20_000)
+                capture_locator(customer_card, output_dir, "21-studio-customers.jpg")
+                customer_card.locator("[data-delete-customer]").click()
+                customer_card.wait_for(state="detached", timeout=20_000)
+                page.locator("[data-logout]").click()
+            except Exception:
+                try:
+                    cleanup_demo_records(page, args.base_url, studio_key, customer_email)
+                except Exception as cleanup_error:
+                    print(f"WARNING: generated demo data cleanup failed: {cleanup_error}")
+                raise
+            else:
+                try:
+                    cleanup_demo_records(page, args.base_url, studio_key, customer_email)
+                except Exception as cleanup_error:
+                    raise RuntimeError(f"Generated demo data cleanup failed: {cleanup_error}") from cleanup_error
 
         assert not errors, f"Browser errors: {errors}"
         browser.close()
 
     print(f"Captured {len(list(output_dir.glob('*.jpg')))} screenshots in {output_dir}.")
-    print("Browser checks passed: five Chambers, eight Artifacts, customer account, demo bag, dummy-QR checkout, linked Neon order, responsive widths, and Studio management.")
+    if args.allow_demo_mutations:
+        print("Browser checks passed: five Chambers, eight Artifacts, customer account, demo bag, dummy-QR checkout, linked order, responsive widths, and Studio management.")
+    else:
+        print("Read-only browser checks passed: five Chambers, eight Artifacts, customer sign-in/sign-up pages, responsive widths, and account-required checkout gate.")
 
 
 if __name__ == "__main__":

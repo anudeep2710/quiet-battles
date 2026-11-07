@@ -1,6 +1,6 @@
 # Assessment screenshots
 
-These screenshots show the demonstration's main paths on desktop and mobile. `scripts/capture-screenshots.py` reproduces them with Playwright. The script does not save the Studio key or visitor data into the screenshots.
+These screenshots show the demonstration's main paths on desktop and mobile. `scripts/capture-screenshots.py` reproduces them with Playwright. The Studio key is never part of an image. Mutating-mode screenshots can include the generated synthetic visitor details, so use a disposable demo database and never enter real customer details.
 
 | File | View |
 | --- | --- |
@@ -29,13 +29,24 @@ These screenshots show the demonstration's main paths on desktop and mobile. `sc
 | `18-signup-mobile.jpg` | Mobile sign-up form with demo details |
 | `19-account-empty-mobile.jpg` | New private archive before an acquisition |
 | `20-account-order-mobile.jpg` | Private archive with its linked demo order |
-| `21-studio-customers.jpg` | Studio customer account management |
 | `23-checkout-account-gate-mobile.jpg` | Required sign-in or account creation before checkout |
 
-Regenerate with Python Playwright installed and the site key kept in the ignored `.studio-key` file:
+Capture public pages from a local instance by default:
 
 ```powershell
-python scripts/capture-screenshots.py --base-url https://quiet-battles-demo.vercel.app --studio-key-file .studio-key
+python scripts/capture-screenshots.py
 ```
 
-The capture script also opens all five Chapter Chambers and eight Artifacts, creates a temporary customer, completes and deletes its demonstration order, deletes the temporary account, updates the order status in Studio, and checks the bag and responsive layouts. It captures pages from the supplied base URL, so use the hosted URL for final submission evidence.
+To capture the hosted site's public pages, opt in to the remote target explicitly:
+
+```powershell
+python scripts/capture-screenshots.py --base-url https://quiet-battles-demo.vercel.app --allow-remote-target
+```
+
+The default run checks public pages, the bag, responsive widths, and the account-required checkout gate without creating accounts or orders on the target. The full checkout and Studio journey creates a synthetic account and order, then removes those records. It requires a Studio key stored outside source control and an explicit mutation opt-in:
+
+```powershell
+python scripts/capture-screenshots.py --allow-demo-mutations --studio-key-file .studio-key
+```
+
+For a non-local target, add `--allow-remote-target` as well. Use a dedicated demo database. Studio order and customer evidence is cropped to the generated test record; other ledger entries are not included.
