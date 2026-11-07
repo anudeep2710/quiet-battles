@@ -1380,6 +1380,7 @@ window.addEventListener("hashchange", function () {
   if (!["checkout", "login", "signup"].includes(route[0])) sessionStorage.removeItem(checkoutAuthPendingKey);
   cartOpen = false;
   cartReturnFocus = false;
+  quickAddSlug = "";
   render();
   if (route[0] === "belief") {
     requestAnimationFrame(function () {
