@@ -3,22 +3,22 @@
 A story-led clothing storefront for the QUIET BATTLES brief. The site connects The Archive to Series, five Chapter Chambers, eight related products, customer accounts, an order history, and a private content Studio.
 
 - **Website:** [Open the site](https://quiet-battles-demo.vercel.app)
-- **Source:** [GitHub repository](https://github.com/anudeep2710/quiet-battles-demo)
+- **Source:** [GitHub repository](https://github.com/anudeep2710/quiet-battles)
 
 All product details, prices, and stories are illustrative. Checkout requires an account, but its QR is a non-payable test image: no payment is collected, verified, or transferred.
 
 ## Explore
 
 - Homepage: /
-- The Archive: /#archive
-- Series 01 — THE GENTLE ARMOR™: /#series/the-gentle-armor
-- Chapter 01: /#chapter/the-first-quiet
-- Product: /#product/soft-armor-hoodie
-- Product catalogue: /#artifacts
-- Sign in: /#login
-- Create an account: /#signup
-- Private order history: /#account
-- Studio: /#admin
+- The Archive: /archive
+- Series 01 — THE GENTLE ARMOR™: /series/the-gentle-armor
+- Chapter 01: /chapter/the-first-quiet
+- Product: /product/soft-armor-hoodie
+- Product catalogue: /artifacts
+- Sign in: /login
+- Create an account: /signup
+- Private order history: /account
+- Studio: /admin
 
 The purchase path is Browse → Add to bag → Checkout → Sign in or create an account → Delivery details → Order review → Test QR → Order confirmation. Guest orders are rejected by the API. The selected bag remains available while the visitor signs in.
 
@@ -68,7 +68,7 @@ The smoke check writes temporary account, order, content, and image records befo
 
 ## Content Studio
 
-Open /#admin and enter the private Studio key. The Studio can edit homepage copy; add, edit, and remove Series, Chapters, and products; upload images; and review customer and order records. Uploaded PNG, JPEG, and WebP files are limited to 2 MB and stored in Neon. Order status can be updated and records can be removed. Chapters and products must keep valid links to one another.
+Open /admin and enter the private Studio key. The Studio can edit homepage copy; add, edit, and remove Series, Chapters, and products; upload images; and review customer and order records. Uploaded PNG, JPEG, and WebP files are limited to 2 MB and stored in Neon. Order status can be updated and records can be removed. Chapters and products must keep valid links to one another.
 
 The current Studio key is a shared credential. It is suitable for this assessment build, but a real team should use named staff accounts, roles, and an audit log.
 
@@ -123,6 +123,6 @@ See [docs/database-schema.md](docs/database-schema.md) for fields and relationsh
 
 This build is for technical assessment, not public commerce. Use sample information only. Email verification, password recovery, generic account-registration responses, effective request throttling, production privacy and retention controls, named Studio users, stock management, shipping and tax calculation, returns, transactional email, and payment-provider verification are not implemented. Before accepting real customer accounts, implement and review the account and privacy controls. Before launching commerce, add inventory, shipping, tax, return, and payment-provider integrations.
 
-The inner pages use hash-based navigation, so search engines do not receive a distinct crawlable URL for every Series, Chapter, and product. A production release should add crawlable routes, page-specific metadata, a sitemap, optimized image derivatives, and monitoring.
+The site uses direct paths for its pages, backed by a single-page-app fallback. Page content and titles render in the browser; a production release should add server-side or static rendering, route-specific social metadata, a sitemap, optimized image derivatives, and monitoring.
 
 Five editorial concepts were generated with OpenAI image generation; additional photography is sourced from Unsplash; the garment illustrations are local SVGs. Google Fonts serves the typefaces. OpenAI Codex assisted with implementation, documentation, and code review. Playwright was used for browser review and screenshot capture.

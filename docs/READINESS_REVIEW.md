@@ -20,7 +20,7 @@ During the browser walkthrough, the homepage hero area appeared flat gray in one
 | Backend and database | Node API and Neon Postgres schema cover content, products, media, accounts, sessions, and orders | Covered in source; current database connection not checked in this review |
 | Admin / CMS | Studio source supports content, product, image, customer, and order management behind a Studio key | Covered in source; signed-in Studio not inspected |
 | Responsive experience | Responsive CSS and desktop/mobile screenshots are present | Covered in source and evidence; final post-edit mobile check remains |
-| SEO and performance basics | Metadata, semantic HTML, static assets, and image alternatives are present | Partial; inner pages use hash URLs and have no sitemap or measured performance report |
+| SEO and performance basics | Metadata, semantic HTML, static assets, and image alternatives are present | Partial; direct paths work, but page content renders in the browser and there is no sitemap or measured performance report |
 | Submission materials | Run instructions, stack, database schema, architecture, estimate, and screenshots are documented here | Covered |
 
 ## Product strategy lens

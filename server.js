@@ -437,6 +437,11 @@ async function handle(req, res) {
     res.writeHead(200, headers(type, type.startsWith("image/") ? "public, max-age=3600" : "no-store"));
     return res.end(req.method === "HEAD" ? undefined : data);
   } catch {
+    if (!path.extname(pathname) && !pathname.startsWith("/assets/") && !pathname.startsWith("/uploads/")) {
+      const index = await fs.promises.readFile(path.join(PUBLIC_DIR, "index.html"));
+      res.writeHead(200, headers("text/html; charset=utf-8"));
+      return res.end(req.method === "HEAD" ? undefined : index);
+    }
     return send(res, 404, "Not found.", "text/plain; charset=utf-8");
   }
 }

@@ -55,7 +55,7 @@ The shared Studio key is appropriate for this assessment build. Production acces
 
 Static assets are served directly from Vercel. The existing stylesheet includes responsive layouts, visible focus styles, and reduced-motion support. The home page includes a description, Open Graph metadata, a favicon, and image text alternatives. Screenshots show desktop and mobile layouts.
 
-Inner pages currently use hash-based URLs. A production version should have crawlable page URLs, page-specific metadata, a sitemap, optimized image variants, and performance monitoring.
+The site uses direct page paths with a single-page-app fallback. Page content and titles render in the browser. A production version should add server-side or static rendering, route-specific social metadata, a sitemap, optimized image variants, and performance monitoring.
 
 ## Security and operating limits
 

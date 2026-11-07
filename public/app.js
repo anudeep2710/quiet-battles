@@ -123,12 +123,71 @@ function cartQuantity() {
 }
 
 function currentRoute() {
-  return (location.hash || "#home").slice(1).split("/");
+  let pathname = location.pathname;
+  if (location.hash) {
+    const legacyRoute = decodeURIComponent(location.hash.slice(1)).replace(/^\/+|\/+$/g, "");
+    pathname = !legacyRoute || legacyRoute === "home" ? "/" : "/" + legacyRoute;
+    history.replaceState(null, "", pathname + location.search);
+  }
+  if (pathname !== "/" && pathname.endsWith("/")) {
+    pathname = pathname.replace(/\/+$/, "");
+    history.replaceState(null, "", pathname + location.search);
+  }
+  if (pathname === "/home") {
+    pathname = "/";
+    history.replaceState(null, "", pathname + location.search);
+  }
+  const segments = pathname.split("/").filter(Boolean).map(decodeURIComponent);
+  return segments.length ? segments : ["home"];
 }
 
 function navLink(label, href) {
   return '<a href="' + href + '">' + label + "</a>";
 }
+
+function finishRouteChange() {
+  const route = currentRoute();
+  if (!["checkout", "login", "signup"].includes(route[0])) sessionStorage.removeItem(checkoutAuthPendingKey);
+  cartOpen = false;
+  cartReturnFocus = false;
+  quickAddSlug = "";
+  render();
+  if (route[0] === "belief") {
+    requestAnimationFrame(function () {
+      const intro = document.getElementById("belief");
+      if (intro) intro.scrollIntoView({ behavior: "smooth" });
+    });
+  } else {
+    window.scrollTo(0, 0);
+  }
+}
+
+function navigateTo(path) {
+  const target = new URL(path, location.origin);
+  if (target.origin !== location.origin) return;
+  if (target.pathname === location.pathname && target.search === location.search) {
+    const route = currentRoute();
+    if (route[0] === "belief") {
+      const intro = document.getElementById("belief");
+      if (intro) intro.scrollIntoView({ behavior: "smooth" });
+    } else if (route[0] === "home") {
+      window.scrollTo(0, 0);
+    }
+    return;
+  }
+  history.pushState(null, "", target.pathname + target.search);
+  finishRouteChange();
+}
+
+root.addEventListener("click", function (event) {
+  const link = event.target.closest && event.target.closest('a[href^="/"]');
+  if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey ||
+      event.shiftKey || event.altKey || link.target === "_blank" || link.hasAttribute("download")) return;
+  const target = new URL(link.href, location.href);
+  if (target.origin !== location.origin) return;
+  event.preventDefault();
+  navigateTo(target.pathname + target.search);
+});
 
 function imageFrame(src, alt, className) {
   return '<div class="' + (className || "image-frame") + '"><img src="' + escapeHtml(src) + '" alt="' + escapeHtml(alt) + '" loading="lazy"></div>';
@@ -158,19 +217,19 @@ function getProduct(slug) {
 
 function renderHeader() {
   const accountLabel = customer ? "My archive" : "Sign in";
-  const accountHref = customer ? "#account" : "#login";
+  const accountHref = customer ? "/account" : "/login";
   return '<div class="topline">A quieter kind of strength · ' + escapeHtml(content.seriesList[0].number) + ' now open</div>' +
     '<header class="site-header"><div class="nav-wrap">' +
-      '<a class="wordmark" href="#home" aria-label="Quiet Battles home">' + escapeHtml(content.brand.name) + '<sup>™</sup></a>' +
+      '<a class="wordmark" href="/" aria-label="Quiet Battles home">' + escapeHtml(content.brand.name) + '<sup>™</sup></a>' +
       '<button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav">Menu</button>' +
       '<nav class="nav-links" id="main-nav" aria-label="Main navigation">' +
-        navLink("The archive", "#archive") +
-        navLink(content.seriesList[0].number, "#series/" + escapeHtml(content.seriesList[0].slug)) +
-        navLink("Artifacts", "#artifacts") +
-        navLink("Our note", "#belief") +
+        navLink("The archive", "/archive") +
+        navLink(content.seriesList[0].number, "/series/" + escapeHtml(content.seriesList[0].slug)) +
+        navLink("Artifacts", "/artifacts") +
+        navLink("Our note", "/belief") +
         '<a class="mobile-account-link" href="' + accountHref + '">' + accountLabel + '</a>' +
       '</nav>' +
-      '<div class="nav-actions"><a href="' + accountHref + '">' + accountLabel + '</a><a class="studio-link" href="#admin">Studio</a><button class="cart-trigger" type="button" data-cart-open>Bag <span class="cart-count">(' + cartQuantity() + ')</span></button></div>' +
+      '<div class="nav-actions"><a href="' + accountHref + '">' + accountLabel + '</a><a class="studio-link" href="/admin">Studio</a><button class="cart-trigger" type="button" data-cart-open>Bag <span class="cart-count">(' + cartQuantity() + ')</span></button></div>' +
     '</div></header>';
 }
 
@@ -179,7 +238,7 @@ function renderFooter() {
     '<div class="footer-main">' +
       '<h2>For what<br>you carry.</h2>' +
       '<p class="footer-note">' + escapeHtml(content.brand.intro) + '</p>' +
-      '<div class="footer-links"><a href="#archive">Explore the archive</a><a href="#artifacts">Meet the artifacts</a><a href="' + (customer ? '#account' : '#login') + '">' + (customer ? 'My private archive' : 'Sign in') + '</a><a href="#admin">Studio access</a></div>' +
+      '<div class="footer-links"><a href="/archive">Explore the archive</a><a href="/artifacts">Meet the artifacts</a><a href="' + (customer ? '/account' : '/login') + '">' + (customer ? 'My private archive' : 'Sign in') + '</a><a href="/admin">Studio access</a></div>' +
     '</div>' +
     '<div class="footer-bottom"><span>© 2026 ' + escapeHtml(content.brand.name) + '™</span><span>' + escapeHtml(content.brand.tagline) + '</span><span>STORIES FOR THE EVERYDAY</span></div>' +
   '</div></footer>';
@@ -187,7 +246,7 @@ function renderFooter() {
 
 function chapterCards(series) {
   return series.chapters.map(function (chapter) {
-    return '<a class="chapter-card" href="#chapter/' + escapeHtml(chapter.slug) + '">' +
+    return '<a class="chapter-card" href="/chapter/' + escapeHtml(chapter.slug) + '">' +
       '<span class="mono">' + escapeHtml(chapter.number) + ' <span aria-hidden="true">·</span> CHAPTER CHAMBER</span>' +
       '<h3>' + escapeHtml(chapter.title) + '</h3>' +
       '<p>' + escapeHtml(chapter.excerpt) + '</p>' +
@@ -206,7 +265,7 @@ function renderHome() {
         '<div class="eyebrow mono">' + escapeHtml(content.hero.eyebrow) + '</div>' +
         '<h1>' + content.hero.title.split("<br>").map(function (line) { return "<span>" + escapeHtml(line) + "</span>"; }).join("") + '</h1>' +
         '<p class="hero-description">' + escapeHtml(content.hero.description) + '</p>' +
-        '<div class="hero-action-row"><a class="button" href="#archive">Enter the archive <span class="arrow">↗</span></a><span class="hero-caption">Stories stitched<br>into the everyday</span></div>' +
+        '<div class="hero-action-row"><a class="button" href="/archive">Enter the archive <span class="arrow">↗</span></a><span class="hero-caption">Stories stitched<br>into the everyday</span></div>' +
       '</div>' +
       '<div class="hero-image"><img src="' + escapeHtml(content.hero.image) + '" alt="A QUIET BATTLES editorial portrait" fetchpriority="high"><span class="hero-stamp">No battle is<br>too quiet to count.</span></div>' +
       '<span class="hero-thread" aria-hidden="true"></span>' +
@@ -223,26 +282,26 @@ function renderHome() {
       '</div>' +
     '</section>' +
     '<section class="series-band"><div class="series-intro">' +
-      '<div class="series-copy"><span class="mono section-label">' + escapeHtml(series.number) + ' · THE ARCHIVE</span><h2>' + escapeHtml(series.title) + '</h2><p class="subtitle">' + escapeHtml(series.subtitle) + '</p><p class="description">' + escapeHtml(series.description) + '</p><a class="button" href="#series/' + escapeHtml(series.slug) + '">Open the series <span class="arrow">↗</span></a></div>' +
+      '<div class="series-copy"><span class="mono section-label">' + escapeHtml(series.number) + ' · THE ARCHIVE</span><h2>' + escapeHtml(series.title) + '</h2><p class="subtitle">' + escapeHtml(series.subtitle) + '</p><p class="description">' + escapeHtml(series.description) + '</p><a class="button" href="/series/' + escapeHtml(series.slug) + '">Open the series <span class="arrow">↗</span></a></div>' +
       '<figure class="series-image"><img src="' + escapeHtml(series.image) + '" alt="' + escapeHtml(series.title) + ' collection portrait" loading="lazy"><figcaption class="mono">' + escapeHtml(series.title) + '</figcaption></figure>' +
     '</div><div class="page chapter-list">' + chapterCards(series) + '</div></section>' +
     '<section class="page section product-feature">' +
       '<div class="product-photo"><img src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + '" loading="lazy"><span class="product-stamp mono">FIELD PIECE 001</span></div>' +
-      '<div class="product-copy"><span class="mono section-label">FROM THE SERIES · ' + escapeHtml(firstChapter.number) + '</span><h2>' + escapeHtml(product.name) + '</h2><p>' + escapeHtml(product.description) + '</p><div class="price">' + money(product.price) + '<small>Illustrative price · INR</small></div><div class="product-details">' + product.details.map(function (line) { return "<span>" + escapeHtml(line) + "</span>"; }).join("") + '</div><a class="button button-dark" href="#product/' + escapeHtml(product.slug) + '">View the piece <span class="arrow">↗</span></a></div>' +
+      '<div class="product-copy"><span class="mono section-label">FROM THE SERIES · ' + escapeHtml(firstChapter.number) + '</span><h2>' + escapeHtml(product.name) + '</h2><p>' + escapeHtml(product.description) + '</p><div class="price">' + money(product.price) + '<small>Illustrative price · INR</small></div><div class="product-details">' + product.details.map(function (line) { return "<span>" + escapeHtml(line) + "</span>"; }).join("") + '</div><a class="button button-dark" href="/product/' + escapeHtml(product.slug) + '">View the piece <span class="arrow">↗</span></a></div>' +
     '</section>' +
   '</main>';
 }
 
 function renderArchive() {
   const entries = content.seriesList.map(function (series) {
-    return '<article class="archive-item"><div class="archive-art"><img src="' + escapeHtml(series.image) + '" alt="' + escapeHtml(series.number + ' — ' + series.title) + '" loading="lazy"><span class="hero-stamp">' + escapeHtml(series.number) + ' · ' + series.chapters.length + ' chapters</span></div><div class="archive-copy"><span class="mono section-label">' + escapeHtml(series.number) + '</span><h2 class="page-title">' + escapeHtml(series.title) + '</h2><p>' + escapeHtml(series.subtitle) + '</p><p>' + escapeHtml(series.description) + '</p><a class="button button-dark" href="#series/' + escapeHtml(series.slug) + '">Explore this series <span class="arrow">↗</span></a></div></article>';
+    return '<article class="archive-item"><div class="archive-art"><img src="' + escapeHtml(series.image) + '" alt="' + escapeHtml(series.number + ' — ' + series.title) + '" loading="lazy"><span class="hero-stamp">' + escapeHtml(series.number) + ' · ' + series.chapters.length + ' chapters</span></div><div class="archive-copy"><span class="mono section-label">' + escapeHtml(series.number) + '</span><h2 class="page-title">' + escapeHtml(series.title) + '</h2><p>' + escapeHtml(series.subtitle) + '</p><p>' + escapeHtml(series.description) + '</p><a class="button button-dark" href="/series/' + escapeHtml(series.slug) + '">Explore this series <span class="arrow">↗</span></a></div></article>';
   }).join("");
   return '<main><section class="archive-hero"><div class="page"><span class="mono section-label">THE QUIET BATTLES ARCHIVE</span><h1 class="page-title">Stories to<br>wear with you.</h1><p class="lead">A growing collection of chapters, objects, and small reminders for the lives we are living between the lines.</p></div></section>' +
     '<section class="page archive-list">' + entries + '</section></main>';
 }
 
 function renderNotFound() {
-  return '<main class="page not-found"><span class="mono section-label">THE ARCHIVE · 404</span><h1 class="page-title">This page is no longer here.</h1><p>The link may have changed. Return to the Archive to find your way.</p><a class="button button-dark" href="#archive">Open the Archive <span class="arrow">↗</span></a></main>';
+  return '<main class="page not-found"><span class="mono section-label">THE ARCHIVE · 404</span><h1 class="page-title">This page is no longer here.</h1><p>The link may have changed. Return to the Archive to find your way.</p><a class="button button-dark" href="/archive">Open the Archive <span class="arrow">↗</span></a></main>';
 }
 
 function catalogCard(product, index) {
@@ -251,13 +310,13 @@ function catalogCard(product, index) {
     return '<button type="button" data-quick-size="' + escapeHtml(size) + '" data-quick-product="' + escapeHtml(product.slug) + '">' + escapeHtml(size) + '</button>';
   }).join("");
   return '<article class="catalog-card" data-product-kind="' + escapeHtml(product.kind) + '">' +
-    '<div class="catalog-media"><a href="#product/' + escapeHtml(product.slug) + '" aria-label="View ' + escapeHtml(product.name) + '"><img class="catalog-front" src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + ' front view" loading="' + (index < 4 ? 'eager' : 'lazy') + '">' +
+    '<div class="catalog-media"><a href="/product/' + escapeHtml(product.slug) + '" aria-label="View ' + escapeHtml(product.name) + '"><img class="catalog-front" src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + ' front view" loading="' + (index < 4 ? 'eager' : 'lazy') + '">' +
       (product.secondaryImage ? '<img class="catalog-back" src="' + escapeHtml(product.secondaryImage) + '" alt="' + escapeHtml(product.name) + ' back view" loading="lazy">' : '') + '</a>' +
       '<div class="catalog-badges"><span>' + escapeHtml(product.kind) + '</span></div>' +
       '<button class="quick-add-trigger" type="button" data-quick-open="' + escapeHtml(product.slug) + '" aria-expanded="' + String(quickOpen) + '">' + (quickOpen ? 'Close' : 'Quick add') + ' <span aria-hidden="true">' + (quickOpen ? '−' : '+') + '</span></button>' +
-      '<div class="quick-add-panel' + (quickOpen ? ' open' : '') + '" aria-hidden="' + String(!quickOpen) + '"' + (quickOpen ? '' : ' inert') + '><div><span class="mono">Choose size</span><a href="#product/' + escapeHtml(product.slug) + '">View details ↗</a></div><div class="quick-size-grid">' + sizes + '</div></div>' +
+      '<div class="quick-add-panel' + (quickOpen ? ' open' : '') + '" aria-hidden="' + String(!quickOpen) + '"' + (quickOpen ? '' : ' inert') + '><div><span class="mono">Choose size</span><a href="/product/' + escapeHtml(product.slug) + '">View details ↗</a></div><div class="quick-size-grid">' + sizes + '</div></div>' +
     '</div>' +
-    '<div class="catalog-card-meta"><div><span class="mono">' + escapeHtml(product.category) + '</span><h2><a href="#product/' + escapeHtml(product.slug) + '">' + escapeHtml(product.name) + '</a></h2></div><strong>' + money(product.price) + '</strong></div>' +
+    '<div class="catalog-card-meta"><div><span class="mono">' + escapeHtml(product.category) + '</span><h2><a href="/product/' + escapeHtml(product.slug) + '">' + escapeHtml(product.name) + '</a></h2></div><strong>' + money(product.price) + '</strong></div>' +
   '</article>';
 }
 
@@ -279,21 +338,21 @@ function renderArtifacts() {
   products.forEach(function (product, index) {
     cards += catalogCard(product, index);
     if (index === 3 && products.length > 4) {
-      cards += '<aside class="catalog-interlude"><div><span class="mono">FIELD NOTE · ' + escapeHtml(featuredChapter.number) + '</span><blockquote>' + escapeHtml(featuredChapter.excerpt) + '</blockquote><a href="#chapter/' + escapeHtml(featuredChapter.slug) + '">Read ' + escapeHtml(featuredChapter.title) + ' <span class="arrow">↗</span></a></div><img src="' + escapeHtml(featuredChapter.image) + '" alt="A portrait from ' + escapeHtml(featuredSeries.title) + '" loading="lazy"></aside>';
+      cards += '<aside class="catalog-interlude"><div><span class="mono">FIELD NOTE · ' + escapeHtml(featuredChapter.number) + '</span><blockquote>' + escapeHtml(featuredChapter.excerpt) + '</blockquote><a href="/chapter/' + escapeHtml(featuredChapter.slug) + '">Read ' + escapeHtml(featuredChapter.title) + ' <span class="arrow">↗</span></a></div><img src="' + escapeHtml(featuredChapter.image) + '" alt="A portrait from ' + escapeHtml(featuredSeries.title) + '" loading="lazy"></aside>';
     }
   });
   const productCount = content.products.length;
   const chapterCount = content.seriesList.reduce(function (total, series) { return total + series.chapters.length; }, 0);
   const heroIndex = String(content.products.indexOf(heroProduct) + 1).padStart(2, "0");
   const indexMax = String(productCount).padStart(2, "0");
-  return '<main class="shop-page"><section class="shop-hero"><div class="shop-hero-copy"><span class="mono">' + escapeHtml(featuredSeries.number) + ' · COMPLETE ARTIFACT INDEX</span><h1>Wear what<br>stayed.</h1><p>' + productCount + ' objects for the private work of continuing. Begin with the story, or choose the shape you need today.</p><div><button class="button shop-primary" type="button" data-scroll-catalogue>Shop the drop <span class="arrow">↓</span></button><a href="#series/' + escapeHtml(featuredSeries.slug) + '">Read the Series</a></div></div><div class="shop-hero-visual"><img src="' + escapeHtml(featuredSeries.image) + '" alt="' + escapeHtml(featuredSeries.title) + ' campaign portrait" fetchpriority="high"><a class="floating-artifact" href="#product/' + escapeHtml(heroProduct.slug) + '"><img src="' + escapeHtml(heroProduct.image) + '" alt="' + escapeHtml(heroProduct.name) + '"><span><b>Featured · Artifact ' + heroIndex + '</b>' + escapeHtml(heroProduct.name) + ' · ' + money(heroProduct.price) + '</span></a><span class="shop-index">01—' + indexMax + '</span></div></section>' +
+  return '<main class="shop-page"><section class="shop-hero"><div class="shop-hero-copy"><span class="mono">' + escapeHtml(featuredSeries.number) + ' · COMPLETE ARTIFACT INDEX</span><h1>Wear what<br>stayed.</h1><p>' + productCount + ' objects for the private work of continuing. Begin with the story, or choose the shape you need today.</p><div><button class="button shop-primary" type="button" data-scroll-catalogue>Shop the drop <span class="arrow">↓</span></button><a href="/series/' + escapeHtml(featuredSeries.slug) + '">Read the Series</a></div></div><div class="shop-hero-visual"><img src="' + escapeHtml(featuredSeries.image) + '" alt="' + escapeHtml(featuredSeries.title) + ' campaign portrait" fetchpriority="high"><a class="floating-artifact" href="/product/' + escapeHtml(heroProduct.slug) + '"><img src="' + escapeHtml(heroProduct.image) + '" alt="' + escapeHtml(heroProduct.name) + '"><span><b>Featured · Artifact ' + heroIndex + '</b>' + escapeHtml(heroProduct.name) + ' · ' + money(heroProduct.price) + '</span></a><span class="shop-index">01—' + indexMax + '</span></div></section>' +
     '<div class="drop-ticker" aria-label="Collection information"><div><span>' + productCount + ' artifacts</span><span>' + chapterCount + ' chapters</span><span>Front + back views</span><span>Dummy QR checkout</span><span>' + productCount + ' artifacts</span><span>' + chapterCount + ' chapters</span><span>Front + back views</span><span>Dummy QR checkout</span></div></div>' +
      '<section class="catalogue" id="catalogue"><header class="catalogue-head page"><div><span class="mono section-label">THE COMPLETE DROP</span><h2>All artifacts</h2><p><strong>' + products.length + '</strong> of ' + content.products.length + ' objects</p></div><div class="catalogue-controls"><nav class="catalog-filters" aria-label="Filter artifacts">' + filterButtons + '</nav><label class="catalog-sort"><span>Sort</span><select data-catalog-sort><option value="featured"' + (catalogSort === 'featured' ? ' selected' : '') + '>Featured</option><option value="name"' + (catalogSort === 'name' ? ' selected' : '') + '>Name: A to Z</option><option value="price-low"' + (catalogSort === 'price-low' ? ' selected' : '') + '>Price: low to high</option><option value="price-high"' + (catalogSort === 'price-high' ? ' selected' : '') + '>Price: high to low</option></select></label></div></header><div class="catalog-grid">' + (cards || '<div class="catalog-empty">No artifacts in this category yet.</div>') + '</div></section></main>';
 }
 
 function customerOrderCards() {
   if (!customerOrders.length) {
-    return '<div class="account-empty"><span class="mono section-label">ACQUISITION LEDGER · 0</span><h2>Nothing recorded yet.</h2><p>After you confirm a non-payable test order, its record will appear here.</p><a class="button button-dark" href="#artifacts">Meet the artifacts <span class="arrow">↗</span></a></div>';
+    return '<div class="account-empty"><span class="mono section-label">ACQUISITION LEDGER · 0</span><h2>Nothing recorded yet.</h2><p>After you confirm a non-payable test order, its record will appear here.</p><a class="button button-dark" href="/artifacts">Meet the artifacts <span class="arrow">↗</span></a></div>';
   }
   return customerOrders.map(function (order) {
     const lines = (order.items || []).map(function (item) {
@@ -309,7 +368,7 @@ function renderAccount() {
   }
   if (!customer) return renderAuth("login");
   const firstName = customer.name.trim().split(/\s+/)[0];
-  return '<main class="account-page"><section class="page account-heading"><div><span class="mono section-label">PRIVATE ARCHIVE · ' + escapeHtml(orderDate(customer.createdAt)) + '</span><h1>Welcome back,<br>' + escapeHtml(firstName) + '.</h1><p>What you chose, when you chose it, and the chapters that travelled with you.</p></div><aside><span class="mono">ARCHIVE HOLDER</span><strong>' + escapeHtml(customer.name) + '</strong><a href="mailto:' + escapeHtml(customer.email) + '">' + escapeHtml(customer.email) + '</a><button class="text-button" type="button" data-customer-logout>Sign out</button></aside></section><section class="page account-ledger"><div class="account-ledger-head"><div><span class="mono section-label">YOUR ACQUISITIONS</span><h2>Objects with<br>a date attached.</h2></div><a class="button button-light" href="#artifacts">View all artifacts</a></div>' + customerOrderCards() + '</section></main>';
+  return '<main class="account-page"><section class="page account-heading"><div><span class="mono section-label">PRIVATE ARCHIVE · ' + escapeHtml(orderDate(customer.createdAt)) + '</span><h1>Welcome back,<br>' + escapeHtml(firstName) + '.</h1><p>What you chose, when you chose it, and the chapters that travelled with you.</p></div><aside><span class="mono">ARCHIVE HOLDER</span><strong>' + escapeHtml(customer.name) + '</strong><a href="mailto:' + escapeHtml(customer.email) + '">' + escapeHtml(customer.email) + '</a><button class="text-button" type="button" data-customer-logout>Sign out</button></aside></section><section class="page account-ledger"><div class="account-ledger-head"><div><span class="mono section-label">YOUR ACQUISITIONS</span><h2>Objects with<br>a date attached.</h2></div><a class="button button-light" href="/artifacts">View all artifacts</a></div>' + customerOrderCards() + '</section></main>';
 }
 
 function renderAuth(mode) {
@@ -319,7 +378,7 @@ function renderAuth(mode) {
     (signup ? '<label><span>Your name</span><input name="name" autocomplete="name" minlength="2" maxlength="80" required></label>' : '') +
     '<label><span>Email</span><input name="email" type="email" autocomplete="email" maxlength="254" required></label><label><span>Password</span><input name="password" type="password" autocomplete="' + (signup ? 'new-password' : 'current-password') + '" minlength="8" maxlength="128" required></label>' +
     (signup ? '<label><span>Confirm password</span><input name="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></label>' : '') +
-    '<div class="auth-message" role="status">' + escapeHtml(authMessage) + '</div><button class="button button-dark" type="submit">' + (signup ? 'Create private archive' : 'Sign in') + ' <span class="arrow">↗</span></button><p class="auth-switch">' + (signup ? 'Already have an archive? <a href="#login">Sign in</a>' : 'New here? <a href="#signup">Create your archive</a>') + '</p><small>Use sample details and a unique password. No real payment is collected.</small></form></section></main>';
+    '<div class="auth-message" role="status">' + escapeHtml(authMessage) + '</div><button class="button button-dark" type="submit">' + (signup ? 'Create private archive' : 'Sign in') + ' <span class="arrow">↗</span></button><p class="auth-switch">' + (signup ? 'Already have an archive? <a href="/login">Sign in</a>' : 'New here? <a href="/signup">Create your archive</a>') + '</p><small>Use sample details and a unique password. No real payment is collected.</small></form></section></main>';
 }
 
 function renderSeries(slug) {
@@ -329,7 +388,7 @@ function renderSeries(slug) {
     '<div class="series-copy"><span class="mono section-label">' + escapeHtml(series.number) + ' · THE ARCHIVE</span><h1>' + escapeHtml(series.title) + '</h1><p class="subtitle">' + escapeHtml(series.subtitle) + '</p><p class="description">' + escapeHtml(series.description) + '</p><span class="hero-caption">' + series.chapters.length + ' chapters · One continuous thread</span></div>' +
     '<figure class="series-image"><img src="' + escapeHtml(series.image) + '" alt="' + escapeHtml(series.title) + ' series" fetchpriority="high"><figcaption class="mono">' + escapeHtml(series.title) + ' · 2026</figcaption></figure>' +
     '</div><div class="page chapter-list">' + chapterCards(series) + '</div></section>' +
-    '<section class="page section"><div class="section-head"><div><span class="mono section-label">THE THREAD</span><h2>Keep what<br>helps.</h2></div><p>' + escapeHtml(series.description) + '</p></div><a class="button button-dark" href="#chapter/' + escapeHtml(series.chapters[0].slug) + '">Begin with ' + escapeHtml(series.chapters[0].number) + ' <span class="arrow">↗</span></a></section></main>';
+    '<section class="page section"><div class="section-head"><div><span class="mono section-label">THE THREAD</span><h2>Keep what<br>helps.</h2></div><p>' + escapeHtml(series.description) + '</p></div><a class="button button-dark" href="/chapter/' + escapeHtml(series.chapters[0].slug) + '">Begin with ' + escapeHtml(series.chapters[0].number) + ' <span class="arrow">↗</span></a></section></main>';
 }
 
 function renderChapter(slug) {
@@ -349,8 +408,8 @@ function renderChapter(slug) {
   return '<main class="chapter-page">' +
     '<section class="chapter-hero"><div class="chapter-heading"><span class="mono section-label">CHAPTER CHAMBER · ' + escapeHtml(series.number) + ' · ' + escapeHtml(chapter.number) + '</span><h1 class="page-title">' + escapeHtml(chapter.title) + '</h1><p class="excerpt">' + escapeHtml(chapter.excerpt) + '</p><span class="mono">' + escapeHtml(series.title) + ' · ' + String(index + 1).padStart(2, "0") + ' / ' + String(series.chapters.length).padStart(2, "0") + '</span></div><div class="chapter-visual"><img src="' + escapeHtml(chapter.image) + '" alt="' + escapeHtml(chapter.title) + '" fetchpriority="high"></div></section>' +
     '<section class="page story-layout"><aside class="story-aside"><span class="mono section-label">A NOTE FROM THE ARCHIVE</span><p>' + escapeHtml(series.subtitle) + '</p><span class="mono">READ AT YOUR OWN PACE</span></aside>' + storyBlock + '</section>' +
-    '<section class="chapter-product"><img src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + '" loading="lazy"><div class="chapter-product-copy"><span class="mono section-label">' + artifactLabel + '</span><h2>' + escapeHtml(product.name) + '</h2><p>' + escapeHtml(product.description) + '</p><a class="button button-dark" href="#product/' + escapeHtml(product.slug) + '">Meet the artifact <span class="arrow">↗</span></a></div></section>' +
-    '<div class="page">' + (next ? '<a class="chapter-next" href="#chapter/' + escapeHtml(next.slug) + '"><span><span class="mono section-label">NEXT IN THE SERIES</span><strong>' + escapeHtml(next.title) + '</strong></span><span class="arrow">↗</span></a>' : '<a class="chapter-next" href="#series/' + escapeHtml(series.slug) + '"><span><span class="mono section-label">BACK TO THE SERIES</span><strong>' + escapeHtml(series.title) + '</strong></span><span class="arrow">↗</span></a>') + '</div>' +
+    '<section class="chapter-product"><img src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + '" loading="lazy"><div class="chapter-product-copy"><span class="mono section-label">' + artifactLabel + '</span><h2>' + escapeHtml(product.name) + '</h2><p>' + escapeHtml(product.description) + '</p><a class="button button-dark" href="/product/' + escapeHtml(product.slug) + '">Meet the artifact <span class="arrow">↗</span></a></div></section>' +
+    '<div class="page">' + (next ? '<a class="chapter-next" href="/chapter/' + escapeHtml(next.slug) + '"><span><span class="mono section-label">NEXT IN THE SERIES</span><strong>' + escapeHtml(next.title) + '</strong></span><span class="arrow">↗</span></a>' : '<a class="chapter-next" href="/series/' + escapeHtml(series.slug) + '"><span><span class="mono section-label">BACK TO THE SERIES</span><strong>' + escapeHtml(series.title) + '</strong></span><span class="arrow">↗</span></a>') + '</div>' +
   '</main>';
 }
 
@@ -364,14 +423,14 @@ function renderProduct(slug) {
   const related = content.products.filter(function (item) { return item.slug !== product.slug; }).sort(function (a, b) {
     return Number(b.kind === product.kind) - Number(a.kind === product.kind);
   }).slice(0, 3);
-  return '<main class="page product-page"><nav class="breadcrumbs" aria-label="Breadcrumbs"><a href="#home">Home</a><span>/</span><a href="#archive">Archive</a><span>/</span><a href="#series/' + escapeHtml(series.slug) + '">' + escapeHtml(series.number) + '</a><span>/</span><a href="#chapter/' + escapeHtml(chapter.slug) + '">' + escapeHtml(chapter.number) + '</a><span>/</span><span>Artifact</span></nav>' +
+  return '<main class="page product-page"><nav class="breadcrumbs" aria-label="Breadcrumbs"><a href="/">Home</a><span>/</span><a href="/archive">Archive</a><span>/</span><a href="/series/' + escapeHtml(series.slug) + '">' + escapeHtml(series.number) + '</a><span>/</span><a href="/chapter/' + escapeHtml(chapter.slug) + '">' + escapeHtml(chapter.number) + '</a><span>/</span><span>Artifact</span></nav>' +
     '<div class="product-detail-layout"><div class="product-gallery"><figure class="gallery-frame"><img src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + ' front view" fetchpriority="high"></figure>' +
     (product.secondaryImage ? '<figure class="gallery-frame"><img src="' + escapeHtml(product.secondaryImage) + '" alt="' + escapeHtml(product.name) + ' back or detail view" loading="lazy"></figure>' : "") + '</div>' +
     '<section class="product-info"><span class="mono section-label">' + escapeHtml(product.category) + ' · CONCEPT PIECE</span><h1 class="page-title">' + escapeHtml(product.name) + '</h1><div class="price">' + money(product.price) + '<small>Illustrative price · INR</small></div><p class="product-desc">' + escapeHtml(product.description) + '</p>' +
     '<div class="size-label"><span>Choose your size</span><button class="size-guide" type="button" data-size-guide="' + escapeHtml(product.slug) + '">Size guide</button></div><div class="size-options">' + product.sizes.map(function (size) { return '<button class="size-option' + (selection === size ? " selected" : "") + '" type="button" data-size="' + escapeHtml(size) + '" data-product="' + escapeHtml(product.slug) + '" aria-pressed="' + (selection === size) + '">' + escapeHtml(size) + '</button>'; }).join("") + '</div><div class="size-help" id="size-help" aria-live="polite"></div>' +
     '<button class="button button-dark" type="button" data-add="' + escapeHtml(product.slug) + '">Add to bag <span class="arrow">↗</span></button><p class="shipping-note">TEST ORDER · NON-PAYABLE QR · NO PAYMENT</p>' +
-    '<div class="accordions"><details class="accordion" open><summary>About the piece</summary><p>' + escapeHtml(product.description) + '</p></details><details class="accordion"><summary>Details and care</summary><ul>' + product.details.map(function (detail) { return "<li>" + escapeHtml(detail) + "</li>"; }).join("") + '<li>Care information is sample copy for this prototype.</li></ul></details><details class="accordion"><summary>From the archive</summary><p>This piece accompanies <a href="#chapter/' + escapeHtml(product.chapterSlug) + '"><u>' + escapeHtml(getChapter(product.chapterSlug).title) + '</u></a>.</p></details></div>' +
-    '</section></div><section class="related-products"><header><span class="mono section-label">KEEP EXPLORING</span><h2>Carry it together.</h2><a href="#artifacts">View all ' + content.products.length + ' artifacts <span class="arrow">↗</span></a></header><div class="related-grid">' + related.map(function (item, index) { return catalogCard(item, index); }).join("") + '</div></section></main>';
+    '<div class="accordions"><details class="accordion" open><summary>About the piece</summary><p>' + escapeHtml(product.description) + '</p></details><details class="accordion"><summary>Details and care</summary><ul>' + product.details.map(function (detail) { return "<li>" + escapeHtml(detail) + "</li>"; }).join("") + '<li>Care information is sample copy for this prototype.</li></ul></details><details class="accordion"><summary>From the archive</summary><p>This piece accompanies <a href="/chapter/' + escapeHtml(product.chapterSlug) + '"><u>' + escapeHtml(getChapter(product.chapterSlug).title) + '</u></a>.</p></details></div>' +
+    '</section></div><section class="related-products"><header><span class="mono section-label">KEEP EXPLORING</span><h2>Carry it together.</h2><a href="/artifacts">View all ' + content.products.length + ' artifacts <span class="arrow">↗</span></a></header><div class="related-grid">' + related.map(function (item, index) { return catalogCard(item, index); }).join("") + '</div></section></main>';
 }
 
 function checkoutSteps(active) {
@@ -411,7 +470,7 @@ function customerValue(name) {
 function renderCheckoutAccount() {
   return '<main class="checkout-page"><div class="page">' + checkoutSteps("account") +
     '<div class="checkout-heading"><span class="mono section-label">CHECKOUT · ACCOUNT REQUIRED</span><h1>Keep your<br>place.</h1><p>Create an archive account or sign in to continue. You can browse and add items before signing in; every order must belong to an account.</p></div>' +
-    '<div class="checkout-layout"><section class="checkout-account-gate"><span class="mono section-label">YOUR BAG IS SAVED</span><h2>Continue to checkout.</h2><p>Your selected artifacts will be waiting after you sign in.</p>' + (checkoutMessage ? '<p class="checkout-message" role="status">' + escapeHtml(checkoutMessage) + '</p>' : '') + '<div class="checkout-account-actions"><a class="button button-dark" href="#signup">Create account <span class="arrow">↗</span></a><a class="button button-light" href="#login">I already have an account</a></div><p class="checkout-account-note">Guest checkout is unavailable. Sign in or create an account to place an order.</p></section>' + checkoutSummary(cart, cartTotal(), false) + '</div></div></main>';
+    '<div class="checkout-layout"><section class="checkout-account-gate"><span class="mono section-label">YOUR BAG IS SAVED</span><h2>Continue to checkout.</h2><p>Your selected artifacts will be waiting after you sign in.</p>' + (checkoutMessage ? '<p class="checkout-message" role="status">' + escapeHtml(checkoutMessage) + '</p>' : '') + '<div class="checkout-account-actions"><a class="button button-dark" href="/signup">Create account <span class="arrow">↗</span></a><a class="button button-light" href="/login">I already have an account</a></div><p class="checkout-account-note">Guest checkout is unavailable. Sign in or create an account to place an order.</p></section>' + checkoutSummary(cart, cartTotal(), false) + '</div></div></main>';
 }
 
 function renderCheckout() {
@@ -419,12 +478,12 @@ function renderCheckout() {
     return '<main class="checkout-page"><div class="page">' + checkoutSteps("complete") +
       '<section class="confirmation-chamber"><span class="confirmation-mark" aria-hidden="true">✓</span><span class="mono section-label">TEST ORDER RECORDED</span><h1>Your artifact<br>has a place.</h1><p>An order record was saved to Neon and is visible in Studio. No payment was requested, verified, or transferred.</p>' +
       '<div class="confirmation-receipt"><span>Order reference</span><strong>' + escapeHtml(checkoutOrder.orderNumber) + '</strong><span>Status</span><strong>' + escapeHtml(checkoutOrder.status) + '</strong><span>Test subtotal</span><strong>' + money(checkoutOrder.subtotal) + '</strong></div>' +
-      (customer ? '<div class="confirmation-actions"><a class="button button-dark" href="#account">View my private archive <span class="arrow">↗</span></a><a class="button button-light" href="#artifacts">Return to artifacts</a></div>' : '<a class="button button-dark" href="#archive">Return to the archive <span class="arrow">↗</span></a>') + '</section></div></main>';
+      (customer ? '<div class="confirmation-actions"><a class="button button-dark" href="/account">View my private archive <span class="arrow">↗</span></a><a class="button button-light" href="/artifacts">Return to artifacts</a></div>' : '<a class="button button-dark" href="/archive">Return to the archive <span class="arrow">↗</span></a>') + '</section></div></main>';
   }
 
   if (!cart.length) {
     sessionStorage.removeItem(checkoutAuthPendingKey);
-    return '<main class="checkout-page"><div class="page"><section class="checkout-empty"><span class="mono section-label">CHECKOUT</span><h1>Your bag is quiet.</h1><p>Choose an artifact before continuing to checkout.</p><a class="button button-dark" href="#artifacts">Shop artifacts <span class="arrow">↗</span></a></section></div></main>';
+    return '<main class="checkout-page"><div class="page"><section class="checkout-empty"><span class="mono section-label">CHECKOUT</span><h1>Your bag is quiet.</h1><p>Choose an artifact before continuing to checkout.</p><a class="button button-dark" href="/artifacts">Shop artifacts <span class="arrow">↗</span></a></section></div></main>';
   }
 
   if (customerLoading) {
@@ -597,7 +656,7 @@ function renderCart() {
   }).join("");
   const total = cartTotal();
   return '<button class="cart-backdrop" type="button" aria-label="Close bag" data-cart-close></button><aside class="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-title"><div class="cart-head"><h2 id="cart-title">Your bag <span class="mono">(' + cartQuantity() + ')</span></h2><button class="icon-button" type="button" data-cart-close aria-label="Close bag">×</button></div>' +
-    '<div class="cart-items">' + (lines || '<div class="cart-empty">Nothing in your bag yet.<br>Find a piece that feels like you.<a href="#artifacts">Shop artifacts ↗</a></div>') + '</div>' +
+    '<div class="cart-items">' + (lines || '<div class="cart-empty">Nothing in your bag yet.<br>Find a piece that feels like you.<a href="/artifacts">Shop artifacts ↗</a></div>') + '</div>' +
     (cart.length ? '<div class="cart-summary"><div class="cart-total"><span>Order subtotal</span><strong>' + money(total) + '</strong></div><button type="button" class="button button-dark" data-checkout>Continue to checkout <span class="arrow">↗</span></button><small>Sign in or create an account to place an order.</small></div>' : "") +
   '</aside>';
 }
@@ -812,8 +871,8 @@ function bindEvents() {
   if (checkout) checkout.addEventListener("click", function () {
     cartOpen = false;
     checkoutMessage = "";
-    if (location.hash === "#checkout") render();
-    else location.hash = "#checkout";
+    if (location.pathname === "/checkout") render();
+    else navigateTo("/checkout");
   });
 
   const checkoutDetails = document.getElementById("checkout-details");
@@ -893,7 +952,7 @@ function bindEvents() {
         clearCheckoutState();
         checkoutMessage = "Your session expired. Sign in again to continue checkout.";
         sessionStorage.setItem(checkoutAuthPendingKey, "true");
-        location.hash = "#login";
+        navigateTo("/login");
         return;
       }
       if (!response.ok) throw new Error(result.error || "The test order could not be recorded.");
@@ -950,7 +1009,7 @@ function bindEvents() {
         sessionStorage.setItem(checkoutAuthPendingKey, "true");
         checkoutMessage = checkoutNotice;
       }
-      location.hash = returnToCheckout ? "#checkout" : "#account";
+      navigateTo(returnToCheckout ? "/checkout" : "/account");
     } catch (error) {
       authMessage = error.message;
       render();
@@ -973,7 +1032,7 @@ function bindEvents() {
     sessionStorage.removeItem("qbCustomerToken");
     clearCheckoutState();
     authMessage = "You have signed out of your private archive.";
-    location.hash = "#login";
+    navigateTo("/login");
   });
 
   const login = document.getElementById("admin-login");
@@ -1375,22 +1434,7 @@ async function loadCustomerSession() {
   }
 }
 
-window.addEventListener("hashchange", function () {
-  const route = currentRoute();
-  if (!["checkout", "login", "signup"].includes(route[0])) sessionStorage.removeItem(checkoutAuthPendingKey);
-  cartOpen = false;
-  cartReturnFocus = false;
-  quickAddSlug = "";
-  render();
-  if (route[0] === "belief") {
-    requestAnimationFrame(function () {
-      const intro = document.getElementById("belief");
-      if (intro) intro.scrollIntoView({ behavior: "smooth" });
-    });
-  } else {
-    window.scrollTo(0, 0);
-  }
-});
+window.addEventListener("popstate", finishRouteChange);
 
 window.addEventListener("keydown", function (event) {
   if (event.key === "Escape" && cartOpen) {
@@ -1422,6 +1466,12 @@ fetch("/api/content")
     else if (cartSync.priceChanged) checkoutMessage = "Product prices were updated from the current catalogue.";
     if (adminToken) adminDraft = cloneContent(content);
     render();
+    if (currentRoute()[0] === "belief") {
+      requestAnimationFrame(function () {
+        const intro = document.getElementById("belief");
+        if (intro) intro.scrollIntoView();
+      });
+    }
     if (customerToken) loadCustomerSession(); else customerLoading = false;
   })
   .catch(function () {
