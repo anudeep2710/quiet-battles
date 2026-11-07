@@ -230,28 +230,45 @@ async function main() {
     customerToken = customerLogin.body.token;
     assert.ok(customerLogin.body.orders.some((order) => order.id === orderId));
   } finally {
+    const cleanupErrors = [];
+    async function cleanup(label, action) {
+      try {
+        await action();
+      } catch (error) {
+        cleanupErrors.push(label + ": " + error.message);
+      }
+    }
     if (orderId) {
-      const removedOrder = await jsonRequest("/api/admin/orders/" + orderId, {
-        method: "DELETE", headers: { Authorization: "Bearer " + login.body.token }
+      await cleanup("remove test order", async () => {
+        const removedOrder = await jsonRequest("/api/admin/orders/" + orderId, {
+          method: "DELETE", headers: { Authorization: "Bearer " + login.body.token }
+        });
+        assert.equal(removedOrder.response.status, 200, JSON.stringify(removedOrder.body));
       });
-      assert.equal(removedOrder.response.status, 200, JSON.stringify(removedOrder.body));
     }
     if (changed) {
-      const restored = await jsonRequest("/api/admin/content", {
-        method: "PUT", headers: auth, body: JSON.stringify(original)
+      await cleanup("restore original content", async () => {
+        const restored = await jsonRequest("/api/admin/content", {
+          method: "PUT", headers: auth, body: JSON.stringify(original)
+        });
+        assert.equal(restored.response.status, 200, JSON.stringify(restored.body));
       });
-      assert.equal(restored.response.status, 200);
     }
     if (customerId) {
-      const removedCustomer = await jsonRequest("/api/admin/customers/" + customerId, {
-        method: "DELETE", headers: { Authorization: "Bearer " + login.body.token }
+      await cleanup("remove test customer", async () => {
+        const removedCustomer = await jsonRequest("/api/admin/customers/" + customerId, {
+          method: "DELETE", headers: { Authorization: "Bearer " + login.body.token }
+        });
+        assert.equal(removedCustomer.response.status, 200, JSON.stringify(removedCustomer.body));
       });
-      assert.equal(removedCustomer.response.status, 200, JSON.stringify(removedCustomer.body));
     }
-    const logout = await jsonRequest("/api/admin/logout", {
-      method: "POST", headers: { Authorization: "Bearer " + login.body.token }
+    await cleanup("revoke Studio session", async () => {
+      const logout = await jsonRequest("/api/admin/logout", {
+        method: "POST", headers: { Authorization: "Bearer " + login.body.token }
+      });
+      assert.equal(logout.response.status, 200);
     });
-    assert.equal(logout.response.status, 200);
+    if (cleanupErrors.length) throw new Error("Cleanup issues: " + cleanupErrors.join("; "));
   }
 
   const afterLogout = await jsonRequest("/api/admin/content", {
