@@ -90,18 +90,64 @@ async function main() {
     assert.equal(me.body.customer.email, customerEmail);
     assert.deepEqual(me.body.orders, []);
 
+    const orderProduct = initial.body.products[0];
+    const orderCustomer = {
+      name: "Assessment Visitor", email: "visitor@example.com", phone: "+91 90000 00000",
+      address: "1 Demo Street", city: "Bengaluru", postalCode: "560001"
+    };
+    const staleQuote = await jsonRequest("/api/orders", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + customerToken },
+      body: JSON.stringify({
+        customer: orderCustomer,
+        items: [{ slug: orderProduct.slug, size: "M", qty: 1 }],
+        expectedSubtotal: orderProduct.price + 1,
+        demoAcknowledged: true
+      })
+    });
+    assert.equal(staleQuote.response.status, 409);
+
+    const duplicateVariant = await jsonRequest("/api/orders", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + customerToken },
+      body: JSON.stringify({
+        customer: orderCustomer,
+        items: [
+          { slug: orderProduct.slug, size: "M", qty: 1 },
+          { slug: orderProduct.slug, size: "M", qty: 1 }
+        ],
+        expectedSubtotal: orderProduct.price * 2,
+        demoAcknowledged: true
+      })
+    });
+    assert.equal(duplicateVariant.response.status, 400);
+
+    const excessiveQuantity = await jsonRequest("/api/orders", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + customerToken },
+      body: JSON.stringify({
+        customer: orderCustomer,
+        items: [{ slug: orderProduct.slug, size: "M", qty: 11 }],
+        expectedSubtotal: orderProduct.price * 11,
+        demoAcknowledged: true
+      })
+    });
+    assert.equal(excessiveQuantity.response.status, 400);
+
     const customerList = await jsonRequest("/api/admin/customers", { headers: auth });
     assert.equal(customerList.response.status, 200);
     assert.ok(customerList.body.customers.some((item) => item.id === customerId && item.orderCount === 0));
 
+    const unsupportedImageContent = structuredClone(original);
+    unsupportedImageContent.hero.image = "https://untrusted.example/quiet-battles.webp";
+    const unsupportedImage = await jsonRequest("/api/admin/content", {
+      method: "PUT", headers: auth, body: JSON.stringify(unsupportedImageContent)
+    });
+    assert.equal(unsupportedImage.response.status, 400);
+
     const createdOrder = await jsonRequest("/api/orders", {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + customerToken },
       body: JSON.stringify({
-        customer: {
-          name: "Assessment Visitor", email: "visitor@example.com", phone: "+91 90000 00000",
-          address: "1 Demo Street", city: "Bengaluru", postalCode: "560001"
-        },
-        items: [{ slug: initial.body.products[0].slug, size: "M", qty: 1 }],
+        customer: orderCustomer,
+        items: [{ slug: orderProduct.slug, size: "M", qty: 1 }],
+        expectedSubtotal: orderProduct.price,
         demoAcknowledged: true
       })
     });

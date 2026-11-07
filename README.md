@@ -17,7 +17,7 @@ A working full-stack assessment prototype for the QUIET BATTLES™ brief. It inc
 - Private customer archive: /#account
 - Content Studio: /#admin
 
-The five chapters have complete sample stories. The bag supports size selection and quantity changes. Checkout collects sample delivery details, presents a clearly labelled non-payable QR, and creates a demonstration order in Neon. It never connects to a bank, UPI account, or payment provider and never transfers money.
+The five chapters have complete sample stories. The bag supports size selection and quantity changes. Checkout requires an account, reviews delivery details and the current order total, then presents a clearly labelled non-payable QR and creates a demonstration order in Neon. It never connects to a bank, UPI account, or payment provider and never transfers money.
 
 Customers can create an account, sign out, sign back in, and see their own linked demo orders. An account is required before checkout; visitors can browse and build a bag before signing in or creating one. Screenshots of the homepage, Archive, Series, Chapters, artifact catalogue, checkout account gate, product, mobile layout, demo bag, and Studio are in [docs/screenshots](docs/screenshots/README.md).
 
@@ -36,7 +36,7 @@ Run npm run test:smoke while the local server is running on port 4174. The smoke
 
 ## Maintain the site
 
-Open Studio, enter the Studio key, and choose Brand & home, Series & chapters, Products, Orders, or Customers. Edit text, image URLs, slugs, story paragraphs, price, sizes, details, and both product views. Add and remove Series, Chapters, and products. Use the image picker to upload PNG, JPEG, or WebP files up to 2 MB. The Orders tab shows delivery details and item snapshots, updates fulfilment status, refreshes the ledger, and removes demonstration orders. The Customers tab lists private archives and can remove demo accounts while preserving their order records. Chapters and products must point to existing linked items.
+Open Studio, enter the Studio key, and choose Brand & home, Series & chapters, Products, Orders, or Customers. Edit text, approved Unsplash image URLs, slugs, story paragraphs, price, sizes, details, and both product views. Add and remove Series, Chapters, and products. Use the image picker to upload PNG, JPEG, or WebP files up to 2 MB. The Orders tab shows delivery details and item snapshots, updates fulfilment status, refreshes the ledger, and removes demonstration orders. The Customers tab lists private archives and can remove demo accounts while preserving their order records. Chapters and products must point to existing linked items.
 
 Content is saved in Neon Postgres. Uploaded images and four-hour Studio sessions also persist in Neon. The image route serves an uploaded image from the database by its ID. For a larger production site, move media to object storage and add named staff accounts, role-based access, image optimization, and an audit log.
 

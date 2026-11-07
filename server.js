@@ -137,9 +137,15 @@ function validText(value, max = 2000) {
 
 function validImage(value) {
   if (!validText(value, 2048)) return false;
-  return /^https:\/\/[^<>"'\s]+$/.test(value) ||
-    /^\/assets\/[a-zA-Z0-9._/-]+$/.test(value) ||
-    /^\/api\/media\/[a-f0-9-]{36}$/.test(value);
+  if (/^\/assets\/[a-zA-Z0-9._/-]+$/.test(value) ||
+      /^\/api\/media\/[a-f0-9-]{36}$/.test(value)) return true;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.hostname === "images.unsplash.com" &&
+      !url.username && !url.password && !url.port;
+  } catch {
+    return false;
+  }
 }
 
 function validContent(value) {
@@ -201,7 +207,8 @@ function validImageBytes(mime, bytes) {
 
 function validOrderRequest(value) {
   if (!isObject(value) || !isObject(value.customer) || !Array.isArray(value.items) ||
-      value.items.length < 1 || value.items.length > 20 || value.demoAcknowledged !== true) return false;
+      value.items.length < 1 || value.items.length > 20 || value.demoAcknowledged !== true ||
+      !Number.isSafeInteger(value.expectedSubtotal) || value.expectedSubtotal < 0) return false;
   const customer = value.customer;
   if (!["name", "email", "phone", "address", "city", "postalCode"].every((key) =>
       validText(customer[key], key === "address" ? 500 : 160) && customer[key].trim())) return false;
@@ -209,10 +216,16 @@ function validOrderRequest(value) {
       !/^[+()\-\s0-9]{6,24}$/.test(customer.phone) ||
       !/^[a-zA-Z0-9\-\s]{3,14}$/.test(customer.postalCode)) return false;
   if (customer.website) return false;
-  return value.items.every((item) => isObject(item) &&
-    /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item.slug || "") &&
-    validText(item.size, 30) && item.size.trim() &&
-    Number.isInteger(item.qty) && item.qty >= 1 && item.qty <= 10);
+  const variants = new Set();
+  return value.items.every((item) => {
+    if (!isObject(item) || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item.slug || "") ||
+        !validText(item.size, 30) || !item.size.trim() ||
+        !Number.isInteger(item.qty) || item.qty < 1 || item.qty > 10) return false;
+    const variant = item.slug + "\u0000" + item.size;
+    if (variants.has(variant)) return false;
+    variants.add(variant);
+    return true;
+  });
 }
 
 async function createOrder(body, customerId) {
@@ -235,6 +248,9 @@ async function createOrder(body, customerId) {
     };
   });
   const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
+  if (body.expectedSubtotal !== subtotal) {
+    throw requestError("The bag price changed. Review the updated subtotal before confirming your order.", 409);
+  }
   const customer = {
     name: body.customer.name.trim(),
     email: body.customer.email.trim().toLowerCase(),
@@ -382,6 +398,13 @@ async function handle(req, res) {
       return send(res, 400, { error: "Check required fields, unique Series and Chapter slugs, linked products, and image URLs." });
     }
     await db.writeContent(body);
+    try {
+      await db.pruneUnusedMedia();
+    } catch (error) {
+      // A cleanup failure must not make an already-committed content save look
+      // like it failed; unused assets can be pruned on the next successful save.
+      console.error("Unused media cleanup failed:", error);
+    }
     return send(res, 200, { ok: true, savedAt: new Date().toISOString() });
   }
 

@@ -146,6 +146,33 @@ async function saveMedia(mimeType, bytes) {
   return "/api/media/" + id;
 }
 
+async function pruneUnusedMedia() {
+  // Keep every image referenced by published content or an order snapshot so
+  // old customer and Studio order records continue to render after edits.
+  await getClient().query(`
+    WITH referenced_urls(url) AS (
+      SELECT hero->>'image' FROM site_settings WHERE id = 1
+      UNION ALL
+      SELECT series->>'image' FROM site_settings WHERE id = 1
+      UNION ALL SELECT image FROM series
+      UNION ALL SELECT image FROM chapters
+      UNION ALL SELECT image FROM products
+      UNION ALL SELECT secondary_image FROM products WHERE secondary_image <> ''
+      UNION ALL
+      SELECT item->>'image'
+      FROM orders
+      CROSS JOIN LATERAL jsonb_array_elements(
+        CASE WHEN jsonb_typeof(orders.items) = 'array' THEN orders.items ELSE '[]'::jsonb END
+      ) AS order_item(item)
+    )
+    DELETE FROM media_assets AS media
+    WHERE NOT EXISTS (
+      SELECT 1 FROM referenced_urls
+      WHERE referenced_urls.url = '/api/media/' || media.id::text
+    )
+  `);
+}
+
 async function readMedia(id) {
   const rows = await getClient().query(
     "SELECT mime_type, base64_data FROM media_assets WHERE id = $1::uuid",
@@ -309,7 +336,7 @@ async function ping() {
 }
 
 module.exports = {
-  initializeDatabase, readContent, writeContent, saveMedia, readMedia,
+  initializeDatabase, readContent, writeContent, saveMedia, readMedia, pruneUnusedMedia,
   createSession, hasSession, deleteSession, createOrder, readOrders,
   updateOrderStatus, deleteOrder, createCustomer, findCustomerByEmail,
   createCustomerSession, readCustomerBySession, deleteCustomerSession,
