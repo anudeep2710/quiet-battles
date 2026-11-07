@@ -1,110 +1,128 @@
-# QUIET BATTLES™ — Website Development Demo
+# QUIET BATTLES™
 
-A working full-stack assessment prototype for the QUIET BATTLES™ brief. It includes a cinematic homepage, responsive navigation, a multi-series Archive, Series 01 — THE GENTLE ARMOR™, five complete Chapter Chambers, eight chapter-linked artifacts with front and back views, customer sign-up and sign-in, a private order archive, an end-to-end demo acquisition, and a Neon-backed Studio for managing content, products, customers, images, and orders.
+A story-led clothing storefront for the QUIET BATTLES brief. The site connects The Archive to Series, five Chapter Chambers, eight related products, customer accounts, an order history, and a private content Studio.
 
-**Assessment deadline:** 11 November 2026, 6:00 PM IST.
+- **Website:** [Open the site](https://quiet-battles-demo.vercel.app)
+- **Source:** [GitHub repository](https://github.com/anudeep2710/quiet-battles-demo)
 
-## Explore the demo
+All product details, prices, and stories are illustrative. Checkout requires an account, but its QR is a non-payable test image: no payment is collected, verified, or transferred.
 
-- Home: /
-- Archive: /#archive
-- Artifacts: /#artifacts
-- Series 01: /#series
-- Complete story: /#chapter/the-first-quiet
-- Sample product: /#product/soft-armor-hoodie
-- Customer sign in: /#login
-- Customer sign up: /#signup
-- Private customer archive: /#account
-- Content Studio: /#admin
+## Explore
 
-The five chapters have complete sample stories. The bag supports size selection and quantity changes. Checkout requires an account, reviews delivery details and the current order total, then presents a clearly labelled non-payable QR and creates a demonstration order in Neon. It never connects to a bank, UPI account, or payment provider and never transfers money.
+- Homepage: /
+- The Archive: /#archive
+- Series 01 — THE GENTLE ARMOR™: /#series/the-gentle-armor
+- Chapter 01: /#chapter/the-first-quiet
+- Product: /#product/soft-armor-hoodie
+- Product catalogue: /#artifacts
+- Sign in: /#login
+- Create an account: /#signup
+- Private order history: /#account
+- Studio: /#admin
 
-Customers can create an account, sign out, sign back in, and see their own linked demo orders. An account is required before checkout; visitors can browse and build a bag before signing in or creating one. Screenshots of the homepage, Archive, Series, Chapters, artifact catalogue, checkout account gate, product, mobile layout, demo bag, and Studio are in [docs/screenshots](docs/screenshots/README.md).
+The purchase path is Browse → Add to bag → Checkout → Sign in or create an account → Delivery details → Order review → Test QR → Order confirmation. Guest orders are rejected by the API. The selected bag remains available while the visitor signs in.
 
-## Run locally
+## Technology
 
-Requirements: Node.js 24.15 or newer, npm, and a Neon Postgres database.
+| Area | Choice |
+| --- | --- |
+| Frontend | Semantic HTML, responsive CSS, browser JavaScript |
+| API | Node.js HTTP handler, shared by local server and Vercel Function |
+| Database | Neon Postgres through @neondatabase/serverless |
+| Hosting | Vercel; source hosted in GitHub |
+| Content management | Custom Studio backed by the same API and database |
+| Images | Local WebP editorial images, Unsplash photography, original garment SVGs |
+| Fonts | Barlow Condensed, DM Sans, IBM Plex Mono from Google Fonts |
 
-1. Install packages with npm install.
-2. Set DATABASE_URL and QB_ADMIN_KEY in an ignored .env.local file. QB_ADMIN_KEY must be at least 16 characters.
-3. Run npm run db:init. It creates or migrates the tables and seeds the sample brand, one Series, five Chapters, and eight products if the site is empty.
-4. Start the site with npm run dev and open http://127.0.0.1:4173.
-
-For the linked Vercel project, run npx vercel env pull .env.local after linking to download its development connection variables. The current Studio key is kept in the ignored .studio-key file in this workspace. Never commit either file.
-
-Run npm run test:smoke while the local server is running on port 4174. The smoke check exercises the eight-product catalogue, guest-order rejection, customer sign-up/sign-in/sign-out, account-linked checkout, the private order archive, Studio customer and order controls, content writes, image upload and cleanup. It restores the original content and deletes its temporary account and order before exiting.
-
-## Maintain the site
-
-Open Studio, enter the Studio key, and choose Brand & home, Series & chapters, Products, Orders, or Customers. Edit text, approved Unsplash image URLs, slugs, story paragraphs, price, sizes, details, and both product views. Add and remove Series, Chapters, and products. Use the image picker to upload PNG, JPEG, or WebP files up to 2 MB. The Orders tab shows delivery details and item snapshots, updates fulfilment status, refreshes the ledger, and removes demonstration orders. The Customers tab lists private archives and can remove demo accounts while preserving their order records. Chapters and products must point to existing linked items.
-
-Content is saved in Neon Postgres. Uploaded images and four-hour Studio sessions also persist in Neon. The image route serves an uploaded image from the database by its ID. For a larger production site, move media to object storage and add named staff accounts, role-based access, image optimization, and an audit log.
+The frontend has no framework or component library. The CMS is built for this project; no CMS plugin or site template is used.
 
 ## Architecture
 
-    Visitor browser → static HTML/CSS/JavaScript → JSON API → Neon Postgres
-    Studio editor ───────────────────────────────→ protected JSON API
-    Studio image picker → upload API → Neon media_assets table
-    Customer sign-up/sign-in → salted password hash + hashed session → Neon customers
-    Visitor bag → browser localStorage → required customer sign-in → dummy-QR checkout
-    Checkout → customer-linked order → private acquisition archive
+```mermaid
+flowchart LR
+  visitor[Visitor browser] --> ui[HTML, CSS, and browser JavaScript]
+  ui --> api[Node.js JSON API]
+  api --> db[(Neon Postgres)]
+  ui --> bag[Browser storage: bag and session token]
+  bag -->|account required| api
+  api -->|catalogue-priced order record| db
+  studio[Private Studio] -->|content, product, order, and customer requests| api
+  api -->|validated updates and media| db
+  ui --> assets[Vercel static images, styles, and scripts]
+```
 
-The Vercel deployment serves the public folder as static assets and runs the API from api/index.js. The same server.js handles requests when running locally. The database schema is created and migrated by scripts/init-db.js. The seed content is in data/content.json.
+Locally, server.js serves the public files and the API. On Vercel, public/ contains static assets and api/index.js exposes the same request handler. db.js contains the Neon queries and schema setup; data/content.json supplies initial content.
 
-Database tables:
+## Run locally
 
-| Table | Data |
+Requirements: Node.js 24.15 or newer, npm, and a Neon Postgres database branch reserved for this project.
+
+1. Install dependencies with npm install.
+2. Copy .env.example to .env.local and set DATABASE_URL and QB_ADMIN_KEY. Use a private key with at least 16 characters.
+3. Run npm run db:init to create or migrate the schema and seed an empty database.
+4. Run npm run dev and open http://127.0.0.1:4173.
+
+Keep .env.local, .studio-key, and all database credentials out of Git. The deployment Studio key is configured as a Vercel environment variable.
+
+The smoke check writes temporary account, order, content, and image records before deleting them. Run it only against a disposable Neon branch. It expects the local server on port 4174 and a .studio-key file containing the same key as QB_ADMIN_KEY. In PowerShell, start the server with $env:PORT = "4174"; npm run dev, then run npm run test:smoke in another terminal.
+
+## Content Studio
+
+Open /#admin and enter the private Studio key. The Studio can edit homepage copy; add, edit, and remove Series, Chapters, and products; upload images; and review customer and order records. Uploaded PNG, JPEG, and WebP files are limited to 2 MB and stored in Neon. Order status can be updated and records can be removed. Chapters and products must keep valid links to one another.
+
+The current Studio key is a shared credential. It is suitable for this assessment build, but a real team should use named staff accounts, roles, and an audit log.
+
+## Data model
+
+| Table | Purpose |
 | --- | --- |
-| site_settings | Brand, hero, introduction, and featured Series compatibility data |
-| series | Ordered Series metadata and image |
-| chapters | Series link, chapter order, slug, story, image, linked product |
-| products | Product type, details, price in INR, sizes, linked chapter |
-| media_assets | Uploaded image type and bytes |
-| admin_sessions | Hashed Studio token and expiration |
-| customers | Customer profile, normalized email, salted scrypt password hash |
-| customer_sessions | Hashed seven-day customer token, account link and expiration |
-| orders | Account link (nullable for legacy records), delivery snapshot, item snapshots, subtotal, payment label, fulfilment status and timestamps |
+| site_settings | Brand and homepage content |
+| series | Ordered Series records |
+| chapters | Chapter story and Series/product links |
+| products | Product details, prices, sizes, and imagery |
+| media_assets | Uploaded image bytes |
+| customers | Customer profile and scrypt-derived password hash |
+| customer_sessions | Hashed, expiring customer session token |
+| admin_sessions | Hashed, expiring Studio session token |
+| orders | Customer-linked delivery, item, price, and status snapshots |
 
-See [docs/database-schema.md](docs/database-schema.md) for fields, constraints, and content relationships.
+The app validates content links before saving. The order API checks the signed-in customer, validates product and size selections, recalculates prices from the catalogue, and stores an order snapshot. It does not handle real payment details.
 
-Studio saves use one Neon transaction. SQL parameters are bound by the Neon serverless driver. The Studio key is held in the deployment environment; it is never sent to visitors except when they enter it to sign in. Session tokens are random, stored as hashes, and revoked on sign-out.
+See [docs/database-schema.md](docs/database-schema.md) for fields and relationships.
 
-## API
+## API overview
 
 | Method and route | Purpose |
 | --- | --- |
-| GET /api/health | Confirm the API can query Neon |
-| GET /api/content | Read public site content |
+| GET /api/health | Check API and database connectivity |
+| GET /api/content | Read published content |
 | GET /api/media/:id | Read an uploaded image |
-| POST /api/auth/signup | Create a customer archive and session |
-| POST /api/auth/login | Sign in to a customer archive |
-| GET /api/auth/me | Read the signed-in customer and their orders |
+| POST /api/auth/signup | Create a customer account |
+| POST /api/auth/login | Sign in |
+| GET /api/auth/me | Read the current account and its orders |
 | POST /api/auth/logout | Revoke a customer session |
-| POST /api/admin/login | Sign in with the Studio key |
-| POST /api/admin/logout | Revoke a Studio session |
-| PUT /api/admin/content | Validate and save content |
-| POST /api/admin/upload | Validate and store an image |
-| POST /api/orders | Reprice the bag and create a demonstration order |
+| POST /api/orders | Validate and record an account-linked order |
+| POST /api/admin/login | Start a Studio session |
+| PUT /api/admin/content | Save validated content |
+| POST /api/admin/upload | Store an image |
 | GET /api/admin/orders | List orders in Studio |
-| PATCH /api/admin/orders/:id | Update an order status |
-| DELETE /api/admin/orders/:id | Remove a demonstration order |
-| GET /api/admin/customers | List customer accounts in Studio |
-| DELETE /api/admin/customers/:id | Remove a demonstration customer account |
+| PATCH /api/admin/orders/:id | Update fulfilment status |
+| DELETE /api/admin/orders/:id | Remove an order |
+| GET /api/admin/customers | List customer accounts |
+| DELETE /api/admin/customers/:id | Remove a customer account |
 
-## Stack and third-party disclosure
+## Submission files
 
-- Frontend: hand-written semantic HTML, responsive CSS, and browser JavaScript. No template, UI framework, or CMS plugin.
-- Backend: Node.js HTTP API, deployed as a Vercel Node Function.
-- Database: Neon Postgres, accessed with @neondatabase/serverless.
-- Hosting: Vercel. The connected GitHub repository deploys new pushes.
-- Images: five original editorial concepts generated with OpenAI image generation, supplementary sample photography from Unsplash, and sixteen original local SVG garment views.
-- Fonts: Barlow Condensed, DM Sans, and IBM Plex Mono loaded from Google Fonts.
-- Development assistance: OpenAI Codex helped implement, document, and review this prototype. Playwright was used to check the browser experience and capture screenshots. GitHub hosts the source.
+- [Submission overview](SUBMISSION.md)
+- [Technical approach and estimate](TECHNICAL_APPROACH.md)
+- [Product readiness review](docs/READINESS_REVIEW.md)
+- [Database schema](docs/database-schema.md)
+- [Screenshots](docs/screenshots/README.md)
 
-The updated overview clarifies the brand philosophy, architecture, and assessment scope. Approved brand assets, final copy, garment specifications, stock, payment, shipping, returns, and commerce policies are still needed for a production launch. The visual direction, stories, price, and product copy are clearly sample material.
+## Scope and next steps
 
-## Demo boundaries
+This build is for technical assessment, not public commerce. Use sample information only. Email verification, password recovery, generic account-registration responses, effective request throttling, production privacy and retention controls, named Studio users, stock management, shipping and tax calculation, returns, transactional email, and payment-provider verification are not implemented. Before accepting real customer accounts, implement and review the account and privacy controls. Before launching commerce, add inventory, shipping, tax, return, and payment-provider integrations.
 
-This is an assessment prototype, not a live payment system. Its demonstration checkout requires a customer account and records an order, but the QR is deliberately non-payable and no payment is verified or transferred. Customer accounts work for the demo, but email verification, password recovery, account-enumeration protection, login throttling, production privacy controls, shipping rates, taxes, stock reservations, returns, transactional email, and production staff roles remain outside the demo. Do not use real customer details or deploy this prototype for public customer accounts until email verification, generic signup responses, effective edge/application rate limits, and retention/privacy controls are implemented and reviewed. Use sample details and a password not used elsewhere. The current hash-based pages are not independently crawlable routes; production should use server-rendered or statically generated URLs. Production media should also move to object storage with optimized derivatives.
+The inner pages use hash-based navigation, so search engines do not receive a distinct crawlable URL for every Series, Chapter, and product. A production release should add crawlable routes, page-specific metadata, a sitemap, optimized image derivatives, and monitoring.
 
-See TECHNICAL_APPROACH.md for the implementation rationale, seven-day plan, production roadmap, and indicative full-project quotation.
+Five editorial concepts were generated with OpenAI image generation; additional photography is sourced from Unsplash; the garment illustrations are local SVGs. Google Fonts serves the typefaces. OpenAI Codex assisted with implementation, documentation, and code review. Playwright was used for browser review and screenshot capture.

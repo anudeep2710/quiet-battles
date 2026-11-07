@@ -91,7 +91,7 @@ function syncCartWithContent(nextContent) {
 function addProductToCart(product, size) {
   const existing = cart.find(function (item) { return item.slug === product.slug && item.size === size; });
   if (existing && existing.qty >= 10) {
-    showNotice("Maximum quantity per size is 10 for this demonstration.");
+    showNotice("Maximum quantity per size is 10.");
     return false;
   }
   if (existing) existing.qty += 1;
@@ -181,7 +181,7 @@ function renderFooter() {
       '<p class="footer-note">' + escapeHtml(content.brand.intro) + '</p>' +
       '<div class="footer-links"><a href="#archive">Explore the archive</a><a href="#artifacts">Meet the artifacts</a><a href="' + (customer ? '#account' : '#login') + '">' + (customer ? 'My private archive' : 'Sign in') + '</a><a href="#admin">Studio access</a></div>' +
     '</div>' +
-    '<div class="footer-bottom"><span>© 2026 ' + escapeHtml(content.brand.name) + '™</span><span>' + escapeHtml(content.brand.tagline) + '</span><span>Independent demo experience</span></div>' +
+    '<div class="footer-bottom"><span>© 2026 ' + escapeHtml(content.brand.name) + '™</span><span>' + escapeHtml(content.brand.tagline) + '</span><span>STORIES FOR THE EVERYDAY</span></div>' +
   '</div></footer>';
 }
 
@@ -228,7 +228,7 @@ function renderHome() {
     '</div><div class="page chapter-list">' + chapterCards(series) + '</div></section>' +
     '<section class="page section product-feature">' +
       '<div class="product-photo"><img src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + '" loading="lazy"><span class="product-stamp mono">FIELD PIECE 001</span></div>' +
-      '<div class="product-copy"><span class="mono section-label">FROM THE SERIES · ' + escapeHtml(firstChapter.number) + '</span><h2>' + escapeHtml(product.name) + '</h2><p>' + escapeHtml(product.description) + '</p><div class="price">' + money(product.price) + '<small>Sample price · INR</small></div><div class="product-details">' + product.details.map(function (line) { return "<span>" + escapeHtml(line) + "</span>"; }).join("") + '</div><a class="button button-dark" href="#product/' + escapeHtml(product.slug) + '">View the piece <span class="arrow">↗</span></a></div>' +
+      '<div class="product-copy"><span class="mono section-label">FROM THE SERIES · ' + escapeHtml(firstChapter.number) + '</span><h2>' + escapeHtml(product.name) + '</h2><p>' + escapeHtml(product.description) + '</p><div class="price">' + money(product.price) + '<small>Illustrative price · INR</small></div><div class="product-details">' + product.details.map(function (line) { return "<span>" + escapeHtml(line) + "</span>"; }).join("") + '</div><a class="button button-dark" href="#product/' + escapeHtml(product.slug) + '">View the piece <span class="arrow">↗</span></a></div>' +
     '</section>' +
   '</main>';
 }
@@ -293,7 +293,7 @@ function renderArtifacts() {
 
 function customerOrderCards() {
   if (!customerOrders.length) {
-    return '<div class="account-empty"><span class="mono section-label">ACQUISITION LEDGER · 0</span><h2>Nothing recorded yet.</h2><p>When you complete a demo acquisition while signed in, it will be kept here.</p><a class="button button-dark" href="#artifacts">Meet the artifacts <span class="arrow">↗</span></a></div>';
+    return '<div class="account-empty"><span class="mono section-label">ACQUISITION LEDGER · 0</span><h2>Nothing recorded yet.</h2><p>After you confirm a non-payable test order, its record will appear here.</p><a class="button button-dark" href="#artifacts">Meet the artifacts <span class="arrow">↗</span></a></div>';
   }
   return customerOrders.map(function (order) {
     const lines = (order.items || []).map(function (item) {
@@ -315,11 +315,11 @@ function renderAccount() {
 function renderAuth(mode) {
   if (customer) return renderAccount();
   const signup = mode === "signup";
-  return '<main class="auth-page"><section class="auth-visual"><div><span class="mono section-label">A PRIVATE PLACE IN THE ARCHIVE</span><blockquote>“Keep a record of what carried you.”</blockquote><p>Your account connects demo acquisitions to one quiet, personal ledger.</p></div></section><section class="auth-panel"><form class="auth-form" id="customer-auth" data-auth-mode="' + (signup ? 'signup' : 'login') + '"><span class="mono section-label">' + (signup ? 'OPEN YOUR ARCHIVE' : 'RETURN TO YOUR ARCHIVE') + '</span><h1>' + (signup ? 'Begin<br>quietly.' : 'Welcome<br>back.') + '</h1><p>' + (signup ? 'Create a private archive for your demonstration acquisitions.' : 'Sign in to revisit your acquisition history.') + '</p>' +
+  return '<main class="auth-page"><section class="auth-visual"><div><span class="mono section-label">A PRIVATE PLACE IN THE ARCHIVE</span><blockquote>“Keep a record of what carried you.”</blockquote><p>Your account connects each order to one quiet, personal ledger.</p></div></section><section class="auth-panel"><form class="auth-form" id="customer-auth" data-auth-mode="' + (signup ? 'signup' : 'login') + '"><span class="mono section-label">' + (signup ? 'OPEN YOUR ARCHIVE' : 'RETURN TO YOUR ARCHIVE') + '</span><h1>' + (signup ? 'Begin<br>quietly.' : 'Welcome<br>back.') + '</h1><p>' + (signup ? 'Create a private archive for your order history.' : 'Sign in to revisit your order history.') + '</p>' +
     (signup ? '<label><span>Your name</span><input name="name" autocomplete="name" minlength="2" maxlength="80" required></label>' : '') +
     '<label><span>Email</span><input name="email" type="email" autocomplete="email" maxlength="254" required></label><label><span>Password</span><input name="password" type="password" autocomplete="' + (signup ? 'new-password' : 'current-password') + '" minlength="8" maxlength="128" required></label>' +
     (signup ? '<label><span>Confirm password</span><input name="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></label>' : '') +
-    '<div class="auth-message" role="status">' + escapeHtml(authMessage) + '</div><button class="button button-dark" type="submit">' + (signup ? 'Create private archive' : 'Sign in') + ' <span class="arrow">↗</span></button><p class="auth-switch">' + (signup ? 'Already have an archive? <a href="#login">Sign in</a>' : 'New here? <a href="#signup">Create your archive</a>') + '</p><small>Assessment demo only. Use demonstration details, not a password you use elsewhere.</small></form></section></main>';
+    '<div class="auth-message" role="status">' + escapeHtml(authMessage) + '</div><button class="button button-dark" type="submit">' + (signup ? 'Create private archive' : 'Sign in') + ' <span class="arrow">↗</span></button><p class="auth-switch">' + (signup ? 'Already have an archive? <a href="#login">Sign in</a>' : 'New here? <a href="#signup">Create your archive</a>') + '</p><small>Use sample details and a unique password. No real payment is collected.</small></form></section></main>';
 }
 
 function renderSeries(slug) {
@@ -367,9 +367,9 @@ function renderProduct(slug) {
   return '<main class="page product-page"><nav class="breadcrumbs" aria-label="Breadcrumbs"><a href="#home">Home</a><span>/</span><a href="#archive">Archive</a><span>/</span><a href="#series/' + escapeHtml(series.slug) + '">' + escapeHtml(series.number) + '</a><span>/</span><a href="#chapter/' + escapeHtml(chapter.slug) + '">' + escapeHtml(chapter.number) + '</a><span>/</span><span>Artifact</span></nav>' +
     '<div class="product-detail-layout"><div class="product-gallery"><figure class="gallery-frame"><img src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + ' front view" fetchpriority="high"></figure>' +
     (product.secondaryImage ? '<figure class="gallery-frame"><img src="' + escapeHtml(product.secondaryImage) + '" alt="' + escapeHtml(product.name) + ' back or detail view" loading="lazy"></figure>' : "") + '</div>' +
-    '<section class="product-info"><span class="mono section-label">' + escapeHtml(product.category) + ' · SAMPLE PRODUCT</span><h1 class="page-title">' + escapeHtml(product.name) + '</h1><div class="price">' + money(product.price) + '<small>INR · sample price</small></div><p class="product-desc">' + escapeHtml(product.description) + '</p>' +
+    '<section class="product-info"><span class="mono section-label">' + escapeHtml(product.category) + ' · CONCEPT PIECE</span><h1 class="page-title">' + escapeHtml(product.name) + '</h1><div class="price">' + money(product.price) + '<small>Illustrative price · INR</small></div><p class="product-desc">' + escapeHtml(product.description) + '</p>' +
     '<div class="size-label"><span>Choose your size</span><button class="size-guide" type="button" data-size-guide="' + escapeHtml(product.slug) + '">Size guide</button></div><div class="size-options">' + product.sizes.map(function (size) { return '<button class="size-option' + (selection === size ? " selected" : "") + '" type="button" data-size="' + escapeHtml(size) + '" data-product="' + escapeHtml(product.slug) + '" aria-pressed="' + (selection === size) + '">' + escapeHtml(size) + '</button>'; }).join("") + '</div><div class="size-help" id="size-help" aria-live="polite"></div>' +
-    '<button class="button button-dark" type="button" data-add="' + escapeHtml(product.slug) + '">Add to bag <span class="arrow">↗</span></button><p class="shipping-note">DEMO ACQUISITION · DUMMY QR · NO REAL PAYMENT</p>' +
+    '<button class="button button-dark" type="button" data-add="' + escapeHtml(product.slug) + '">Add to bag <span class="arrow">↗</span></button><p class="shipping-note">TEST ORDER · NON-PAYABLE QR · NO PAYMENT</p>' +
     '<div class="accordions"><details class="accordion" open><summary>About the piece</summary><p>' + escapeHtml(product.description) + '</p></details><details class="accordion"><summary>Details and care</summary><ul>' + product.details.map(function (detail) { return "<li>" + escapeHtml(detail) + "</li>"; }).join("") + '<li>Care information is sample copy for this prototype.</li></ul></details><details class="accordion"><summary>From the archive</summary><p>This piece accompanies <a href="#chapter/' + escapeHtml(product.chapterSlug) + '"><u>' + escapeHtml(getChapter(product.chapterSlug).title) + '</u></a>.</p></details></div>' +
     '</section></div><section class="related-products"><header><span class="mono section-label">KEEP EXPLORING</span><h2>Carry it together.</h2><a href="#artifacts">View all ' + content.products.length + ' artifacts <span class="arrow">↗</span></a></header><div class="related-grid">' + related.map(function (item, index) { return catalogCard(item, index); }).join("") + '</div></section></main>';
 }
@@ -393,7 +393,7 @@ function checkoutLineItems(items, snapshot) {
 
 function checkoutSummary(items, subtotal, snapshot) {
   return '<aside class="checkout-summary" aria-label="Order summary"><span class="mono section-label">ACQUISITION LEDGER</span><h2>Your artifact</h2><div class="checkout-lines">' + checkoutLineItems(items, snapshot) + '</div>' +
-    '<div class="checkout-total"><span>Demo subtotal</span><strong>' + money(subtotal) + '</strong></div><p>Shipping and taxes are not calculated in this assessment demonstration.</p></aside>';
+    '<div class="checkout-total"><span>Order subtotal</span><strong>' + money(subtotal) + '</strong></div><p>Shipping and taxes are not included in these illustrative prices.</p></aside>';
 }
 
 function renderCheckoutReview() {
@@ -417,8 +417,8 @@ function renderCheckoutAccount() {
 function renderCheckout() {
   if (checkoutOrder) {
     return '<main class="checkout-page"><div class="page">' + checkoutSteps("complete") +
-      '<section class="confirmation-chamber"><span class="confirmation-mark" aria-hidden="true">✓</span><span class="mono section-label">ACQUISITION RECORDED · DEMONSTRATION</span><h1>Your artifact<br>has a place.</h1><p>A demo order was saved to Neon and is now visible in Studio. No money was requested or transferred.</p>' +
-      '<div class="confirmation-receipt"><span>Order reference</span><strong>' + escapeHtml(checkoutOrder.orderNumber) + '</strong><span>Status</span><strong>' + escapeHtml(checkoutOrder.status) + '</strong><span>Demo subtotal</span><strong>' + money(checkoutOrder.subtotal) + '</strong></div>' +
+      '<section class="confirmation-chamber"><span class="confirmation-mark" aria-hidden="true">✓</span><span class="mono section-label">TEST ORDER RECORDED</span><h1>Your artifact<br>has a place.</h1><p>An order record was saved to Neon and is visible in Studio. No payment was requested, verified, or transferred.</p>' +
+      '<div class="confirmation-receipt"><span>Order reference</span><strong>' + escapeHtml(checkoutOrder.orderNumber) + '</strong><span>Status</span><strong>' + escapeHtml(checkoutOrder.status) + '</strong><span>Test subtotal</span><strong>' + money(checkoutOrder.subtotal) + '</strong></div>' +
       (customer ? '<div class="confirmation-actions"><a class="button button-dark" href="#account">View my private archive <span class="arrow">↗</span></a><a class="button button-light" href="#artifacts">Return to artifacts</a></div>' : '<a class="button button-dark" href="#archive">Return to the archive <span class="arrow">↗</span></a>') + '</section></div></main>';
   }
 
@@ -441,17 +441,17 @@ function renderCheckout() {
   if (checkoutStep === "review") return renderCheckoutReview();
   if (checkoutStep === "payment") {
     return '<main class="checkout-page"><div class="page">' + checkoutSteps("payment") +
-      '<div class="checkout-heading"><span class="mono section-label">ACQUISITION · DEMO PAYMENT</span><h1>A ritual of exchange.</h1><p>This QR is intentionally non-payable. Confirming it creates a demonstration order for the Studio workflow.</p></div>' +
-      '<div class="checkout-layout"><section class="payment-chamber"><div class="qr-frame"><img src="/assets/demo-payment-qr.svg" alt="Dummy QR marked demo and not payable"></div>' +
-        '<div class="payment-copy"><span class="mono section-label">DUMMY QR · NOT PAYABLE</span><h2>No money moves here.</h2><p>This screen demonstrates the payment step without connecting to UPI, a bank, or a payment gateway.</p>' +
+      '<div class="checkout-heading"><span class="mono section-label">ACQUISITION · TEST QR</span><h1>A ritual of exchange.</h1><p>This QR cannot accept payment. Confirming records an order for Studio; no payment occurs.</p></div>' +
+      '<div class="checkout-layout"><section class="payment-chamber"><div class="qr-frame"><img src="/assets/test-payment-qr.svg" alt="Test QR marked not payable"></div>' +
+        '<div class="payment-copy"><span class="mono section-label">TEST QR · NOT PAYABLE</span><h2>No money moves here.</h2><p>This screen records a test order without connecting to UPI, a bank, or a payment provider.</p>' +
         '<dl class="delivery-note"><div><dt>For</dt><dd>' + customerValue("name") + '</dd></div><div><dt>Delivery</dt><dd>' + customerValue("city") + ' · ' + customerValue("postalCode") + '</dd></div></dl>' +
-        '<label class="demo-ack"><input type="checkbox" data-demo-ack> <span>I understand this is a demonstration and no payment will be made.</span></label><div class="checkout-message" role="status">' + escapeHtml(checkoutMessage) + '</div>' +
-        '<div class="checkout-actions"><button class="button button-light" type="button" data-back-details>Back</button><button class="button button-dark" type="button" data-confirm-demo>Confirm demo order <span class="arrow">↗</span></button></div></div></section>' +
+        '<label class="payment-ack"><input type="checkbox" data-payment-ack> <span>I understand no payment will be made. This only records a test order.</span></label><div class="checkout-message" role="status">' + escapeHtml(checkoutMessage) + '</div>' +
+        '<div class="checkout-actions"><button class="button button-light" type="button" data-back-details>Back</button><button class="button button-dark" type="button" data-confirm-order>Confirm test order <span class="arrow">↗</span></button></div></div></section>' +
         checkoutSummary(cart, subtotal, false) + '</div></div></main>';
   }
 
   return '<main class="checkout-page"><div class="page">' + checkoutSteps("details") +
-    '<div class="checkout-heading"><span class="mono section-label">ACQUISITION · DELIVERY DETAILS</span><h1>Where should<br>it find you?</h1><p>Use sample information for this assessment. The submitted details are stored with the demo order in Neon.</p></div>' +
+    '<div class="checkout-heading"><span class="mono section-label">ACQUISITION · DELIVERY DETAILS</span><h1>Where should<br>it find you?</h1><p>Use sample information; these details are stored with the test order in Neon.</p></div>' +
     '<div class="checkout-layout"><form class="checkout-form" id="checkout-details">' + (checkoutMessage ? '<p class="checkout-message" role="status">' + escapeHtml(checkoutMessage) + '</p>' : '') + '<div class="checkout-field-grid">' +
       '<label><span>Full name</span><input name="name" autocomplete="name" value="' + customerValue("name") + '" maxlength="160" required></label>' +
       '<label><span>Email</span><input name="email" type="email" autocomplete="email" value="' + customerValue("email") + '" maxlength="160" required></label>' +
@@ -460,7 +460,7 @@ function renderCheckout() {
       '<label class="wide"><span>Delivery address</span><textarea name="address" autocomplete="street-address" maxlength="500" required>' + customerValue("address") + '</textarea></label>' +
       '<label><span>Postal code</span><input name="postalCode" autocomplete="postal-code" value="' + customerValue("postalCode") + '" minlength="3" maxlength="14" required></label>' +
       '<label class="honeypot" aria-hidden="true"><span>Website</span><input name="website" tabindex="-1" autocomplete="off"></label>' +
-    '</div><p class="privacy-note">Assessment demo: do not enter sensitive or real customer information.</p><button class="button button-dark" type="submit">Continue to demo payment <span class="arrow">↗</span></button></form>' + checkoutSummary(cart, subtotal, false) + '</div></div></main>';
+    '</div><p class="privacy-note">Use sample details only. Do not enter real personal or delivery information.</p><button class="button button-dark" type="submit">Continue to test QR <span class="arrow">↗</span></button></form>' + checkoutSummary(cart, subtotal, false) + '</div></div></main>';
 }
 
 function field(label, path, value, options) {
@@ -479,7 +479,7 @@ function field(label, path, value, options) {
 }
 
 function adminLogin() {
-  return '<form class="admin-login" id="admin-login"><span class="mono section-label">CONTENT DESK · PRIVATE PREVIEW</span><h2>Studio access</h2><p>Sign in to manage the archive, products, images, and demonstration orders.</p>' +
+  return '<form class="admin-login" id="admin-login"><span class="mono section-label">CONTENT DESK · PRIVATE ACCESS</span><h2>Studio access</h2><p>Sign in to manage the archive, products, images, and test orders.</p>' +
     '<label class="admin-field"><span>Studio key</span><input type="password" name="key" autocomplete="current-password" required></label>' +
     '<div class="admin-status" role="status">' + escapeHtml(adminMessage) + '</div><button class="button button-dark" type="submit">Open the studio <span class="arrow">↗</span></button></form>';
 }
@@ -493,7 +493,7 @@ function orderDate(value) {
 function adminOrderCards() {
   if (adminOrdersLoading) return '<div class="admin-card admin-empty"><h2>Opening the order ledger…</h2></div>';
   if (!adminOrdersLoaded) return '<div class="admin-card admin-empty"><h2>Order ledger</h2><p>Orders will appear here after the Studio connects to Neon.</p></div>';
-  if (!adminOrders.length) return '<div class="admin-card admin-empty"><span class="mono section-label">ORDER LEDGER · 0</span><h2>No acquisitions yet.</h2><p>Complete the dummy QR checkout to create a demonstration order.</p></div>';
+  if (!adminOrders.length) return '<div class="admin-card admin-empty"><span class="mono section-label">ORDER LEDGER · 0</span><h2>No acquisitions yet.</h2><p>Complete the non-payable test checkout to create an order record.</p></div>';
   return adminOrders.map(function (order) {
     const customer = order.customer || {};
     const lines = (order.items || []).map(function (item) {
@@ -503,18 +503,18 @@ function adminOrderCards() {
       return '<option value="' + status + '"' + (status === order.status ? " selected" : "") + '>' + status + '</option>';
     }).join("");
     return '<article class="admin-card admin-order"><div class="admin-order-head"><div><span class="mono section-label">' + escapeHtml(order.orderNumber) + '</span><h2>' + escapeHtml(customer.name) + '</h2><p>' + escapeHtml(orderDate(order.createdAt)) + '</p></div><span class="order-badge">' + escapeHtml(order.status) + '</span></div>' +
-      '<div class="admin-order-grid"><section><h3>Artifact</h3>' + lines + '<div class="admin-order-total"><span>Demo subtotal</span><strong>' + money(order.subtotal) + '</strong></div></section>' +
+      '<div class="admin-order-grid"><section><h3>Artifact</h3>' + lines + '<div class="admin-order-total"><span>Test subtotal</span><strong>' + money(order.subtotal) + '</strong></div></section>' +
       '<section class="admin-customer"><h3>Customer & delivery</h3><p><strong>' + escapeHtml(customer.email) + '</strong><br>' + escapeHtml(customer.phone) + '</p><p>' + escapeHtml(customer.address) + '<br>' + escapeHtml(customer.city) + ' · ' + escapeHtml(customer.postalCode) + '</p><span class="mono">PAYMENT · ' + escapeHtml(order.paymentStatus) + '</span></section></div>' +
-      '<div class="admin-order-actions"><label><span>Order status</span><select data-order-status="' + escapeHtml(order.id) + '">' + statusOptions + '</select></label><button class="button button-dark" type="button" data-update-order="' + escapeHtml(order.id) + '">Save status</button><button class="remove-button" type="button" data-delete-order="' + escapeHtml(order.id) + '">Delete demo order</button></div></article>';
+      '<div class="admin-order-actions"><label><span>Order status</span><select data-order-status="' + escapeHtml(order.id) + '">' + statusOptions + '</select></label><button class="button button-dark" type="button" data-update-order="' + escapeHtml(order.id) + '">Save status</button><button class="remove-button" type="button" data-delete-order="' + escapeHtml(order.id) + '">Delete order</button></div></article>';
   }).join("");
 }
 
 function adminCustomerCards() {
   if (adminCustomersLoading) return '<div class="admin-card admin-empty"><h2>Opening the customer archive…</h2></div>';
   if (!adminCustomersLoaded) return '<div class="admin-card admin-empty"><h2>Customer archive</h2><p>Customer accounts will appear here after Studio connects to Neon.</p></div>';
-  if (!adminCustomers.length) return '<div class="admin-card admin-empty"><span class="mono section-label">CUSTOMER ARCHIVE · 0</span><h2>No private archives yet.</h2><p>Create a demonstration account from the storefront to test this workflow.</p></div>';
+  if (!adminCustomers.length) return '<div class="admin-card admin-empty"><span class="mono section-label">CUSTOMER ARCHIVE · 0</span><h2>No private archives yet.</h2><p>Create an account from the storefront to review account records.</p></div>';
   return '<div class="admin-customer-list">' + adminCustomers.map(function (item) {
-    return '<article class="admin-card admin-customer-record"><div><span class="mono section-label">ARCHIVE HOLDER · ' + escapeHtml(orderDate(item.createdAt)) + '</span><h2>' + escapeHtml(item.name) + '</h2><a href="mailto:' + escapeHtml(item.email) + '">' + escapeHtml(item.email) + '</a></div><div class="customer-record-meta"><strong>' + Number(item.orderCount || 0) + '</strong><span>linked demo order' + (Number(item.orderCount || 0) === 1 ? '' : 's') + '</span></div><button class="remove-button" type="button" data-delete-customer="' + escapeHtml(item.id) + '">Delete demo account</button></article>';
+    return '<article class="admin-card admin-customer-record"><div><span class="mono section-label">ARCHIVE HOLDER · ' + escapeHtml(orderDate(item.createdAt)) + '</span><h2>' + escapeHtml(item.name) + '</h2><a href="mailto:' + escapeHtml(item.email) + '">' + escapeHtml(item.email) + '</a></div><div class="customer-record-meta"><strong>' + Number(item.orderCount || 0) + '</strong><span>linked order' + (Number(item.orderCount || 0) === 1 ? '' : 's') + '</span></div><button class="remove-button" type="button" data-delete-customer="' + escapeHtml(item.id) + '">Delete account</button></article>';
   }).join("") + '</div>';
 }
 
@@ -570,7 +570,7 @@ function adminDashboard() {
     '<div class="admin-savebar"><span>Remember to save your changes before leaving this page.</span><div class="admin-actions"><span class="admin-status" id="admin-status" role="status">' + escapeHtml(adminMessage) + '</span><button class="button" type="submit">Save changes <span class="arrow">↗</span></button></div></div>';
 
   return '<div class="admin-shell"><div class="page">' +
-    '<div class="admin-top"><div><span class="mono section-label">QUIET BATTLES · CONTENT & ORDER DESK</span><h1>Studio</h1></div><div><p>Content, media, customer accounts, and demo orders are saved to Neon Postgres.</p><button class="button button-light" type="button" data-logout>Sign out</button></div></div>' +
+    '<div class="admin-top"><div><span class="mono section-label">QUIET BATTLES · CONTENT & ORDER DESK</span><h1>Studio</h1></div><div><p>Content, media, customer accounts, and test orders are saved to Neon Postgres.</p><button class="button button-light" type="button" data-logout>Sign out</button></div></div>' +
     '<div class="admin-tabs" role="group" aria-label="Studio sections"><button class="admin-tab' + activeClass("brand") + '" type="button" data-tab="brand" aria-pressed="' + selected("brand") + '">Brand & home</button><button class="admin-tab' + activeClass("series") + '" type="button" data-tab="series" aria-pressed="' + selected("series") + '">Series & chapters</button><button class="admin-tab' + activeClass("products") + '" type="button" data-tab="products" aria-pressed="' + selected("products") + '">Products</button><button class="admin-tab' + activeClass("orders") + '" type="button" data-tab="orders" aria-pressed="' + selected("orders") + '">Orders <span>(' + adminOrders.length + ')</span></button><button class="admin-tab' + activeClass("customers") + '" type="button" data-tab="customers" aria-pressed="' + selected("customers") + '">Customers <span>(' + adminCustomers.length + ')</span></button></div>' +
     '<form id="admin-form">' +
       '<section class="admin-panel' + activeClass("brand") + '" data-panel="brand"><div class="admin-card"><h2>Brand introduction</h2><div class="admin-grid">' +
@@ -598,7 +598,7 @@ function renderCart() {
   const total = cartTotal();
   return '<button class="cart-backdrop" type="button" aria-label="Close bag" data-cart-close></button><aside class="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-title"><div class="cart-head"><h2 id="cart-title">Your bag <span class="mono">(' + cartQuantity() + ')</span></h2><button class="icon-button" type="button" data-cart-close aria-label="Close bag">×</button></div>' +
     '<div class="cart-items">' + (lines || '<div class="cart-empty">Nothing in your bag yet.<br>Find a piece that feels like you.<a href="#artifacts">Shop artifacts ↗</a></div>') + '</div>' +
-    (cart.length ? '<div class="cart-summary"><div class="cart-total"><span>Demo subtotal</span><strong>' + money(total) + '</strong></div><button type="button" class="button button-dark" data-demo-checkout>Continue to checkout <span class="arrow">↗</span></button><small>Sign in or create an account to place an order.</small></div>' : "") +
+    (cart.length ? '<div class="cart-summary"><div class="cart-total"><span>Order subtotal</span><strong>' + money(total) + '</strong></div><button type="button" class="button button-dark" data-checkout>Continue to checkout <span class="arrow">↗</span></button><small>Sign in or create an account to place an order.</small></div>' : "") +
   '</aside>';
 }
 
@@ -723,7 +723,7 @@ function bindEvents() {
     button.addEventListener("click", function () {
       const index = Number(button.dataset.cartInc);
       if (cart[index].qty >= 10) {
-        showNotice("Maximum quantity per size is 10 for this demonstration.");
+        showNotice("Maximum quantity per size is 10.");
         return;
       }
       cart[index].qty += 1;
@@ -808,7 +808,7 @@ function bindEvents() {
       : "Available sizes: " + sizes + ". Garment measurements are pending approved product specifications.";
     showNotice(fitNote);
   });
-  const checkout = document.querySelector("[data-demo-checkout]");
+  const checkout = document.querySelector("[data-checkout]");
   if (checkout) checkout.addEventListener("click", function () {
     cartOpen = false;
     checkoutMessage = "";
@@ -843,17 +843,17 @@ function bindEvents() {
     render();
     window.scrollTo(0, 0);
   });
-  const confirmDemo = document.querySelector("[data-confirm-demo]");
-  if (confirmDemo) confirmDemo.addEventListener("click", async function () {
-    const acknowledgement = document.querySelector("[data-demo-ack]");
+  const confirmOrder = document.querySelector("[data-confirm-order]");
+  if (confirmOrder) confirmOrder.addEventListener("click", async function () {
+    const acknowledgement = document.querySelector("[data-payment-ack]");
     if (!acknowledgement || !acknowledgement.checked) {
-      checkoutMessage = "Confirm that you understand this is a no-payment demonstration.";
+      checkoutMessage = "Confirm that no payment will be made to record this test order.";
       const message = document.querySelector(".checkout-message");
       if (message) message.textContent = checkoutMessage;
       return;
     }
-    confirmDemo.disabled = true;
-    confirmDemo.textContent = "Recording acquisition…";
+    confirmOrder.disabled = true;
+    confirmOrder.textContent = "Recording order…";
     checkoutMessage = "";
     try {
       const orderHeaders = { "Content-Type": "application/json" };
@@ -865,7 +865,7 @@ function bindEvents() {
           customer: checkoutCustomer,
           items: cart.map(function (item) { return { slug: item.slug, size: item.size, qty: item.qty }; }),
           expectedSubtotal: cartTotal(),
-          demoAcknowledged: true
+          noPaymentAcknowledged: true
         })
       });
       const result = await response.json();
@@ -896,7 +896,7 @@ function bindEvents() {
         location.hash = "#login";
         return;
       }
-      if (!response.ok) throw new Error(result.error || "The demonstration order could not be recorded.");
+      if (!response.ok) throw new Error(result.error || "The test order could not be recorded.");
       checkoutOrder = result.order;
       if (customer) customerOrders = [result.order].concat(customerOrders.filter(function (order) { return order.id !== result.order.id; }));
       checkoutStep = "complete";
@@ -906,8 +906,8 @@ function bindEvents() {
       window.scrollTo(0, 0);
     } catch (error) {
       checkoutMessage = error.message;
-      confirmDemo.disabled = false;
-      confirmDemo.innerHTML = 'Confirm demo order <span class="arrow">↗</span>';
+      confirmOrder.disabled = false;
+      confirmOrder.innerHTML = 'Confirm test order <span class="arrow">↗</span>';
       const message = document.querySelector(".checkout-message");
       if (message) message.textContent = checkoutMessage;
     }
@@ -1052,12 +1052,12 @@ function bindEvents() {
   });
   document.querySelectorAll("[data-delete-order]").forEach(function (button) {
     button.addEventListener("click", function () {
-      if (window.confirm("Delete this demonstration order from Neon?")) deleteAdminOrder(button.dataset.deleteOrder, button);
+      if (window.confirm("Delete this order from Neon?")) deleteAdminOrder(button.dataset.deleteOrder, button);
     });
   });
   document.querySelectorAll("[data-delete-customer]").forEach(function (button) {
     button.addEventListener("click", function () {
-      if (window.confirm("Delete this demonstration customer account? Linked orders will remain in the order ledger.")) deleteAdminCustomer(button.dataset.deleteCustomer, button);
+      if (window.confirm("Delete this customer account? Linked orders will remain in the order ledger.")) deleteAdminCustomer(button.dataset.deleteCustomer, button);
     });
   });
 
@@ -1172,7 +1172,7 @@ async function loadAdminOrders() {
     }
     adminOrders = result.orders;
     adminOrdersLoaded = true;
-    adminMessage = adminOrders.length ? "Order ledger updated." : "No demonstration orders yet.";
+    adminMessage = adminOrders.length ? "Order ledger updated." : "No orders yet.";
   } catch (error) {
     adminOrdersLoaded = true;
     adminMessage = error.message;
@@ -1197,7 +1197,7 @@ async function loadAdminCustomers() {
     }
     adminCustomers = result.customers;
     adminCustomersLoaded = true;
-    adminMessage = adminCustomers.length ? "Customer archive updated." : "No demonstration customer accounts yet.";
+    adminMessage = adminCustomers.length ? "Customer archive updated." : "No customer accounts yet.";
   } catch (error) {
     adminCustomersLoaded = true;
     adminMessage = error.message;
@@ -1214,7 +1214,7 @@ async function deleteAdminCustomer(id, button) {
       method: "DELETE", headers: { Authorization: "Bearer " + adminToken }
     });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "The demonstration account could not be deleted.");
+    if (!response.ok) throw new Error(result.error || "The customer account could not be deleted.");
     adminCustomers = adminCustomers.filter(function (item) { return item.id !== id; });
     adminMessage = result.email + " deleted from the customer archive.";
     render();
@@ -1254,9 +1254,9 @@ async function deleteAdminOrder(id, button) {
       method: "DELETE", headers: { Authorization: "Bearer " + adminToken }
     });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "The demonstration order could not be deleted.");
+    if (!response.ok) throw new Error(result.error || "The order could not be deleted.");
     adminOrders = adminOrders.filter(function (order) { return order.id !== id; });
-    adminMessage = result.orderNumber + " deleted from the demo ledger.";
+    adminMessage = result.orderNumber + " deleted from the order ledger.";
     render();
   } catch (error) {
     adminMessage = error.message;
@@ -1305,7 +1305,7 @@ async function uploadImage(input) {
       fieldInput.value = result.url;
       updateField(fieldInput);
     }
-    adminMessage = "Image uploaded. Save changes to publish it in the demo.";
+    adminMessage = "Image uploaded. Save changes to publish it on the site.";
     render();
     const tab = document.querySelector('[data-tab="' + tabName + '"]');
     if (tab) tab.click();

@@ -207,7 +207,7 @@ function validImageBytes(mime, bytes) {
 
 function validOrderRequest(value) {
   if (!isObject(value) || !isObject(value.customer) || !Array.isArray(value.items) ||
-      value.items.length < 1 || value.items.length > 20 || value.demoAcknowledged !== true ||
+      value.items.length < 1 || value.items.length > 20 || value.noPaymentAcknowledged !== true ||
       !Number.isSafeInteger(value.expectedSubtotal) || value.expectedSubtotal < 0) return false;
   const customer = value.customer;
   if (!["name", "email", "phone", "address", "city", "postalCode"].every((key) =>
@@ -229,7 +229,7 @@ function validOrderRequest(value) {
 }
 
 async function createOrder(body, customerId) {
-  if (!validOrderRequest(body)) throw requestError("Check the customer details, bag items, and demo-payment acknowledgement.");
+  if (!validOrderRequest(body)) throw requestError("Check the customer details, bag items, and no-payment acknowledgement.");
   const content = await db.readContent();
   const products = new Map(content.products.map((product) => [product.slug, product]));
   const items = body.items.map((line) => {
@@ -457,7 +457,7 @@ function onRequest(req, res) {
 
 if (require.main === module) {
   http.createServer(onRequest).listen(PORT, "127.0.0.1", () => {
-    console.log("QUIET BATTLES demo running at http://127.0.0.1:" + PORT);
+    console.log("QUIET BATTLES running at http://127.0.0.1:" + PORT);
   });
 }
 

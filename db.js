@@ -38,7 +38,7 @@ const schema = [
   "CREATE TABLE IF NOT EXISTS admin_sessions (token_hash TEXT PRIMARY KEY, expires_at TIMESTAMPTZ NOT NULL)",
   "CREATE TABLE IF NOT EXISTS customers (id UUID PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL, password_salt TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())",
   "CREATE TABLE IF NOT EXISTS customer_sessions (token_hash TEXT PRIMARY KEY, customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE, expires_at TIMESTAMPTZ NOT NULL)",
-  "CREATE TABLE IF NOT EXISTS orders (id UUID PRIMARY KEY, order_number TEXT NOT NULL UNIQUE, customer JSONB NOT NULL, items JSONB NOT NULL, subtotal INTEGER NOT NULL CHECK (subtotal >= 0), payment_method TEXT NOT NULL DEFAULT 'demo_qr', payment_status TEXT NOT NULL DEFAULT 'Demo confirmed', status TEXT NOT NULL DEFAULT 'Placed', created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now())",
+  "CREATE TABLE IF NOT EXISTS orders (id UUID PRIMARY KEY, order_number TEXT NOT NULL UNIQUE, customer JSONB NOT NULL, items JSONB NOT NULL, subtotal INTEGER NOT NULL CHECK (subtotal >= 0), payment_method TEXT NOT NULL DEFAULT 'test_qr', payment_status TEXT NOT NULL DEFAULT 'Not paid', status TEXT NOT NULL DEFAULT 'Placed', created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now())",
   "ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id UUID REFERENCES customers(id) ON DELETE SET NULL",
   "CREATE INDEX IF NOT EXISTS orders_customer_id_created_at_idx ON orders (customer_id, created_at DESC)",
   "CREATE INDEX IF NOT EXISTS orders_created_at_idx ON orders (created_at DESC)"
@@ -212,7 +212,7 @@ async function createOrder(customer, items, subtotal, customerId) {
   const suffix = crypto.randomBytes(3).toString("hex").toUpperCase();
   const orderNumber = "QB-" + date + "-" + suffix;
   const rows = await getClient().query(
-    "INSERT INTO orders (id, order_number, customer_id, customer, items, subtotal) VALUES ($1::uuid, $2, $3::uuid, $4::jsonb, $5::jsonb, $6) RETURNING id, order_number, customer_id, customer, items, subtotal, payment_method, payment_status, status, created_at, updated_at",
+    "INSERT INTO orders (id, order_number, customer_id, customer, items, subtotal, payment_method, payment_status) VALUES ($1::uuid, $2, $3::uuid, $4::jsonb, $5::jsonb, $6, 'test_qr', 'Not paid') RETURNING id, order_number, customer_id, customer, items, subtotal, payment_method, payment_status, status, created_at, updated_at",
     [id, orderNumber, customerId || null, JSON.stringify(customer), JSON.stringify(items), subtotal]
   );
   return mapOrder(rows[0]);
@@ -226,8 +226,8 @@ function mapOrder(row) {
     customer: row.customer,
     items: row.items,
     subtotal: row.subtotal,
-    paymentMethod: row.payment_method,
-    paymentStatus: row.payment_status,
+    paymentMethod: row.payment_method === "demo_qr" ? "test_qr" : row.payment_method,
+    paymentStatus: row.payment_status === "Demo confirmed" ? "Not paid" : row.payment_status,
     status: row.status,
     createdAt: row.created_at,
     updatedAt: row.updated_at

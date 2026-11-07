@@ -66,7 +66,7 @@ async function main() {
   try {
     const signup = await jsonRequest("/api/auth/signup", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Archive Visitor", email: customerEmail, password: "quiet-demo-2026" })
+      body: JSON.stringify({ name: "Archive Visitor", email: customerEmail, password: "quiet-test-2026" })
     });
     assert.equal(signup.response.status, 201, JSON.stringify(signup.body));
     customerId = signup.body.customer.id;
@@ -75,7 +75,7 @@ async function main() {
 
     const duplicate = await jsonRequest("/api/auth/signup", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Archive Visitor", email: customerEmail.toUpperCase(), password: "quiet-demo-2026" })
+      body: JSON.stringify({ name: "Archive Visitor", email: customerEmail.toUpperCase(), password: "quiet-test-2026" })
     });
     assert.equal(duplicate.response.status, 409);
 
@@ -92,8 +92,8 @@ async function main() {
 
     const orderProduct = initial.body.products[0];
     const orderCustomer = {
-      name: "Assessment Visitor", email: "visitor@example.com", phone: "+91 90000 00000",
-      address: "1 Demo Street", city: "Bengaluru", postalCode: "560001"
+      name: "Test Visitor", email: "visitor@example.com", phone: "+91 90000 00000",
+      address: "1 Sample Street", city: "Bengaluru", postalCode: "560001"
     };
     const staleQuote = await jsonRequest("/api/orders", {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + customerToken },
@@ -101,7 +101,7 @@ async function main() {
         customer: orderCustomer,
         items: [{ slug: orderProduct.slug, size: "M", qty: 1 }],
         expectedSubtotal: orderProduct.price + 1,
-        demoAcknowledged: true
+        noPaymentAcknowledged: true
       })
     });
     assert.equal(staleQuote.response.status, 409);
@@ -115,7 +115,7 @@ async function main() {
           { slug: orderProduct.slug, size: "M", qty: 1 }
         ],
         expectedSubtotal: orderProduct.price * 2,
-        demoAcknowledged: true
+        noPaymentAcknowledged: true
       })
     });
     assert.equal(duplicateVariant.response.status, 400);
@@ -126,7 +126,7 @@ async function main() {
         customer: orderCustomer,
         items: [{ slug: orderProduct.slug, size: "M", qty: 11 }],
         expectedSubtotal: orderProduct.price * 11,
-        demoAcknowledged: true
+        noPaymentAcknowledged: true
       })
     });
     assert.equal(excessiveQuantity.response.status, 400);
@@ -148,14 +148,14 @@ async function main() {
         customer: orderCustomer,
         items: [{ slug: orderProduct.slug, size: "M", qty: 1 }],
         expectedSubtotal: orderProduct.price,
-        demoAcknowledged: true
+        noPaymentAcknowledged: true
       })
     });
     assert.equal(createdOrder.response.status, 201, JSON.stringify(createdOrder.body));
     orderId = createdOrder.body.order.id;
     assert.match(createdOrder.body.order.orderNumber, /^QB-\d{8}-[A-F0-9]{6}$/);
     assert.equal(createdOrder.body.order.subtotal, initial.body.products[0].price);
-    assert.equal(createdOrder.body.order.paymentMethod, "demo_qr");
+    assert.equal(createdOrder.body.order.paymentMethod, "test_qr");
     assert.equal(createdOrder.body.order.customerId, customerId);
 
     const meWithOrder = await jsonRequest("/api/auth/me", { headers: { Authorization: "Bearer " + customerToken } });
@@ -224,7 +224,7 @@ async function main() {
 
     const customerLogin = await jsonRequest("/api/auth/login", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: customerEmail, password: "quiet-demo-2026" })
+      body: JSON.stringify({ email: customerEmail, password: "quiet-test-2026" })
     });
     assert.equal(customerLogin.response.status, 200);
     customerToken = customerLogin.body.token;

@@ -1,8 +1,8 @@
 {
-  "name": "quiet-battles-demo",
+  "name": "quiet-battles-storefront",
   "version": "0.1.0",
   "private": true,
-  "description": "A responsive QUIET BATTLES storefront and Neon-backed content studio demo.",
+  "description": "A responsive QUIET BATTLES storefront and Neon-backed content studio.",
   "scripts": {
     "start": "node server.js",
     "dev": "node --env-file=.env.local server.js",
