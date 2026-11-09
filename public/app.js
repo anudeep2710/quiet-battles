@@ -8,6 +8,7 @@ let cartReturnFocus = false;
 let adminToken = sessionStorage.getItem("qbAdminToken") || "";
 let adminMessage = "";
 let adminSetupConfigured = null;
+let adminAccessMode = "";
 let adminAccessLoaded = false;
 let adminAccessLoading = false;
 let adminAccessError = "";
@@ -667,11 +668,12 @@ function field(label, path, value, options) {
 }
 
 function adminLogin() {
+  const setupLink = adminSetupConfigured ? "" : '<button class="text-button" type="button" data-admin-access-mode="setup">First time here? Create the owner account</button>';
   return '<form class="admin-login" id="admin-login"><span class="mono section-label">CONTENT DESK · PRIVATE ACCESS</span><h2>Studio access</h2><p>Use your admin email, password, and Studio key to manage the archive, products, images, and test orders.</p>' +
     '<label class="admin-field"><span>Admin email</span><input type="email" name="email" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>' +
     '<label class="admin-field"><span>Password</span><input type="password" name="password" autocomplete="current-password" required></label>' +
     '<label class="admin-field"><span>Studio key</span><input type="password" name="key" autocomplete="off" required></label>' +
-    '<div class="admin-status" role="status">' + escapeHtml(adminMessage) + '</div><button class="button button-dark" type="submit">Open the studio <span class="arrow">↗</span></button></form>';
+    '<div class="admin-status" role="status">' + escapeHtml(adminMessage) + '</div><button class="button button-dark" type="submit">Sign in to Studio <span class="arrow">↗</span></button>' + setupLink + '</form>';
 }
 
 function adminSetup() {
@@ -680,7 +682,8 @@ function adminSetup() {
     '<label class="admin-field"><span>Account password</span><input type="password" name="password" autocomplete="new-password" minlength="12" maxlength="128" required><small>Use at least 12 characters.</small></label>' +
     '<label class="admin-field"><span>Confirm password</span><input type="password" name="confirmPassword" autocomplete="new-password" minlength="12" maxlength="128" required></label>' +
     '<label class="admin-field"><span>Studio key</span><input type="password" name="key" autocomplete="off" maxlength="512" required></label>' +
-    '<div class="admin-status" role="status">' + escapeHtml(adminMessage) + '</div><button class="button button-dark" type="submit">Create owner account <span class="arrow">↗</span></button></form>';
+    '<div class="admin-status" role="status">' + escapeHtml(adminMessage) + '</div><button class="button button-dark" type="submit">Create owner account <span class="arrow">↗</span></button>' +
+    '<button class="text-button" type="button" data-admin-access-mode="login">Already have an account? Sign in</button></form>';
 }
 
 function renderAdminAccess() {
@@ -699,7 +702,8 @@ function renderAdminAccess() {
   if (adminToken || !adminAccessLoaded || adminAccessError) {
     return '<div class="admin-shell"><div class="page"><section class="admin-login admin-access-message"><span class="mono section-label">CONTENT DESK · PRIVATE ACCESS</span><h2>' + escapeHtml(title) + '</h2><p>' + escapeHtml(message) + '</p>' + retry + '</section></div></div>';
   }
-  return '<div class="admin-shell"><div class="page">' + (adminSetupConfigured ? adminLogin() : adminSetup()) + '</div></div>';
+  const showLogin = adminSetupConfigured || adminAccessMode === "login";
+  return '<div class="admin-shell"><div class="page">' + (showLogin ? adminLogin() : adminSetup()) + '</div></div>';
 }
 
 async function loadAdminAccess() {
@@ -711,6 +715,7 @@ async function loadAdminAccess() {
     if (!response.ok) throw new Error("Could not check Studio setup.");
     const status = await response.json();
     adminSetupConfigured = Boolean(status.configured);
+    if (adminSetupConfigured) adminAccessMode = "login";
     if (adminToken) {
       const sessionResponse = await fetch("/api/admin/session", { headers: { Authorization: "Bearer " + adminToken } });
       if (sessionResponse.ok) {
@@ -1279,8 +1284,20 @@ function bindEvents() {
   if (retryAdminAccess) retryAdminAccess.addEventListener("click", function () {
     adminAccessLoaded = false;
     adminSetupConfigured = null;
+    adminAccessMode = "";
     adminAccessError = "";
     render();
+  });
+
+  document.querySelectorAll("[data-admin-access-mode]").forEach(function (switchButton) {
+    switchButton.addEventListener("click", function () {
+      if (adminSetupConfigured && switchButton.dataset.adminAccessMode === "setup") return;
+      adminAccessMode = switchButton.dataset.adminAccessMode;
+      adminMessage = "";
+      render();
+      const firstField = document.querySelector("#admin-login input, #admin-setup input");
+      if (firstField) firstField.focus();
+    });
   });
 
   const setup = document.getElementById("admin-setup");

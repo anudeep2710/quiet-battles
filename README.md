@@ -45,8 +45,8 @@ The screenshots and video below were captured from the current local source usin
 
 The Studio is a private content-management area at `/admin`.
 
-1. On first access, create the one-time owner account using an email, password, password confirmation, and the private Studio key configured on the server as `QB_ADMIN_KEY`.
-2. On later visits, sign in with the owner email, password, and Studio key.
+1. On first access, create the one-time owner account using an email, password, password confirmation, and the private Studio key configured on the server as `QB_ADMIN_KEY`. The first-access screen also has an **Already have an account? Sign in** option.
+2. After setup, `/admin` opens the sign-in form on later visits. Sign in with the owner email, password, and Studio key. The one-time owner account cannot be created again after setup.
 3. Use the Studio tabs to edit homepage copy, Series, Chapters, and products. Chapter-to-product links are checked before saving.
 4. Upload PNG, JPEG, or WebP images up to 2 MB. The Studio stores them in Neon for this assessment build.
 5. Review customer and test-order records. Sign out when finished.
