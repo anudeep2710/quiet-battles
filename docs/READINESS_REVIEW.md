@@ -1,49 +1,52 @@
-# Product and submission readiness review
+# Release readiness review
+
+Reviewed 9 November 2026 for the QUIET BATTLES™ technical assessment.
 
 ## Decision
 
-The source is suitable to present as a working assessment prototype with clearly stated limits. It is not ready to process real customer orders or payments. The customer journey requires an account, but the QR is non-payable and no money moves.
+The storefront and source package are ready for a technical assessment review. The product story, catalogue, sample bag, account-required checkout gate, Neon-backed content reads, responsive layouts, screenshots, and walkthrough are available. The Studio is still at first access: its owner must complete the one-time setup before the admin dashboard can be demonstrated. This is not a live commerce release; the QR is non-payable and no real payment is processed.
 
-The current production deployment includes the latest Studio access fix. After applying the additive schema migration to the connected Neon `main` branch on 9 November 2026, `GET /api/health` and `GET /api/content` returned 200; content contains one Series, five Chapters, and eight products. `GET /api/admin/setup-status` reports `configured: false`, so the one-time Studio owner account still needs to be created. Live customer signup, Studio saves, and order creation remain unverified.
+## Release record
 
-## Current verification evidence
+- Public source: [anudeep2710/quiet-battles](https://github.com/anudeep2710/quiet-battles)
+- Vercel Production: [quiet-battles-demo.vercel.app](https://quiet-battles-demo.vercel.app)
+- Vercel reports the Production alias is built from this repository's `main` branch; inspect the Vercel deployment record for the current SHA.
+- `GET /api/health`: HTTP 200, `ok: true`, database reported as Neon Postgres.
+- `GET /api/content`: HTTP 200 with one Series, five Chapters, and eight Products.
+- `GET /api/admin/setup-status`: HTTP 200, `configured: false`. The owner account does not exist yet.
+- The working tree is clean after publishing the reviewed release.
 
-On 9 November 2026, Playwright captured the current local-source homepage, Archive, Series, Chapter, catalogue, product page, bag with one sample item, sign-in and sign-up forms, checkout account gate on desktop and mobile, and first-use Studio setup screen. The capture-only preview served `data/content.json`, blocked API routes that could modify a database, and returned the not-configured state for the Studio setup view. It did not connect to Neon, submit a customer account, create an order, create a Studio owner, or save content.
+## Functional verification
 
-Earlier review recorded six passing unit tests, a passing mocked Studio-auth check, and successful JavaScript syntax checks. The latest admin-access toggle was checked in Chrome; `npm run test:admin-auth` passed. HyperFrames checked the walkthrough composition: zero errors in lint, runtime, layout, motion, and contrast, zero craft warnings, and five sampled frames. Six non-blocking structural lint warnings remain in the composition.
+| Area | Result |
+| --- | --- |
+| Public routes | Direct loads passed for the homepage, Archive, Series, all five Chapters, catalogue, all eight Products, sign-in, sign-up, account, checkout, and Studio. |
+| Story navigation | Homepage → Archive → Series → Chapter → linked Product worked. A sample Back/Forward sequence also worked. |
+| Account section links | `/account#account-orders` and `/account#account-discover` previously resolved as invalid pages. The route parser now preserves these in-page fragments; both URLs render the account sign-in screen when no account is signed in. Legacy `/#archive` still resolves to `/archive`. |
+| Catalogue | All eight products displayed. Category filters, price sorting, rapid filter changes, and reset worked. Refresh resets filters to the full catalogue. |
+| Product and bag | Adding without a size is rejected. Selecting a size adds the correct product; quantity, size, subtotal, and refresh persistence worked. Test items were removed after verification. |
+| Checkout gate | In a fresh tab, the bag was preserved and checkout required sign-in or account creation. No customer details or order were submitted. |
+| Responsive layout | At 320, 375, 390, and 768 px, 1024 × 768 tablet landscape, and 1440 × 900 desktop, the checked homepage, Archive, Series, Chapter, catalogue, product, authentication, checkout gate, and Studio first-access screens showed no horizontal overflow. At 320 px the menu and bag controls are at least 44 px high, and checkout actions fit the screen width. |
+| Studio | The first-access form appears and includes owner email, password, confirmation, and Studio key. The separate sign-in form and server-side setup/login behavior pass the isolated auth check. A live owner account was not created and live content saves were not attempted. |
 
-## Requirements check
+The previous homepage error was not reproduced during the repeated checks. The exact status and root cause of that earlier failure were not captured. Current health and content endpoints pass, but this does not prove the earlier incident can never recur.
 
-| Requirement | Evidence | Status |
-| --- | --- | --- |
-| Premium homepage, brand introduction, and navigation | Current-source desktop/mobile screenshots and page captures | Covered |
-| Archive, Series, and five Chapters | Current-source captures show Archive, Series 01, Chapter 01; content contains five Chapters | Covered |
-| Product page and catalogue | Eight sample products, product details, size selection, catalogue filters and sorting | Covered in UI; sizes, price, stock, and product specifications are illustrative |
-| Account-required purchase flow | Bag screenshot and checkout account gate; API validates customer session and recalculates catalog prices | UI observed; account creation, signed-in checkout, and order creation not run against Neon |
-| Non-payable QR and order record | Source marks test orders `demo_recorded` / `not_payable`; tests cover order contract and recovery | Migration preserved three existing demo/test QR orders and marked them non-payable; no new order was created during verification |
-| Backend and Neon database | Node API and schema cover content, products, media, customers, sessions, orders, idempotency, and rate limits | Live health and content reads passed after schema migration; customer/order writes remain unverified |
-| Studio/CMS | First-use setup screen and code for homepage, Series, Chapter, product, image, customer, and order management | Live first-access form loads; owner account and content save not yet verified |
-| Responsive experience | Current-source screenshots at 1440 px desktop and 390 px mobile | Two widths observed; tablet, broad device matrix, and formal accessibility audit remain unrun |
-| SEO and performance | Semantic markup, metadata, static assets, focus styles, reduced motion support | Partial; no measured performance report, route-specific social metadata, sitemap, or server-rendered pages |
-| Submission materials | README walkthrough, stack, architecture diagram, use guide, screenshots, and 21-second video | Present; screenshots/video are local captures and predate the latest admin-link styling and Neon migration |
+## Automated checks
 
-## Main gaps before real commerce
+- `node --check public/app.js` — passed.
+- `npm run test:unit` — 6 passed, 0 failed.
+- `npm run test:admin-auth` — passed using mocked database methods; it covered first-run setup, concurrent setup, sign-in, protected access, versioned saves, and logout.
+- `npm run test:smoke` was not run because it writes customer, order, image, and content records. No disposable Neon branch was confirmed for this release check.
+- No live customer account, Studio owner, content save, or order was created.
 
-- Create the one-time Studio owner account and verify a content save with sample copy. Do not use real customer information for assessment testing.
-- If full signup and order-write tests are needed, run them against a disposable Neon branch and remove the test data afterward.
-- Customer email verification and password recovery are missing. Customer and Studio tokens remain in browser `sessionStorage`; production should use reviewed secure, HttpOnly, SameSite cookies and CSRF protections.
-- Define privacy notices, retention/anonymization rules, named Studio users, roles, recovery, and an audit log before storing real personal data.
-- Inventory reservation, shipping and tax calculation, returns, order messaging, transactional email, and payment-provider verification are not implemented.
-- Replace database-stored image bytes with managed object storage and optimized image sizes at production scale.
-- Add crawlable, server-rendered or pre-rendered page content, route-specific social metadata, a sitemap, and measured performance monitoring.
-- Brand copy, photography rights, garment specifications, size charts, prices, and availability need approval.
+## One action before demonstrating the admin dashboard
 
-## Safe submission steps
+The owner should visit `/admin` and complete the one-time setup with an email, a unique password of at least 12 characters, confirmation, and the private Studio key configured on the server. An invalid empty setup request returned HTTP 400 (rather than the 503 used when the key is missing or too short); setup status remained false, so no owner was created. This creates the single owner account and signs that browser in. Enter the password and key yourself; do not place them in the public README, GitHub, screenshots, or video. After setup, the page offers the regular sign-in flow.
 
-1. Use the README reviewer guide and local screenshots/video to explain the current source. The hosted deployment and Neon content API are current and verified.
-2. Create the one-time Studio owner only when ready to demonstrate the admin; use sample content and avoid real customer information.
-3. Use a disposable Neon branch for full signup, order-write, and recovery tests; do not treat the dummy QR as payment.
-4. Keep `.env.local`, `.studio-key`, Studio credentials, and Neon connection strings out of Git, the video, screenshots, and reviewer materials.
-5. Remove synthetic accounts, images, orders, and uploaded content from the disposable branch after verification.
+## Assessment scope and production gaps
 
-See [the README](../README.md) for use instructions, local setup, architecture, screenshots, video, and estimate.
+Product copy, prices, sizes, and garment details are illustrative; stock is not tracked. The dummy QR cannot accept or verify payment. Order creation and Studio content writes were not tested against Neon in this review.
+
+Before accepting real orders, add customer email verification and password recovery, move auth tokens to reviewed secure HttpOnly sessions with CSRF protections, define customer-data retention, add inventory reservation and shipping/tax rules, integrate and verify a real payment provider, and establish privacy, returns, and order-notification processes. The current Studio is a single-owner demo; production use needs named staff roles and audit history. Image uploads are stored in Neon for this small prototype and should move to managed object storage before scale.
+
+See the [README](../README.md) for the user guide, local setup, stack, architecture diagram, screenshots, walkthrough, and estimate.
