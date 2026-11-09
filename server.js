@@ -491,6 +491,33 @@ async function handle(req, res) {
     return send(res, 200, { orders: await db.readOrders() });
   }
 
+  if (req.method === "GET" && pathname === "/api/admin/product-activity") {
+    if (!await requireAdmin(req, res)) return;
+    const [recordedProducts, content] = await Promise.all([db.readProductOrderStats(), db.readContent()]);
+    const productsBySlug = new Map(content.products.map((product) => [product.slug, {
+      slug: product.slug,
+      name: product.name,
+      unitsOrdered: 0,
+      orderCount: 0
+    }]));
+    for (const recorded of recordedProducts) {
+      const product = productsBySlug.get(recorded.slug);
+      if (product) {
+        product.unitsOrdered = recorded.unitsOrdered;
+        product.orderCount = recorded.orderCount;
+      } else {
+        productsBySlug.set(recorded.slug, recorded);
+      }
+    }
+    const products = [...productsBySlug.values()].sort((a, b) =>
+      b.unitsOrdered - a.unitsOrdered || a.name.localeCompare(b.name)
+    );
+    return send(res, 200, {
+      totalUnitsOrdered: products.reduce((total, product) => total + product.unitsOrdered, 0),
+      products
+    });
+  }
+
   if (req.method === "GET" && pathname === "/api/admin/customers") {
     if (!await requireAdmin(req, res)) return;
     return send(res, 200, { customers: await db.readCustomers() });

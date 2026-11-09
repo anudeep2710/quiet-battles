@@ -28,6 +28,10 @@ let adminOrdersLoading = false;
 let adminCustomers = [];
 let adminCustomersLoaded = false;
 let adminCustomersLoading = false;
+let adminProductStats = null;
+let adminProductStatsLoaded = false;
+let adminProductStatsLoading = false;
+let adminProductStatsError = "";
 let adminActiveTab = "brand";
 let customerToken = sessionStorage.getItem("qbCustomerToken") || "";
 let customer = null;
@@ -776,6 +780,29 @@ function adminCustomerCards() {
   }).join("") + '</div>';
 }
 
+function adminProductActivityPanel() {
+  if (adminProductStatsError) {
+    return '<div class="admin-card admin-empty"><span class="mono section-label">PRODUCT ACTIVITY</span><h2>Could not load the chart.</h2><p>' + escapeHtml(adminProductStatsError) + '</p><button class="button button-light" type="button" data-refresh-product-activity>Retry</button></div>';
+  }
+  if (!adminProductStatsLoaded || adminProductStatsLoading) {
+    return '<div class="admin-card admin-empty" role="status"><h2>Loading product activity…</h2></div>';
+  }
+  const stats = adminProductStats || { products: [], totalUnitsOrdered: 0 };
+  const products = Array.isArray(stats.products) ? stats.products : [];
+  const totalUnits = Math.max(0, Number(stats.totalUnitsOrdered) || 0);
+  const highestUnits = Math.max(1, ...products.map(function (product) { return Number(product.unitsOrdered) || 0; }));
+  const rows = products.map(function (product) {
+    const units = Math.max(0, Number(product.unitsOrdered) || 0);
+    const demoOrders = Math.max(0, Number(product.orderCount) || 0);
+    const width = Math.min(100, Math.round(units / highestUnits * 100));
+    return '<div class="admin-activity-row"><div class="admin-activity-row-head"><div><strong>' + escapeHtml(product.name) + '</strong><small>' + demoOrders + (demoOrders === 1 ? ' demo order' : ' demo orders') + '</small></div><b>' + units + '<small>' + (units === 1 ? ' unit' : ' units') + '</small></b></div><div class="admin-activity-track" role="progressbar" aria-label="' + escapeHtml(product.name + ': ' + units + (units === 1 ? ' unit' : ' units') + ' in demo orders') + '" aria-valuemin="0" aria-valuemax="' + highestUnits + '" aria-valuenow="' + units + '"><span style="width:' + width + '%"></span></div></div>';
+  }).join("");
+  return '<div class="admin-activity-summary"><article class="admin-card admin-activity-total"><span class="mono section-label">UNITS IN DEMO ORDERS</span><strong>' + totalUnits + '</strong><p>All recorded, non-payable test order items.</p></article><aside class="admin-card admin-activity-notice"><span class="mono section-label">SALES STATUS</span><h2>No verified sales</h2><p>The QR is a placeholder and does not take payment. This chart counts demo order quantities only; it does not represent paid sales, stock, or fulfillment.</p></aside></div>' +
+    '<section class="admin-card admin-activity-chart"><div class="admin-row-title"><div><span class="mono section-label">PRODUCT PERFORMANCE · DEMO DATA</span><h2>Units recorded by piece</h2></div><button class="button button-light" type="button" data-refresh-product-activity>Refresh</button></div>' +
+    (totalUnits === 0 ? '<p class="admin-activity-empty">No demo orders have been recorded yet. Every current product is shown with a zero count.</p>' : '') +
+    '<div class="admin-activity-rows">' + (rows || '<p class="admin-activity-empty">No products are available.</p>') + '</div></section>';
+}
+
 function adminDashboard() {
   const draft = adminDraft || content;
   const seriesForms = draft.seriesList.map(function (series, seriesIndex) {
@@ -824,12 +851,12 @@ function adminDashboard() {
 
   function activeClass(name) { return adminActiveTab === name ? " active" : ""; }
   function selected(name) { return adminActiveTab === name ? "true" : "false"; }
-  const savebar = ["orders", "customers"].includes(adminActiveTab) ? "" :
+  const savebar = ["orders", "customers", "product-activity"].includes(adminActiveTab) ? "" :
     '<div class="admin-savebar"><span>Remember to save your changes before leaving this page.</span><div class="admin-actions"><span class="admin-status" id="admin-status" role="status">' + escapeHtml(adminMessage) + '</span><button class="button" type="submit">Save changes <span class="arrow">↗</span></button></div></div>';
 
   return '<div class="admin-shell"><div class="page">' +
     '<div class="admin-top"><div><span class="mono section-label">QUIET BATTLES · CONTENT & ORDER DESK</span><h1>Studio</h1></div><div><p>Content, media, customer accounts, and test orders are saved to Neon Postgres.</p><button class="button button-light" type="button" data-logout>Sign out</button></div></div>' +
-    '<div class="admin-tabs" role="group" aria-label="Studio sections"><button class="admin-tab' + activeClass("brand") + '" type="button" data-tab="brand" aria-pressed="' + selected("brand") + '">Brand & home</button><button class="admin-tab' + activeClass("series") + '" type="button" data-tab="series" aria-pressed="' + selected("series") + '">Series & chapters</button><button class="admin-tab' + activeClass("products") + '" type="button" data-tab="products" aria-pressed="' + selected("products") + '">Products</button><button class="admin-tab' + activeClass("orders") + '" type="button" data-tab="orders" aria-pressed="' + selected("orders") + '">Orders <span>(' + adminOrders.length + ')</span></button><button class="admin-tab' + activeClass("customers") + '" type="button" data-tab="customers" aria-pressed="' + selected("customers") + '">Customers <span>(' + adminCustomers.length + ')</span></button></div>' +
+    '<div class="admin-tabs" role="group" aria-label="Studio sections"><button class="admin-tab' + activeClass("brand") + '" type="button" data-tab="brand" aria-pressed="' + selected("brand") + '">Brand & home</button><button class="admin-tab' + activeClass("series") + '" type="button" data-tab="series" aria-pressed="' + selected("series") + '">Series & chapters</button><button class="admin-tab' + activeClass("products") + '" type="button" data-tab="products" aria-pressed="' + selected("products") + '">Products</button><button class="admin-tab' + activeClass("product-activity") + '" type="button" data-tab="product-activity" aria-pressed="' + selected("product-activity") + '">Product activity</button><button class="admin-tab' + activeClass("orders") + '" type="button" data-tab="orders" aria-pressed="' + selected("orders") + '">Orders <span>(' + adminOrders.length + ')</span></button><button class="admin-tab' + activeClass("customers") + '" type="button" data-tab="customers" aria-pressed="' + selected("customers") + '">Customers <span>(' + adminCustomers.length + ')</span></button></div>' +
     '<form id="admin-form">' +
       '<section class="admin-panel' + activeClass("brand") + '" data-panel="brand"><div class="admin-card"><h2>Brand introduction</h2><div class="admin-grid">' +
         field("Brand name", "brand.name", draft.brand.name) +
@@ -843,6 +870,7 @@ function adminDashboard() {
       '</div><div class="admin-card"><h2>Our note</h2><div class="admin-grid">' + field("Section label", "introduction.eyebrow", draft.introduction.eyebrow) + field("Heading", "introduction.title", draft.introduction.title) + '</div>' + field("Copy", "introduction.copy", draft.introduction.copy, { textarea: true }) + '</div></section>' +
       '<section class="admin-panel' + activeClass("series") + '" data-panel="series"><div class="admin-row-title"><h2>Archive Series · ' + draft.seriesList.length + '</h2><button class="button button-dark" type="button" data-add-series>Add series</button></div>' + seriesForms + '</section>' +
       '<section class="admin-panel' + activeClass("products") + '" data-panel="products"><div class="admin-card"><div class="admin-row-title"><h2>Product catalogue · ' + draft.products.length + '</h2><button class="button button-light" type="button" data-add-product>Add product</button></div><p class="admin-required-note"><span aria-hidden="true">*</span> Required fields. New products need a positive price, at least one size, an image, and one or more details before any changes can be saved.</p>' + productForms + '</div></section>' +
+      '<section class="admin-panel' + activeClass("product-activity") + '" data-panel="product-activity">' + adminProductActivityPanel() + '</section>' +
       '<section class="admin-panel' + activeClass("orders") + '" data-panel="orders"><div class="admin-row-title"><div><span class="mono section-label">NEON ORDER RECORDS</span><h2>Order ledger · ' + adminOrders.length + '</h2></div><button class="button button-light" type="button" data-refresh-orders>Refresh orders</button></div><div class="admin-status order-admin-status" role="status">' + escapeHtml(adminMessage) + '</div>' + adminOrderCards() + '</section>' +
       '<section class="admin-panel' + activeClass("customers") + '" data-panel="customers"><div class="admin-row-title"><div><span class="mono section-label">NEON CUSTOMER RECORDS</span><h2>Private archives · ' + adminCustomers.length + '</h2></div><button class="button button-light" type="button" data-refresh-customers>Refresh customers</button></div><div class="admin-status customer-admin-status" role="status">' + escapeHtml(adminMessage) + '</div>' + adminCustomerCards() + '</section>' + savebar +
     '</form></div></div>';
@@ -1333,6 +1361,10 @@ function bindEvents() {
       adminOrdersLoaded = false;
       adminCustomers = [];
       adminCustomersLoaded = false;
+      adminProductStats = null;
+      adminProductStatsLoaded = false;
+      adminProductStatsLoading = false;
+      adminProductStatsError = "";
       adminActiveTab = "brand";
       adminMessage = "Studio account created.";
       render();
@@ -1366,6 +1398,10 @@ function bindEvents() {
       adminOrdersLoaded = false;
       adminCustomers = [];
       adminCustomersLoaded = false;
+      adminProductStats = null;
+      adminProductStatsLoaded = false;
+      adminProductStatsLoading = false;
+      adminProductStatsError = "";
       adminActiveTab = "brand";
       adminMessage = "Studio opened.";
       render();
@@ -1388,6 +1424,10 @@ function bindEvents() {
     adminOrdersLoaded = false;
     adminCustomers = [];
     adminCustomersLoaded = false;
+    adminProductStats = null;
+    adminProductStatsLoaded = false;
+    adminProductStatsLoading = false;
+    adminProductStatsError = "";
     adminActiveTab = "brand";
     adminMessage = "You have signed out.";
     render();
@@ -1405,9 +1445,10 @@ function bindEvents() {
         panel.classList.toggle("active", panel.dataset.panel === tab.dataset.tab);
       });
       const savebar = document.querySelector(".admin-savebar");
-      if (savebar) savebar.classList.toggle("hide", ["orders", "customers"].includes(adminActiveTab));
+      if (savebar) savebar.classList.toggle("hide", ["orders", "customers", "product-activity"].includes(adminActiveTab));
       if (adminActiveTab === "orders" && !adminOrdersLoaded && !adminOrdersLoading) loadAdminOrders();
       if (adminActiveTab === "customers" && !adminCustomersLoaded && !adminCustomersLoading) loadAdminCustomers();
+      if (adminActiveTab === "product-activity" && !adminProductStatsLoaded && !adminProductStatsLoading) loadAdminProductActivity();
     });
   });
 
@@ -1420,6 +1461,12 @@ function bindEvents() {
   if (refreshCustomers) refreshCustomers.addEventListener("click", function () {
     adminCustomersLoaded = false;
     loadAdminCustomers();
+  });
+  const refreshProductActivity = document.querySelector("[data-refresh-product-activity]");
+  if (refreshProductActivity) refreshProductActivity.addEventListener("click", function () {
+    adminProductStatsLoaded = false;
+    adminProductStatsError = "";
+    loadAdminProductActivity();
   });
   document.querySelectorAll("[data-delete-order]").forEach(function (button) {
     button.addEventListener("click", function () {
@@ -1527,6 +1574,7 @@ function bindEvents() {
   if (adminForm) adminForm.addEventListener("submit", saveAdminContent);
   if (currentRoute()[0] === "admin" && adminToken && adminActiveTab === "orders" && !adminOrdersLoaded && !adminOrdersLoading) loadAdminOrders();
   if (currentRoute()[0] === "admin" && adminToken && adminActiveTab === "customers" && !adminCustomersLoaded && !adminCustomersLoading) loadAdminCustomers();
+  if (currentRoute()[0] === "admin" && adminToken && adminActiveTab === "product-activity" && !adminProductStatsLoaded && !adminProductStatsLoading) loadAdminProductActivity();
 }
 
 async function loadAdminOrders() {
@@ -1550,6 +1598,34 @@ async function loadAdminOrders() {
     adminMessage = error.message;
   } finally {
     adminOrdersLoading = false;
+    render();
+  }
+}
+
+async function loadAdminProductActivity() {
+  if (!adminToken || adminProductStatsLoading) return;
+  adminProductStatsLoading = true;
+  adminProductStatsError = "";
+  render();
+  try {
+    const response = await fetch("/api/admin/product-activity", { headers: { Authorization: "Bearer " + adminToken } });
+    const result = await response.json();
+    if (!response.ok) {
+      if (response.status === 401) {
+        adminToken = "";
+        sessionStorage.removeItem("qbAdminToken");
+      }
+      throw new Error(result.error || "Product activity could not be loaded.");
+    }
+    if (!Array.isArray(result.products) || !Number.isSafeInteger(result.totalUnitsOrdered)) {
+      throw new Error("Product activity returned an invalid response.");
+    }
+    adminProductStats = result;
+    adminProductStatsLoaded = true;
+  } catch (error) {
+    adminProductStatsError = error.message;
+  } finally {
+    adminProductStatsLoading = false;
     render();
   }
 }

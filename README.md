@@ -50,7 +50,8 @@ The Studio is a private content-management area at `/admin`.
 3. Use the Studio tabs to edit homepage copy, Series, Chapters, and products. Chapter-to-product links are checked before saving. Only a signed-in Studio session can save content or upload images.
 4. **Add product** creates an unsaved draft. Complete every required field before saving: name, type, URL slug, category, positive INR price, at least one unique size, chapter link, description, image, and one or more detail/care lines. The back/detail image is optional. Incomplete drafts are rejected in the form and again by the server.
 5. Upload PNG, JPEG, or WebP images up to 2 MB. The Studio stores them in Neon for this assessment build.
-6. Review customer and test-order records. Sign out when finished.
+6. Open **Product activity** to compare units recorded by product in demo orders. These counts are non-payable test quantities, not paid sales or inventory.
+7. Review customer and test-order records. Sign out when finished.
 
 The first-use Studio screenshot below shows the one-time owner form. The screenshot capture did not create an owner account or save Studio content. The live Neon-backed content API returns one Series, five Chapters, and eight products; the owner account has since been created. Keep the Studio key and password out of GitHub, screenshots, and the public walkthrough.
 
@@ -174,12 +175,13 @@ See [database schema](docs/database-schema.md) and the API overview below.
 | `GET /api/admin/setup-status` · `POST /api/admin/setup` | Check and complete one-time Studio owner setup |
 | `POST /api/admin/login` · `GET /api/admin/session` | Sign in to or validate a Studio session |
 | `PUT /api/admin/content` · `POST /api/admin/upload` | Save validated content and upload an image |
+| `GET /api/admin/product-activity` | Read product quantities from non-payable demo orders; requires a Studio session |
 | `GET /api/admin/orders` · `DELETE /api/admin/orders/:id` | Review or remove a test order |
 | `GET /api/admin/customers` · `DELETE /api/admin/customers/:id` | Review or remove a customer account |
 
 ## What is and is not implemented
 
-The assessment build demonstrates browsing, catalogue filters and sorting, account-area order/product search, account creation and sign-in, private order history, account-required checkout, non-payable QR confirmation, and content-management screens. Product names, garment details, stories, sizes, prices, stock, and availability are illustrative and require brand approval. Inventory is not tracked.
+The assessment build demonstrates browsing, catalogue filters and sorting, account-area order/product search, account creation and sign-in, private order history, account-required checkout, non-payable QR confirmation, content management, and an admin product-activity chart. The chart reports quantities in demo orders only; these are not paid sales. Product names, garment details, stories, sizes, prices, stock, and availability are illustrative and require brand approval. Inventory is not tracked.
 
 This is ready to present as an assessment prototype, not as a live commerce service. The deployed Vercel source was verified against GitHub `main`, and the live Neon health/content reads returned 200 with one Series, five Chapters, and eight products. Live customer signup, Studio content saves, and order creation have not been exercised. Email verification, password recovery, secure HttpOnly sessions, customer-data retention rules, named Studio roles, inventory reservation, shipping and tax calculation, returns, transactional email, real payment-provider verification, production SEO rendering, and performance monitoring remain outside this assessment build. Do not collect real customer data or take payment through it.
 

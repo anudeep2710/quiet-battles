@@ -11,7 +11,7 @@ async function main() {
   const password = "local test password";
   const key = "local-test-studio-key-123";
   const savedEnv = Object.fromEntries(["QB_ADMIN_KEY"].map((name) => [name, process.env[name]]));
-  const dbMethods = ["findAdminAccount", "createAdminAccount", "createSession", "hasSession", "deleteSession", "readOrders", "consumeAuthAttempt", "writeContent", "pruneUnusedMedia"];
+  const dbMethods = ["findAdminAccount", "createAdminAccount", "createSession", "hasSession", "deleteSession", "readOrders", "readContent", "readProductOrderStats", "consumeAuthAttempt", "writeContent", "pruneUnusedMedia"];
   const savedDb = Object.fromEntries(dbMethods.map((name) => [name, db[name]]));
   const sessions = new Set();
   let account = null;
@@ -28,6 +28,11 @@ async function main() {
   db.hasSession = async (token) => sessions.has(token);
   db.deleteSession = async (token) => { sessions.delete(token); };
   db.readOrders = async () => [];
+  db.readContent = async () => structuredClone(seedContent);
+  db.readProductOrderStats = async () => [
+    { slug: "soft-armor-hoodie", name: "An older hoodie name", unitsOrdered: 4, orderCount: 2 },
+    { slug: "retired-still-point-cap", name: "Archived Still Point Cap", unitsOrdered: 1, orderCount: 1 }
+  ];
   db.consumeAuthAttempt = async () => false;
   db.writeContent = async (_content, expectedVersion) => {
     if (expectedVersion !== contentVersion) {
@@ -79,6 +84,8 @@ async function main() {
 
     assert.equal((await request("/api/admin/content", { ...seedContent, contentVersion: 1 }, undefined, "PUT")).status, 401,
       "product catalogue changes require an authenticated Studio session");
+    assert.equal((await request("/api/admin/product-activity")).status, 401,
+      "product activity must not be exposed to visitors without an authenticated Studio session");
     assert.equal((await request("/api/admin/upload", { data: "" })).status, 401,
       "product images cannot be uploaded without an authenticated Studio session");
     assert.equal(contentWrites, 0, "unauthenticated requests must not write content");
@@ -99,6 +106,17 @@ async function main() {
     const auth = { Authorization: "Bearer " + login.body.token };
     assert.equal((await request("/api/admin/session", undefined, auth)).status, 200);
     assert.equal((await request("/api/admin/orders", undefined, auth)).status, 200);
+    const productActivity = await request("/api/admin/product-activity", undefined, auth);
+    assert.equal(productActivity.status, 200);
+    assert.equal(productActivity.body.totalUnitsOrdered, 5);
+    assert.deepEqual(productActivity.body.products.find((item) => item.slug === "soft-armor-hoodie"), {
+      slug: "soft-armor-hoodie", name: seedContent.products.find((item) => item.slug === "soft-armor-hoodie").name,
+      unitsOrdered: 4, orderCount: 2
+    }, "current product names should be used with recorded demo quantities");
+    assert.ok(productActivity.body.products.some((item) => item.slug === "retired-still-point-cap" && item.unitsOrdered === 1),
+      "products removed from the current catalogue remain visible in the order history summary");
+    assert.equal(Object.hasOwn(productActivity.body.products[0], "customer"), false,
+      "the aggregate endpoint must not include customer records");
     assert.equal((await request("/api/admin/orders/5f7220cb-0876-4c65-9c68-87b2fd924512", { status: "Shipped" }, auth, "PATCH")).status, 409,
       "Studio cannot advance a non-payable test order to fulfilment");
     assert.equal((await request("/api/admin/content", seedContent, auth, "PUT")).status, 428,
@@ -124,7 +142,7 @@ async function main() {
     assert.equal(staleContent.status, 409, "a stale Studio tab cannot overwrite newer content");
     assert.equal((await request("/api/admin/logout", {}, auth)).status, 200);
     assert.equal((await request("/api/admin/orders", undefined, auth)).status, 401);
-    console.log("Studio API test passed: owner setup, concurrent registration, login, admin-only writes, required product fields, versioned saves, stale-write rejection, safe order state, and logout.");
+    console.log("Studio API test passed: owner setup, login, admin-only writes and analytics, product activity aggregation, required product fields, versioned saves, safe order state, and logout.");
   } finally {
     await new Promise((resolve) => server.close(resolve));
     for (const [name, value] of Object.entries(savedEnv)) {

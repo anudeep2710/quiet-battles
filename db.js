@@ -307,6 +307,31 @@ async function readOrders() {
   return rows.map(mapOrder);
 }
 
+async function readProductOrderStats() {
+  const rows = await getClient().query(`
+    SELECT
+      NULLIF(BTRIM(order_item.item->>'slug'), '') AS slug,
+      MAX(COALESCE(NULLIF(BTRIM(order_item.item->>'name'), ''), NULLIF(BTRIM(order_item.item->>'slug'), ''), 'Archived product')) AS name,
+      SUM(CASE WHEN (order_item.item->>'qty') ~ '^[0-9]{1,3}$' THEN (order_item.item->>'qty')::integer ELSE 0 END)::integer AS units_ordered,
+      COUNT(DISTINCT orders.id)::integer AS order_count
+    FROM orders
+    CROSS JOIN LATERAL jsonb_array_elements(
+      CASE WHEN jsonb_typeof(orders.items) = 'array' THEN orders.items ELSE '[]'::jsonb END
+    ) AS order_item(item)
+    WHERE orders.payment_method IN ('test_qr', 'demo_qr')
+      AND COALESCE(orders.order_state, 'demo_recorded') = 'demo_recorded'
+      AND NULLIF(BTRIM(order_item.item->>'slug'), '') IS NOT NULL
+    GROUP BY NULLIF(BTRIM(order_item.item->>'slug'), '')
+    ORDER BY units_ordered DESC, name ASC
+  `);
+  return rows.map((row) => ({
+    slug: row.slug,
+    name: row.name,
+    unitsOrdered: Number(row.units_ordered || 0),
+    orderCount: Number(row.order_count || 0)
+  }));
+}
+
 async function deleteOrder(id) {
   const rows = await getClient().query(
     "DELETE FROM orders WHERE id = $1::uuid RETURNING order_number",
@@ -418,7 +443,7 @@ async function ping() {
 module.exports = {
   initializeDatabase, readContent, writeContent, saveMedia, readMedia, pruneUnusedMedia,
   findAdminAccount, createAdminAccount, createSession, hasSession, deleteSession, createOrder, readOrders,
-  findOrderByIdempotencyKey, consumeAuthAttempt,
+  readProductOrderStats, findOrderByIdempotencyKey, consumeAuthAttempt,
   deleteOrder, createCustomer, findCustomerByEmail,
   createCustomerSession, readCustomerBySession, deleteCustomerSession,
   readCustomerOrders, readCustomers, deleteCustomer, ping
