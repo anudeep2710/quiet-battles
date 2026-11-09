@@ -18,7 +18,7 @@ The homepage hero image renders in the current desktop and mobile captures. A li
 | Account-required purchase flow | API rejects guest orders; account page and checkout gate are present; delivery and review steps are implemented in source | Covered in implementation; final authenticated checkout not exercised in this review |
 | Test QR and order confirmation | Non-payable QR step and order-record path are implemented; no money moves | Covered in implementation; order creation not exercised in this review |
 | Backend and database | Node API and Neon Postgres schema cover content, products, media, accounts, sessions, and orders; live health endpoint reports Neon connected | Covered in source and live health check; current write flow not exercised |
-| Admin / CMS | Studio source supports content, product, image, customer, and order management behind a Studio key | Covered in source; signed-in Studio not inspected |
+| Admin / CMS | Studio source supports content, product, image, customer, and order management behind an admin email, password, and Studio key | Covered in source; signed-in Studio not inspected in this review |
 | Responsive experience | Responsive CSS and current desktop/mobile screenshots are present | Covered in source and captured layouts; a full device matrix was not run |
 | SEO and performance basics | Metadata, semantic HTML, static assets, and image alternatives are present | Partial; direct paths work, but page content renders in the browser and there is no sitemap or measured performance report |
 | Submission materials | Run instructions, stack, database schema, architecture, estimate, current screenshots, and a short walkthrough video are linked from the README | Covered |

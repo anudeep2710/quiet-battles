@@ -7,7 +7,9 @@
     "start": "node server.js",
     "dev": "node --env-file=.env.local server.js",
     "db:init": "node --env-file=.env.local scripts/init-db.js",
-    "test:smoke": "node scripts/smoke-test.js"
+    "test:admin-auth": "node scripts/admin-auth-test.js",
+    "test:smoke": "node --env-file=.env.local scripts/smoke-test.js",
+    "admin:hash-password": "node scripts/hash-admin-password.js"
   },
   "engines": {
     "node": ">=24.15.0"

@@ -18,7 +18,7 @@ All product details, prices, and stories are illustrative. Checkout requires an 
 1. Start at the [homepage](https://quiet-battles-demo.vercel.app/) and enter [The Archive](https://quiet-battles-demo.vercel.app/archive).
 2. Open [Series 01](https://quiet-battles-demo.vercel.app/series/the-gentle-armor), choose a Chapter such as [The First Quiet](https://quiet-battles-demo.vercel.app/chapter/the-first-quiet), and follow its link to [The Soft Armor Hoodie](https://quiet-battles-demo.vercel.app/product/soft-armor-hoodie).
 3. Choose a size, add the hoodie to the bag, and continue to checkout. [Sign in](https://quiet-battles-demo.vercel.app/login) or [create an account](https://quiet-battles-demo.vercel.app/signup) to place a test order. The QR cannot accept payment.
-4. Browse the [full catalogue](https://quiet-battles-demo.vercel.app/artifacts). The private [Studio](https://quiet-battles-demo.vercel.app/admin) manages site content and orders; its key is shared separately with reviewers.
+4. Browse the [full catalogue](https://quiet-battles-demo.vercel.app/artifacts). The private [Studio](https://quiet-battles-demo.vercel.app/admin) manages site content and orders; its sign-in credentials are shared separately with reviewers.
 
 ### Direct page paths
 
@@ -60,7 +60,7 @@ Click an image to open it at full size. The [screenshot index](docs/screenshots/
 
 | Sign in | Create account | Studio access |
 | --- | --- | --- |
-| <a href="docs/screenshots/current/07-signin-desktop.jpg"><img src="docs/screenshots/current/07-signin-desktop.jpg" alt="Customer sign-in page" width="290"></a> | <a href="docs/screenshots/current/08-signup-desktop.jpg"><img src="docs/screenshots/current/08-signup-desktop.jpg" alt="Customer account creation page" width="290"></a> | <a href="docs/screenshots/current/09-studio-access-desktop.jpg"><img src="docs/screenshots/current/09-studio-access-desktop.jpg" alt="Private Studio key entry page" width="290"></a> |
+| <a href="docs/screenshots/current/07-signin-desktop.jpg"><img src="docs/screenshots/current/07-signin-desktop.jpg" alt="Customer sign-in page" width="290"></a> | <a href="docs/screenshots/current/08-signup-desktop.jpg"><img src="docs/screenshots/current/08-signup-desktop.jpg" alt="Customer account creation page" width="290"></a> | <a href="docs/screenshots/current/09-studio-access-desktop.jpg"><img src="docs/screenshots/current/09-studio-access-desktop.jpg" alt="Private Studio email, password, and key entry page" width="290"></a> |
 
 ### Mobile
 
@@ -107,19 +107,28 @@ Locally, server.js serves the public files and the API. On Vercel, public/ conta
 Requirements: Node.js 24.15 or newer, npm, and a Neon Postgres database branch reserved for this project.
 
 1. Install dependencies with npm install.
-2. Copy .env.example to .env.local and set DATABASE_URL and QB_ADMIN_KEY. Use a private key with at least 16 characters.
+2. Copy .env.example to .env.local and set DATABASE_URL, QB_ADMIN_EMAIL, QB_ADMIN_PASSWORD_HASH, and QB_ADMIN_KEY. Use a private Studio key with at least 16 characters.
 3. Run npm run db:init to create or migrate the schema and seed an empty database.
 4. Run npm run dev and open http://127.0.0.1:4173.
 
-Keep .env.local, .studio-key, and all database credentials out of Git. The deployment Studio key is configured as a Vercel environment variable.
+Generate the salted password hash in PowerShell without putting the password in a command argument:
 
-The smoke check writes temporary account, order, content, and image records before deleting them. Run it only against a disposable Neon branch. It expects the local server on port 4174 and a .studio-key file containing the same key as QB_ADMIN_KEY. In PowerShell, start the server with $env:PORT = "4174"; npm run dev, then run npm run test:smoke in another terminal.
+```powershell
+$secret = Read-Host 'Studio password' -AsSecureString
+$plain = [System.Net.NetworkCredential]::new('', $secret).Password
+$plain | npm run admin:hash-password --silent
+Remove-Variable plain, secret
+```
+
+Copy the printed `salt:hash` value to QB_ADMIN_PASSWORD_HASH. Keep .env.local, .studio-key, and all database credentials out of Git. Configure the same email, hash, and Studio key in Vercel. Changing any of these values invalidates existing Studio sessions.
+
+The smoke check writes temporary account, order, content, and image records before deleting them. Run it only against a disposable Neon branch. Set QB_ADMIN_TEST_PASSWORD in the ignored .env.local file to the Studio password for that local test; never set it in Vercel. The check expects the local server on port 4174. In PowerShell, start the server with $env:PORT = "4174"; npm run dev, then run npm run test:smoke in another terminal. The isolated `npm run test:admin-auth` check does not use Neon.
 
 ## Content Studio
 
-Open /admin and enter the private Studio key. The Studio can edit homepage copy; add, edit, and remove Series, Chapters, and products; upload images; and review customer and order records. Uploaded PNG, JPEG, and WebP files are limited to 2 MB and stored in Neon. Order status can be updated and records can be removed. Chapters and products must keep valid links to one another.
+Open /admin and enter the admin email, password, and private Studio key. The Studio can edit homepage copy; add, edit, and remove Series, Chapters, and products; upload images; and review customer and order records. Uploaded PNG, JPEG, and WebP files are limited to 2 MB and stored in Neon. Order status can be updated and records can be removed. Chapters and products must keep valid links to one another.
 
-The current Studio key is a shared credential. It is suitable for this assessment build, but a real team should use named staff accounts, roles, and an audit log.
+The Studio uses one owner credential set. A real team should use named staff accounts, roles, and an audit log.
 
 ## Data model
 

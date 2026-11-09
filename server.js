@@ -113,6 +113,11 @@ function passwordMatches(password, salt, expected) {
   return actual.length === stored.length && crypto.timingSafeEqual(actual, stored);
 }
 
+function adminPasswordMatches(password, encodedHash) {
+  const parts = /^([a-f0-9]{32}):([a-f0-9]{128})$/.exec(encodedHash);
+  return Boolean(parts) && passwordMatches(password, parts[1], parts[2]);
+}
+
 async function startCustomerSession(customer) {
   const token = crypto.randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + CUSTOMER_SESSION_MS);
@@ -339,12 +344,22 @@ async function handle(req, res) {
   }
 
   if (req.method === "POST" && pathname === "/api/admin/login") {
-    if (!process.env.QB_ADMIN_KEY || process.env.QB_ADMIN_KEY.length < 16) {
+    const adminEmail = normalizeEmail(process.env.QB_ADMIN_EMAIL);
+    const adminPasswordHash = process.env.QB_ADMIN_PASSWORD_HASH || "";
+    const studioKey = process.env.QB_ADMIN_KEY || "";
+    if (!validEmail(adminEmail) || !/^([a-f0-9]{32}):([a-f0-9]{128})$/.test(adminPasswordHash) || studioKey.length < 16) {
       return send(res, 503, { error: "Studio access is not configured." });
     }
     const body = await readJson(req, 4096);
-    if (!safeEqual(body.key || "", process.env.QB_ADMIN_KEY)) {
-      return send(res, 401, { error: "That studio key is not correct." });
+    const validInput = isObject(body) && typeof body.email === "string" && body.email.length <= 254 &&
+      typeof body.password === "string" && body.password.length <= 128 &&
+      typeof body.key === "string" && body.key.length <= 512;
+    if (!validInput) return send(res, 401, { error: "Studio credentials are not correct." });
+    const emailMatches = safeEqual(normalizeEmail(body.email), adminEmail);
+    const keyMatches = safeEqual(body.key, studioKey);
+    const passwordIsCorrect = adminPasswordMatches(body.password, adminPasswordHash);
+    if (!emailMatches || !keyMatches || !passwordIsCorrect) {
+      return send(res, 401, { error: "Studio credentials are not correct." });
     }
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000);

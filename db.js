@@ -181,8 +181,14 @@ async function readMedia(id) {
   return rows[0] || null;
 }
 
+function adminSessionHash(token) {
+  const credentials = [process.env.QB_ADMIN_KEY || "", process.env.QB_ADMIN_EMAIL || "",
+    process.env.QB_ADMIN_PASSWORD_HASH || ""].join("\0");
+  return crypto.createHmac("sha256", credentials).update(token).digest("hex");
+}
+
 async function createSession(token, expiresAt) {
-  const hash = crypto.createHash("sha256").update(token).digest("hex");
+  const hash = adminSessionHash(token);
   const sql = getClient();
   await sql.transaction([
     sql.query("DELETE FROM admin_sessions WHERE expires_at < now()"),
@@ -192,7 +198,7 @@ async function createSession(token, expiresAt) {
 
 async function hasSession(token) {
   if (!/^[a-f0-9]{64}$/.test(token)) return false;
-  const hash = crypto.createHash("sha256").update(token).digest("hex");
+  const hash = adminSessionHash(token);
   const rows = await getClient().query(
     "SELECT 1 FROM admin_sessions WHERE token_hash = $1 AND expires_at > now()",
     [hash]
@@ -202,7 +208,7 @@ async function hasSession(token) {
 
 async function deleteSession(token) {
   if (!/^[a-f0-9]{64}$/.test(token)) return;
-  const hash = crypto.createHash("sha256").update(token).digest("hex");
+  const hash = adminSessionHash(token);
   await getClient().query("DELETE FROM admin_sessions WHERE token_hash = $1", [hash]);
 }
 

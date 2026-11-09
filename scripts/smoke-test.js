@@ -1,11 +1,14 @@
 "use strict";
 
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
 
 const base = process.argv[2] || "http://127.0.0.1:4174";
-const studioKey = fs.readFileSync(path.join(__dirname, "..", ".studio-key"), "utf8").trim();
+const studioKey = process.env.QB_ADMIN_KEY;
+const studioEmail = process.env.QB_ADMIN_EMAIL;
+const studioPassword = process.env.QB_ADMIN_TEST_PASSWORD;
+if (!studioKey || !studioEmail || !studioPassword) {
+  throw new Error("Set QB_ADMIN_KEY, QB_ADMIN_EMAIL, and QB_ADMIN_TEST_PASSWORD in .env.local before the disposable-database smoke test.");
+}
 
 async function jsonRequest(route, options) {
   const response = await fetch(base + route, options);
@@ -47,13 +50,30 @@ async function main() {
 
   const denied = await jsonRequest("/api/admin/login", {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ key: "incorrect-key" })
+    body: JSON.stringify({ email: studioEmail, password: studioPassword, key: "incorrect-key" })
   });
   assert.equal(denied.response.status, 401);
 
+  const wrongPassword = await jsonRequest("/api/admin/login", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: studioEmail, password: "incorrect-password", key: studioKey })
+  });
+  assert.equal(wrongPassword.response.status, 401);
+
+  const wrongEmail = await jsonRequest("/api/admin/login", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "other@example.com", password: studioPassword, key: studioKey })
+  });
+  assert.equal(wrongEmail.response.status, 401);
+
+  const keyOnly = await jsonRequest("/api/admin/login", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: studioKey })
+  });
+  assert.equal(keyOnly.response.status, 401);
+
   const login = await jsonRequest("/api/admin/login", {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ key: studioKey })
+    body: JSON.stringify({ email: studioEmail, password: studioPassword, key: studioKey })
   });
   assert.equal(login.response.status, 200);
   const auth = { "Content-Type": "application/json", Authorization: "Bearer " + login.body.token };

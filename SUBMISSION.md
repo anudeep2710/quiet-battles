@@ -20,7 +20,7 @@
 
 Start with the [README review guide](README.md) and [walkthrough video](docs/walkthrough/quiet-battles-walkthrough.mp4). The [technical approach](TECHNICAL_APPROACH.md) explains the architecture and production estimate. The [database schema](docs/database-schema.md), [readiness review](docs/READINESS_REVIEW.md), and [current screenshots](docs/screenshots/README.md) provide supporting details.
 
-Studio is at /admin and requires the private Studio key. The key is not included in source control or this document. Contact the developer separately to arrange access.
+Studio is at /admin and requires the admin email, password, and private Studio key. These credentials are not included in source control or this document. Contact the developer separately to arrange access.
 
 ## Stack and tools
 

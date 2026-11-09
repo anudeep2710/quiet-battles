@@ -538,8 +538,10 @@ function field(label, path, value, options) {
 }
 
 function adminLogin() {
-  return '<form class="admin-login" id="admin-login"><span class="mono section-label">CONTENT DESK · PRIVATE ACCESS</span><h2>Studio access</h2><p>Sign in to manage the archive, products, images, and test orders.</p>' +
-    '<label class="admin-field"><span>Studio key</span><input type="password" name="key" autocomplete="current-password" required></label>' +
+  return '<form class="admin-login" id="admin-login"><span class="mono section-label">CONTENT DESK · PRIVATE ACCESS</span><h2>Studio access</h2><p>Use your admin email, password, and Studio key to manage the archive, products, images, and test orders.</p>' +
+    '<label class="admin-field"><span>Admin email</span><input type="email" name="email" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>' +
+    '<label class="admin-field"><span>Password</span><input type="password" name="password" autocomplete="current-password" required></label>' +
+    '<label class="admin-field"><span>Studio key</span><input type="password" name="key" autocomplete="off" required></label>' +
     '<div class="admin-status" role="status">' + escapeHtml(adminMessage) + '</div><button class="button button-dark" type="submit">Open the studio <span class="arrow">↗</span></button></form>';
 }
 
@@ -1039,9 +1041,12 @@ function bindEvents() {
   if (login) login.addEventListener("submit", async function (event) {
     event.preventDefault();
     adminMessage = "";
-    const key = new FormData(login).get("key");
+    const credentials = new FormData(login);
+    const email = credentials.get("email");
+    const password = credentials.get("password");
+    const key = credentials.get("key");
     try {
-      const response = await fetch("/api/admin/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: key }) });
+      const response = await fetch("/api/admin/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email, password: password, key: key }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Unable to sign in.");
       adminToken = result.token;
@@ -1056,7 +1061,9 @@ function bindEvents() {
       render();
     } catch (error) {
       adminMessage = error.message;
-      render();
+      login.querySelector(".admin-status").textContent = adminMessage;
+      login.elements.namedItem("password").value = "";
+      login.elements.namedItem("key").value = "";
     }
   });
 
