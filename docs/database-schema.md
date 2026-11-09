@@ -9,6 +9,7 @@ The setup script scripts/init-db.js creates or migrates the tables. db.js contai
 | chapters | sort_order, series_slug, number, slug, title, excerpt, image, product_slug, story | Ordered Chapter story and links to its Series and product. Chapter slugs are unique. |
 | products | sort_order, slug, name, kind, category, description, price, image, secondary_image, sizes, details, chapter_slug | Product content and its link to a Chapter. Price is a nonnegative integer in INR. |
 | media_assets | id, mime_type, base64_data, created_at | PNG, JPEG, and WebP image uploads, limited to 2 MB each. |
+| admin_accounts | id, email, password_hash, password_salt, created_at | Singleton owner account for Studio. The primary-key check fixes the row to id 1; email is unique and the password uses scrypt with a random salt. |
 | admin_sessions | token_hash, expires_at | Four-hour Studio sessions. Only the hash of the random token is stored. |
 | customers | id, name, email, password_hash, password_salt, created_at | Customer account. Email is normalized and unique; passwords are derived with scrypt. |
 | customer_sessions | token_hash, customer_id, expires_at | Seven-day customer session. The token is stored only as a SHA-256 hash; sessions cascade when an account is deleted. |

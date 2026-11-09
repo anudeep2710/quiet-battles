@@ -4,10 +4,10 @@ const assert = require("node:assert/strict");
 
 const base = process.argv[2] || "http://127.0.0.1:4174";
 const studioKey = process.env.QB_ADMIN_KEY;
-const studioEmail = process.env.QB_ADMIN_EMAIL;
+const studioEmail = process.env.QB_ADMIN_TEST_EMAIL;
 const studioPassword = process.env.QB_ADMIN_TEST_PASSWORD;
 if (!studioKey || !studioEmail || !studioPassword) {
-  throw new Error("Set QB_ADMIN_KEY, QB_ADMIN_EMAIL, and QB_ADMIN_TEST_PASSWORD in .env.local before the disposable-database smoke test.");
+  throw new Error("Set QB_ADMIN_KEY, QB_ADMIN_TEST_EMAIL, and QB_ADMIN_TEST_PASSWORD in .env.local before the disposable-database smoke test.");
 }
 
 async function jsonRequest(route, options) {
@@ -48,35 +48,41 @@ async function main() {
   });
   assert.equal(guestOrder.response.status, 401);
 
-  const denied = await jsonRequest("/api/admin/login", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: studioEmail, password: studioPassword, key: "incorrect-key" })
-  });
-  assert.equal(denied.response.status, 401);
-
-  const wrongPassword = await jsonRequest("/api/admin/login", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: studioEmail, password: "incorrect-password", key: studioKey })
-  });
-  assert.equal(wrongPassword.response.status, 401);
-
-  const wrongEmail = await jsonRequest("/api/admin/login", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: "other@example.com", password: studioPassword, key: studioKey })
-  });
-  assert.equal(wrongEmail.response.status, 401);
-
-  const keyOnly = await jsonRequest("/api/admin/login", {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: studioKey })
-  });
-  assert.equal(keyOnly.response.status, 401);
-
-  const login = await jsonRequest("/api/admin/login", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: studioEmail, password: studioPassword, key: studioKey })
-  });
-  assert.equal(login.response.status, 200);
-  const auth = { "Content-Type": "application/json", Authorization: "Bearer " + login.body.token };
+  const setupStatus = await jsonRequest("/api/admin/setup-status");
+  assert.equal(setupStatus.response.status, 200);
+  let studioToken;
+  if (!setupStatus.body.configured) {
+    const denied = await jsonRequest("/api/admin/setup", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: studioEmail, password: studioPassword, confirmPassword: studioPassword, key: "incorrect-key" })
+    });
+    assert.equal(denied.response.status, 401);
+    const setup = await jsonRequest("/api/admin/setup", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: studioEmail, password: studioPassword, confirmPassword: studioPassword, key: studioKey })
+    });
+    assert.equal(setup.response.status, 201, JSON.stringify(setup.body));
+    studioToken = setup.body.token;
+  } else {
+    for (const invalid of [
+      { email: studioEmail, password: "incorrect-password", key: studioKey },
+      { email: "other@example.com", password: studioPassword, key: studioKey },
+      { email: studioEmail, password: studioPassword, key: "incorrect-key" },
+      { key: studioKey }
+    ]) {
+      const denied = await jsonRequest("/api/admin/login", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(invalid)
+      });
+      assert.equal(denied.response.status, 401);
+    }
+    const login = await jsonRequest("/api/admin/login", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: studioEmail, password: studioPassword, key: studioKey })
+    });
+    assert.equal(login.response.status, 200);
+    studioToken = login.body.token;
+  }
+  const auth = { "Content-Type": "application/json", Authorization: "Bearer " + studioToken };
   const original = initial.body;
   let changed = false;
   let orderId = "";
@@ -261,7 +267,7 @@ async function main() {
     if (orderId) {
       await cleanup("remove test order", async () => {
         const removedOrder = await jsonRequest("/api/admin/orders/" + orderId, {
-          method: "DELETE", headers: { Authorization: "Bearer " + login.body.token }
+          method: "DELETE", headers: { Authorization: "Bearer " + studioToken }
         });
         assert.equal(removedOrder.response.status, 200, JSON.stringify(removedOrder.body));
       });
@@ -277,14 +283,14 @@ async function main() {
     if (customerId) {
       await cleanup("remove test customer", async () => {
         const removedCustomer = await jsonRequest("/api/admin/customers/" + customerId, {
-          method: "DELETE", headers: { Authorization: "Bearer " + login.body.token }
+          method: "DELETE", headers: { Authorization: "Bearer " + studioToken }
         });
         assert.equal(removedCustomer.response.status, 200, JSON.stringify(removedCustomer.body));
       });
     }
     await cleanup("revoke Studio session", async () => {
       const logout = await jsonRequest("/api/admin/logout", {
-        method: "POST", headers: { Authorization: "Bearer " + login.body.token }
+        method: "POST", headers: { Authorization: "Bearer " + studioToken }
       });
       assert.equal(logout.response.status, 200);
     });

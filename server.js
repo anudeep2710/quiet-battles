@@ -11,6 +11,9 @@ const PORT = Number(process.env.PORT || 4173);
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const ORDER_STATUSES = new Set(["Placed", "Confirmed", "Packed", "Shipped", "Completed", "Cancelled"]);
 const CUSTOMER_SESSION_MS = 7 * 24 * 60 * 60 * 1000;
+const ADMIN_AUTH_WINDOW_MS = 15 * 60 * 1000;
+const ADMIN_AUTH_MAX_ATTEMPTS = 10;
+const adminAuthAttempts = new Map();
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -113,9 +116,39 @@ function passwordMatches(password, salt, expected) {
   return actual.length === stored.length && crypto.timingSafeEqual(actual, stored);
 }
 
-function adminPasswordMatches(password, encodedHash) {
-  const parts = /^([a-f0-9]{32}):([a-f0-9]{128})$/.exec(encodedHash);
-  return Boolean(parts) && passwordMatches(password, parts[1], parts[2]);
+function adminPasswordMatches(password, account) {
+  if (!account || !/^[a-f0-9]{128}$/.test(account.password_hash || "") ||
+      !/^[a-f0-9]{32}$/.test(account.password_salt || "")) return false;
+  return passwordMatches(password, account.password_salt, account.password_hash);
+}
+
+function rateLimitedAdminAuth(req, scope) {
+  const now = Date.now();
+  const address = String(req.headers["x-real-ip"] || req.socket?.remoteAddress || "unknown").slice(0, 128);
+  const key = scope + ":" + address;
+  let attempt = adminAuthAttempts.get(key);
+  if (!attempt || now - attempt.startedAt >= ADMIN_AUTH_WINDOW_MS) {
+    attempt = { startedAt: now, count: 0 };
+  }
+  if (attempt.count >= ADMIN_AUTH_MAX_ATTEMPTS) {
+    adminAuthAttempts.set(key, attempt);
+    return true;
+  }
+  attempt.count += 1;
+  adminAuthAttempts.set(key, attempt);
+  if (adminAuthAttempts.size > 500) {
+    for (const [entryKey, entry] of adminAuthAttempts) {
+      if (now - entry.startedAt >= ADMIN_AUTH_WINDOW_MS) adminAuthAttempts.delete(entryKey);
+    }
+  }
+  return false;
+}
+
+async function startAdminSession() {
+  const token = crypto.randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000);
+  await db.createSession(token, expiresAt);
+  return { token, expiresIn: 14400 };
 }
 
 async function startCustomerSession(customer) {
@@ -343,28 +376,58 @@ async function handle(req, res) {
       "public, max-age=31536000, immutable");
   }
 
-  if (req.method === "POST" && pathname === "/api/admin/login") {
-    const adminEmail = normalizeEmail(process.env.QB_ADMIN_EMAIL);
-    const adminPasswordHash = process.env.QB_ADMIN_PASSWORD_HASH || "";
+  if (req.method === "GET" && pathname === "/api/admin/setup-status") {
+    return send(res, 200, { configured: Boolean(await db.findAdminAccount()) });
+  }
+
+  if (req.method === "GET" && pathname === "/api/admin/session") {
+    if (!await db.hasSession(tokenFrom(req))) return send(res, 401, { error: "Your studio session has expired. Sign in again." });
+    return send(res, 200, { ok: true });
+  }
+
+  if (req.method === "POST" && pathname === "/api/admin/setup") {
+    if (rateLimitedAdminAuth(req, "setup")) return send(res, 429, { error: "Too many attempts. Try again in 15 minutes." });
     const studioKey = process.env.QB_ADMIN_KEY || "";
-    if (!validEmail(adminEmail) || !/^([a-f0-9]{32}):([a-f0-9]{128})$/.test(adminPasswordHash) || studioKey.length < 16) {
-      return send(res, 503, { error: "Studio access is not configured." });
+    if (studioKey.length < 16) return send(res, 503, { error: "Studio setup is not configured." });
+    if (await db.findAdminAccount()) return send(res, 409, { error: "Studio setup is already complete. Sign in instead." });
+    const body = await readJson(req, 8192);
+    if (!isObject(body) || typeof body.email !== "string" || body.email.length > 254 ||
+        typeof body.password !== "string" || body.password.length > 128 ||
+        typeof body.confirmPassword !== "string" || body.confirmPassword.length > 128 ||
+        typeof body.key !== "string" || body.key.length > 512) {
+      return send(res, 400, { error: "Enter a valid email, password, confirmation, and Studio key." });
     }
+    const email = normalizeEmail(body.email);
+    if (!validEmail(email) || body.password.length < 12) {
+      return send(res, 400, { error: "Use a valid email and a password with at least 12 characters." });
+    }
+    if (body.password !== body.confirmPassword) return send(res, 400, { error: "The password confirmation does not match." });
+    if (!safeEqual(body.key, studioKey)) return send(res, 401, { error: "Studio credentials are not correct." });
+
+    const passwordSalt = crypto.randomBytes(16).toString("hex");
+    const passwordHash = crypto.scryptSync(body.password, passwordSalt, 64).toString("hex");
+    const account = await db.createAdminAccount(email, passwordHash, passwordSalt);
+    if (!account) return send(res, 409, { error: "Studio setup is already complete. Sign in instead." });
+    return send(res, 201, await startAdminSession());
+  }
+
+  if (req.method === "POST" && pathname === "/api/admin/login") {
+    if (rateLimitedAdminAuth(req, "login")) return send(res, 429, { error: "Too many attempts. Try again in 15 minutes." });
+    const studioKey = process.env.QB_ADMIN_KEY || "";
+    if (studioKey.length < 16) return send(res, 503, { error: "Studio access is not configured." });
     const body = await readJson(req, 4096);
     const validInput = isObject(body) && typeof body.email === "string" && body.email.length <= 254 &&
       typeof body.password === "string" && body.password.length <= 128 &&
       typeof body.key === "string" && body.key.length <= 512;
     if (!validInput) return send(res, 401, { error: "Studio credentials are not correct." });
-    const emailMatches = safeEqual(normalizeEmail(body.email), adminEmail);
+    const account = await db.findAdminAccount();
+    const emailMatches = Boolean(account) && safeEqual(normalizeEmail(body.email), account.email);
     const keyMatches = safeEqual(body.key, studioKey);
-    const passwordIsCorrect = adminPasswordMatches(body.password, adminPasswordHash);
+    const passwordIsCorrect = adminPasswordMatches(body.password, account);
     if (!emailMatches || !keyMatches || !passwordIsCorrect) {
       return send(res, 401, { error: "Studio credentials are not correct." });
     }
-    const token = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000);
-    await db.createSession(token, expiresAt);
-    return send(res, 200, { token, expiresIn: 14400 });
+    return send(res, 200, await startAdminSession());
   }
 
   if (req.method === "POST" && pathname === "/api/admin/logout") {

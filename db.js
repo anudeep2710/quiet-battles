@@ -36,6 +36,7 @@ const schema = [
   "ALTER TABLE products ADD COLUMN IF NOT EXISTS secondary_image TEXT NOT NULL DEFAULT ''",
   "CREATE TABLE IF NOT EXISTS media_assets (id UUID PRIMARY KEY, mime_type TEXT NOT NULL, base64_data TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())",
   "CREATE TABLE IF NOT EXISTS admin_sessions (token_hash TEXT PRIMARY KEY, expires_at TIMESTAMPTZ NOT NULL)",
+  "CREATE TABLE IF NOT EXISTS admin_accounts (id SMALLINT PRIMARY KEY CHECK (id = 1), email TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL, password_salt TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())",
   "CREATE TABLE IF NOT EXISTS customers (id UUID PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL, password_salt TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())",
   "CREATE TABLE IF NOT EXISTS customer_sessions (token_hash TEXT PRIMARY KEY, customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE, expires_at TIMESTAMPTZ NOT NULL)",
   "CREATE TABLE IF NOT EXISTS orders (id UUID PRIMARY KEY, order_number TEXT NOT NULL UNIQUE, customer JSONB NOT NULL, items JSONB NOT NULL, subtotal INTEGER NOT NULL CHECK (subtotal >= 0), payment_method TEXT NOT NULL DEFAULT 'test_qr', payment_status TEXT NOT NULL DEFAULT 'Not paid', status TEXT NOT NULL DEFAULT 'Placed', created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now())",
@@ -182,9 +183,22 @@ async function readMedia(id) {
 }
 
 function adminSessionHash(token) {
-  const credentials = [process.env.QB_ADMIN_KEY || "", process.env.QB_ADMIN_EMAIL || "",
-    process.env.QB_ADMIN_PASSWORD_HASH || ""].join("\0");
-  return crypto.createHmac("sha256", credentials).update(token).digest("hex");
+  return crypto.createHmac("sha256", process.env.QB_ADMIN_KEY || "").update(token).digest("hex");
+}
+
+async function findAdminAccount() {
+  const rows = await getClient().query(
+    "SELECT id, email, password_hash, password_salt, created_at FROM admin_accounts WHERE id = 1"
+  );
+  return rows[0] || null;
+}
+
+async function createAdminAccount(email, passwordHash, passwordSalt) {
+  const rows = await getClient().query(
+    "INSERT INTO admin_accounts (id, email, password_hash, password_salt) VALUES (1, $1, $2, $3) ON CONFLICT DO NOTHING RETURNING id, email, password_hash, password_salt, created_at",
+    [email, passwordHash, passwordSalt]
+  );
+  return rows[0] || null;
 }
 
 async function createSession(token, expiresAt) {
@@ -343,7 +357,7 @@ async function ping() {
 
 module.exports = {
   initializeDatabase, readContent, writeContent, saveMedia, readMedia, pruneUnusedMedia,
-  createSession, hasSession, deleteSession, createOrder, readOrders,
+  findAdminAccount, createAdminAccount, createSession, hasSession, deleteSession, createOrder, readOrders,
   updateOrderStatus, deleteOrder, createCustomer, findCustomerByEmail,
   createCustomerSession, readCustomerBySession, deleteCustomerSession,
   readCustomerOrders, readCustomers, deleteCustomer, ping

@@ -107,26 +107,17 @@ Locally, server.js serves the public files and the API. On Vercel, public/ conta
 Requirements: Node.js 24.15 or newer, npm, and a Neon Postgres database branch reserved for this project.
 
 1. Install dependencies with npm install.
-2. Copy .env.example to .env.local and set DATABASE_URL, QB_ADMIN_EMAIL, QB_ADMIN_PASSWORD_HASH, and QB_ADMIN_KEY. Use a private Studio key with at least 16 characters.
+2. Copy .env.example to .env.local and set DATABASE_URL and QB_ADMIN_KEY. Use a private Studio key with at least 16 characters.
 3. Run npm run db:init to create or migrate the schema and seed an empty database.
-4. Run npm run dev and open http://127.0.0.1:4173.
+4. Run npm run dev and open http://127.0.0.1:4173. The first visitor with the Studio key can create the one-time owner account at /admin.
 
-Generate the salted password hash in PowerShell without putting the password in a command argument:
+Keep .env.local, .studio-key, and database credentials out of Git. Configure DATABASE_URL and the same private Studio key in Vercel. Changing QB_ADMIN_KEY invalidates existing Studio sessions. The account password is salted and hashed by the server, then stored in Neon; only the account owner can use the login form after initial setup.
 
-```powershell
-$secret = Read-Host 'Studio password' -AsSecureString
-$plain = [System.Net.NetworkCredential]::new('', $secret).Password
-$plain | npm run admin:hash-password --silent
-Remove-Variable plain, secret
-```
-
-Copy the printed `salt:hash` value to QB_ADMIN_PASSWORD_HASH. Keep .env.local, .studio-key, and all database credentials out of Git. Configure the same email, hash, and Studio key in Vercel. Changing any of these values invalidates existing Studio sessions.
-
-The smoke check writes temporary account, order, content, and image records before deleting them. Run it only against a disposable Neon branch. Set QB_ADMIN_TEST_PASSWORD in the ignored .env.local file to the Studio password for that local test; never set it in Vercel. The check expects the local server on port 4174. In PowerShell, start the server with $env:PORT = "4174"; npm run dev, then run npm run test:smoke in another terminal. The isolated `npm run test:admin-auth` check does not use Neon.
+The smoke check writes temporary customer, order, content, and image records. Run it only against a disposable Neon branch. Set QB_ADMIN_TEST_EMAIL and QB_ADMIN_TEST_PASSWORD in ignored .env.local; on a fresh branch the test creates this test-only Studio account once. Never set those variables in Vercel. The check expects the local server on port 4174. In PowerShell, start it with `$env:PORT = "4174"; npm run dev`, then run `npm run test:smoke` in another terminal. The isolated `npm run test:admin-auth` check does not use Neon.
 
 ## Content Studio
 
-Open /admin and enter the admin email, password, and private Studio key. The Studio can edit homepage copy; add, edit, and remove Series, Chapters, and products; upload images; and review customer and order records. Uploaded PNG, JPEG, and WebP files are limited to 2 MB and stored in Neon. Order status can be updated and records can be removed. Chapters and products must keep valid links to one another.
+Open /admin. On first use, create the owner account with an email, password, password confirmation, and private Studio key. The key is checked against a server-only secret and is never stored in Neon. Setup is locked after the first account is saved; later visits use the email, password, and key sign-in form. Passwords are scrypt-hashed with a random salt in Neon. The Studio can edit homepage copy; add, edit, and remove Series, Chapters, and products; upload images; and review customer and order records. Uploaded PNG, JPEG, and WebP files are limited to 2 MB and stored in Neon. Order status can be updated and records can be removed. Chapters and products must keep valid links to one another.
 
 The Studio uses one owner credential set. A real team should use named staff accounts, roles, and an audit log.
 
@@ -139,6 +130,7 @@ The Studio uses one owner credential set. A real team should use named staff acc
 | chapters | Chapter story and Series/product links |
 | products | Product details, prices, sizes, and imagery |
 | media_assets | Uploaded image bytes |
+| admin_accounts | One-time Studio owner email and salted scrypt password hash |
 | customers | Customer profile and scrypt-derived password hash |
 | customer_sessions | Hashed, expiring customer session token |
 | admin_sessions | Hashed, expiring Studio session token |
@@ -160,7 +152,10 @@ See [docs/database-schema.md](docs/database-schema.md) for fields and relationsh
 | GET /api/auth/me | Read the current account and its orders |
 | POST /api/auth/logout | Revoke a customer session |
 | POST /api/orders | Validate and record an account-linked order |
+| GET /api/admin/setup-status | Check whether first-time Studio setup is complete |
+| POST /api/admin/setup | Create the one-time Studio owner account |
 | POST /api/admin/login | Start a Studio session |
+| GET /api/admin/session | Validate the current Studio session |
 | PUT /api/admin/content | Save validated content |
 | POST /api/admin/upload | Store an image |
 | GET /api/admin/orders | List orders in Studio |
@@ -180,7 +175,7 @@ See [docs/database-schema.md](docs/database-schema.md) for fields and relationsh
 
 ## Scope and next steps
 
-This build is for technical assessment, not public commerce. Use sample information only. Email verification, password recovery, generic account-registration responses, effective request throttling, production privacy and retention controls, named Studio users, stock management, shipping and tax calculation, returns, transactional email, and payment-provider verification are not implemented. Before accepting real customer accounts, implement and review the account and privacy controls. Before launching commerce, add inventory, shipping, tax, return, and payment-provider integrations.
+This build is for technical assessment, not public commerce. Use sample information only. Customer email verification, password recovery, generic account-registration responses, shared/edge-enforced request throttling, production privacy and retention controls, named Studio users, stock management, shipping and tax calculation, returns, transactional email, and payment-provider verification are not implemented. Studio setup and sign-in use a basic per-instance attempt limit; replace it with shared edge or database-backed throttling before public use. Before accepting real customer accounts, implement and review the account and privacy controls. Before launching commerce, add inventory, shipping, tax, return, and payment-provider integrations.
 
 The site uses direct paths for its pages, backed by a single-page-app fallback. Page content and titles render in the browser; a production release should add server-side or static rendering, route-specific social metadata, a sitemap, optimized image derivatives, and monitoring.
 

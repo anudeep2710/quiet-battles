@@ -7,6 +7,11 @@ let cartOpen = false;
 let cartReturnFocus = false;
 let adminToken = sessionStorage.getItem("qbAdminToken") || "";
 let adminMessage = "";
+let adminSetupConfigured = null;
+let adminAccessLoaded = false;
+let adminAccessLoading = false;
+let adminAccessError = "";
+let adminSessionChecked = !adminToken;
 let noticeTimer = null;
 let noticeMessage = "";
 let sizeSelection = {};
@@ -545,6 +550,65 @@ function adminLogin() {
     '<div class="admin-status" role="status">' + escapeHtml(adminMessage) + '</div><button class="button button-dark" type="submit">Open the studio <span class="arrow">↗</span></button></form>';
 }
 
+function adminSetup() {
+  return '<form class="admin-login" id="admin-setup"><span class="mono section-label">CONTENT DESK · FIRST ACCESS</span><h2>Create the Studio account</h2><p>This one-time setup creates the owner account for the content desk. Keep the Studio key private; it is checked securely and is not stored with your account.</p>' +
+    '<label class="admin-field"><span>Account email</span><input type="email" name="email" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="254" required></label>' +
+    '<label class="admin-field"><span>Account password</span><input type="password" name="password" autocomplete="new-password" minlength="12" maxlength="128" required><small>Use at least 12 characters.</small></label>' +
+    '<label class="admin-field"><span>Confirm password</span><input type="password" name="confirmPassword" autocomplete="new-password" minlength="12" maxlength="128" required></label>' +
+    '<label class="admin-field"><span>Studio key</span><input type="password" name="key" autocomplete="off" maxlength="512" required></label>' +
+    '<div class="admin-status" role="status">' + escapeHtml(adminMessage) + '</div><button class="button button-dark" type="submit">Create owner account <span class="arrow">↗</span></button></form>';
+}
+
+function renderAdminAccess() {
+  if (adminToken && adminSessionChecked) return adminDashboard();
+  let title = "Studio access";
+  let message = "Checking the one-time setup status…";
+  let retry = "";
+  if (adminAccessError) {
+    title = "Studio unavailable";
+    message = adminAccessError;
+    retry = '<button class="button button-dark" type="button" data-retry-admin-access>Try again <span class="arrow">↗</span></button>';
+  } else if (adminToken) {
+    title = "Checking your session";
+    message = "Please wait while Studio verifies this browser session.";
+  }
+  if (adminToken || !adminAccessLoaded || adminAccessError) {
+    return '<div class="admin-shell"><div class="page"><section class="admin-login admin-access-message"><span class="mono section-label">CONTENT DESK · PRIVATE ACCESS</span><h2>' + escapeHtml(title) + '</h2><p>' + escapeHtml(message) + '</p>' + retry + '</section></div></div>';
+  }
+  return '<div class="admin-shell"><div class="page">' + (adminSetupConfigured ? adminLogin() : adminSetup()) + '</div></div>';
+}
+
+async function loadAdminAccess() {
+  if (adminAccessLoading || adminAccessLoaded) return;
+  adminAccessLoading = true;
+  adminAccessError = "";
+  try {
+    const response = await fetch("/api/admin/setup-status");
+    if (!response.ok) throw new Error("Could not check Studio setup.");
+    const status = await response.json();
+    adminSetupConfigured = Boolean(status.configured);
+    if (adminToken) {
+      const sessionResponse = await fetch("/api/admin/session", { headers: { Authorization: "Bearer " + adminToken } });
+      if (sessionResponse.ok) {
+        adminSessionChecked = true;
+      } else {
+        adminToken = "";
+        sessionStorage.removeItem("qbAdminToken");
+        adminSessionChecked = true;
+        adminMessage = "Your Studio session expired. Sign in again.";
+      }
+    } else {
+      adminSessionChecked = true;
+    }
+  } catch {
+    adminAccessError = "Studio setup could not be checked. Try again when the connection is available.";
+  } finally {
+    adminAccessLoading = false;
+    adminAccessLoaded = true;
+    if (content && currentRoute()[0] === "admin") render();
+  }
+}
+
 function orderDate(value) {
   try {
     return new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
@@ -712,6 +776,7 @@ function render() {
   const existingCheckoutForm = document.getElementById("checkout-details");
   const checkoutValues = existingCheckoutForm ? Object.fromEntries(new FormData(existingCheckoutForm)) : null;
   const route = currentRoute();
+  if (route[0] === "admin" && !adminAccessLoaded) loadAdminAccess();
   let main;
   if (route[0] === "archive") main = renderArchive();
   else if (route[0] === "artifacts") main = renderArtifacts();
@@ -722,7 +787,7 @@ function render() {
   else if (route[0] === "login") main = renderAuth("login");
   else if (route[0] === "signup") main = renderAuth("signup");
   else if (route[0] === "account") main = renderAccount();
-  else if (route[0] === "admin") main = '<main>' + (adminToken ? adminDashboard() : '<div class="admin-shell"><div class="page">' + adminLogin() + '</div></div>') + '</main>';
+  else if (route[0] === "admin") main = '<main>' + renderAdminAccess() + '</main>';
   else if (["", "home", "belief"].includes(route[0])) main = renderHome();
   else main = renderNotFound();
   root.innerHTML = renderHeader() + main + renderFooter() + renderCart() + renderNotice();
@@ -1037,6 +1102,53 @@ function bindEvents() {
     navigateTo("/login");
   });
 
+  const retryAdminAccess = document.querySelector("[data-retry-admin-access]");
+  if (retryAdminAccess) retryAdminAccess.addEventListener("click", function () {
+    adminAccessLoaded = false;
+    adminSetupConfigured = null;
+    adminAccessError = "";
+    render();
+  });
+
+  const setup = document.getElementById("admin-setup");
+  if (setup) setup.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    adminMessage = "";
+    const values = new FormData(setup);
+    const email = values.get("email");
+    const password = values.get("password");
+    const confirmPassword = values.get("confirmPassword");
+    const key = values.get("key");
+    try {
+      const response = await fetch("/api/admin/setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, password: password, confirmPassword: confirmPassword, key: key })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Unable to create the Studio account.");
+      adminSetupConfigured = true;
+      adminToken = result.token;
+      adminSessionChecked = true;
+      sessionStorage.setItem("qbAdminToken", adminToken);
+      adminDraft = cloneContent(content);
+      adminOrders = [];
+      adminOrdersLoaded = false;
+      adminCustomers = [];
+      adminCustomersLoaded = false;
+      adminActiveTab = "brand";
+      adminMessage = "Studio account created.";
+      render();
+    } catch (error) {
+      adminMessage = error.message;
+      const status = setup.querySelector(".admin-status");
+      if (status) status.textContent = adminMessage;
+      setup.elements.namedItem("password").value = "";
+      setup.elements.namedItem("confirmPassword").value = "";
+      setup.elements.namedItem("key").value = "";
+    }
+  });
+
   const login = document.getElementById("admin-login");
   if (login) login.addEventListener("submit", async function (event) {
     event.preventDefault();
@@ -1050,6 +1162,7 @@ function bindEvents() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Unable to sign in.");
       adminToken = result.token;
+      adminSessionChecked = true;
       sessionStorage.setItem("qbAdminToken", adminToken);
       adminDraft = cloneContent(content);
       adminOrders = [];
@@ -1071,6 +1184,7 @@ function bindEvents() {
   if (logout) logout.addEventListener("click", async function () {
     await fetch("/api/admin/logout", { method: "POST", headers: { Authorization: "Bearer " + adminToken } }).catch(function () {});
     adminToken = "";
+    adminSessionChecked = true;
     sessionStorage.removeItem("qbAdminToken");
     adminDraft = null;
     adminOrders = [];
