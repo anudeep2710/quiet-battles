@@ -7,7 +7,20 @@ A story-led clothing storefront for the QUIET BATTLES brief. The site connects T
 
 All product details, prices, and stories are illustrative. Checkout requires an account, but its QR is a non-payable test image: no payment is collected, verified, or transferred.
 
-## Explore
+## Watch the walkthrough
+
+[![QUIET BATTLES walkthrough poster](docs/walkthrough/quiet-battles-poster.jpg)](docs/walkthrough/quiet-battles-walkthrough.mp4)
+
+[Play or download the short walkthrough](docs/walkthrough/quiet-battles-walkthrough.mp4) · [View current desktop and mobile screenshots](docs/screenshots/README.md)
+
+## Review guide
+
+1. Start at the [homepage](https://quiet-battles-demo.vercel.app/) and enter [The Archive](https://quiet-battles-demo.vercel.app/archive).
+2. Open [Series 01](https://quiet-battles-demo.vercel.app/series/the-gentle-armor), choose a Chapter such as [The First Quiet](https://quiet-battles-demo.vercel.app/chapter/the-first-quiet), and follow its link to [The Soft Armor Hoodie](https://quiet-battles-demo.vercel.app/product/soft-armor-hoodie).
+3. Choose a size, add the hoodie to the bag, and continue to checkout. [Sign in](https://quiet-battles-demo.vercel.app/login) or [create an account](https://quiet-battles-demo.vercel.app/signup) to place a test order. The QR cannot accept payment.
+4. Browse the [full catalogue](https://quiet-battles-demo.vercel.app/artifacts). The private [Studio](https://quiet-battles-demo.vercel.app/admin) manages site content and orders; its key is shared separately with reviewers.
+
+### Direct page paths
 
 - Homepage: /
 - The Archive: /archive
@@ -33,6 +46,7 @@ The purchase path is Browse → Add to bag → Checkout → Sign in or create an
 | Content management | Custom Studio backed by the same API and database |
 | Images | Local WebP editorial images, Unsplash photography, original garment SVGs |
 | Fonts | Barlow Condensed, DM Sans, IBM Plex Mono from Google Fonts |
+| Walkthrough media | Playwright CLI captures, Hyperframes composition, FFmpeg poster and encoding |
 
 The frontend has no framework or component library. The CMS is built for this project; no CMS plugin or site template is used.
 
@@ -118,6 +132,7 @@ See [docs/database-schema.md](docs/database-schema.md) for fields and relationsh
 - [Product readiness review](docs/READINESS_REVIEW.md)
 - [Database schema](docs/database-schema.md)
 - [Screenshots](docs/screenshots/README.md)
+- [Walkthrough video](docs/walkthrough/quiet-battles-walkthrough.mp4)
 
 ## Scope and next steps
 
@@ -125,4 +140,4 @@ This build is for technical assessment, not public commerce. Use sample informat
 
 The site uses direct paths for its pages, backed by a single-page-app fallback. Page content and titles render in the browser; a production release should add server-side or static rendering, route-specific social metadata, a sitemap, optimized image derivatives, and monitoring.
 
-Five editorial concepts were generated with OpenAI image generation; additional photography is sourced from Unsplash; the garment illustrations are local SVGs. Google Fonts serves the typefaces. OpenAI Codex assisted with implementation, documentation, and code review. Playwright was used for browser review and screenshot capture.
+Five editorial concepts were generated with OpenAI image generation; additional photography is sourced from Unsplash; the garment illustrations are local SVGs. Google Fonts serves the typefaces. OpenAI Codex assisted with implementation, documentation, and code review. Playwright CLI captured the current screenshots. The walkthrough was composed with the Brag skill and Hyperframes, with FFmpeg used for the poster and final video.

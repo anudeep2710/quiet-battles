@@ -4,6 +4,7 @@
 
 - **Website:** [Open the site](https://quiet-battles-demo.vercel.app)
 - **Source:** [GitHub repository](https://github.com/anudeep2710/quiet-battles) — private; reviewers need repository access.
+- **Walkthrough:** [Watch the short video](docs/walkthrough/quiet-battles-walkthrough.mp4) · [View current screenshots](docs/screenshots/README.md)
 
 ## What is included
 
@@ -17,7 +18,7 @@
 
 ## How to review
 
-Start with [README.md](README.md) for local setup and site routes. The [technical approach](TECHNICAL_APPROACH.md) explains the architecture and production estimate. The [database schema](docs/database-schema.md), [readiness review](docs/READINESS_REVIEW.md), and [screenshots](docs/screenshots/README.md) provide supporting details.
+Start with the [README review guide](README.md) and [walkthrough video](docs/walkthrough/quiet-battles-walkthrough.mp4). The [technical approach](TECHNICAL_APPROACH.md) explains the architecture and production estimate. The [database schema](docs/database-schema.md), [readiness review](docs/READINESS_REVIEW.md), and [current screenshots](docs/screenshots/README.md) provide supporting details.
 
 Studio is at /admin and requires the private Studio key. The key is not included in source control or this document. Contact the developer separately to arrange access.
 
@@ -29,7 +30,7 @@ Studio is at /admin and requires the private Studio key. The key is not included
 - Hosting and source: Vercel and GitHub.
 - Assets: five editorial concepts generated with OpenAI image generation, supplementary Unsplash photography, and original SVG garment illustrations.
 - Fonts: Google Fonts.
-- No site template, frontend framework, CMS plugin, or paid UI plugin was used. OpenAI Codex assisted with implementation and documentation; Playwright was used for browser review and screenshots.
+- No site template, frontend framework, CMS plugin, or paid UI plugin was used. OpenAI Codex assisted with implementation and documentation. Playwright CLI captured screenshots; the Brag skill and Hyperframes composed the walkthrough, and FFmpeg finalized its poster and video.
 
 ## Data and payment boundaries
 

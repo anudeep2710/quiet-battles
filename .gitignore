@@ -15,3 +15,4 @@ __pycache__/
 .share-body.json
 output/playwright/
 .playwright-cli/
+brag-output/

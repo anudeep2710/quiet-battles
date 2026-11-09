@@ -1,6 +1,25 @@
-# Screenshots
+# Website screenshots
 
-These earlier captures document the main page layouts and flows at desktop and mobile widths. Some screenshots retain the previous interface wording; use the [website](https://quiet-battles-demo.vercel.app) for current copy and [READINESS_REVIEW.md](../READINESS_REVIEW.md) for verification limits.
+## Current site · 9 November 2026
+
+These images were captured from the [live website](https://quiet-battles-demo.vercel.app) at 1440 px desktop and 390 px mobile widths. The full page views show the public story and shopping path. The checkout image uses an isolated browser bag with one sample hoodie; no account or order was created.
+
+| Screenshot | Page | What to look for |
+| --- | --- | --- |
+| [Home hero](current/01-home-desktop.jpg) · [full page](current/01-home-full.jpg) | `/` | Brand introduction and featured content |
+| [The Archive](current/02-archive-desktop.jpg) | `/archive` | Series entry point |
+| [Series 01](current/03-series-desktop.jpg) | `/series/the-gentle-armor` | The five Chapters |
+| [Chapter 01](current/04-chapter-desktop.jpg) | `/chapter/the-first-quiet` | Story and linked Artifact |
+| [Hoodie product](current/05-product-desktop.jpg) | `/product/soft-armor-hoodie` | Price, size choice, and front/back views |
+| [Catalogue](current/06-catalogue-desktop.jpg) | `/artifacts` | Eight products and filters |
+| [Sign in](current/07-signin-desktop.jpg) · [create account](current/08-signup-desktop.jpg) | `/login`, `/signup` | Account access |
+| [Studio access](current/09-studio-access-desktop.jpg) | `/admin` | Private content desk entry |
+| [Mobile home](current/10-home-mobile.jpg) · [product](current/11-product-mobile.jpg) · [catalogue](current/12-catalogue-mobile.jpg) | Mobile | Responsive layouts |
+| [Mobile checkout gate](current/13-checkout-account-gate-mobile.jpg) | `/checkout` | Account required before an order |
+
+## Earlier workflow captures
+
+The captures below document the signed-in order and Studio flows with synthetic information. Some contain earlier interface wording. Use the current images above for the latest public pages and [READINESS_REVIEW.md](../READINESS_REVIEW.md) for verification limits.
 
 | File | What it shows |
 | --- | --- |

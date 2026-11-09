@@ -4,9 +4,9 @@
 
 The current build covers the core technical-assessment requirements and is suitable to present as a working prototype with clear limits. It is not ready to process real customer accounts or payments.
 
-This review combines a read-only source and documentation review with a browser walkthrough of the hosted pages. Public routes, story pages, products, account pages, and the checkout account gate were inspected. Studio's credential-protected tools and a new account-to-order transaction were not exercised during this review. No order was placed and no database records were changed.
+This review combines a read-only source and documentation review with a browser walkthrough of the hosted pages. Public routes, story pages, products, account pages, and the checkout account gate were inspected. Current desktop and mobile screenshots were captured on 9 November 2026. Studio's credential-protected tools and a new account-to-order transaction were not exercised during this review. No order was placed and no database records were changed.
 
-During the browser walkthrough, the homepage hero area appeared flat gray in one capture. The hosted hero image endpoint returned HTTP 200 with the expected image size, and the checked-in image and saved homepage screenshot render correctly. This may have been a load-timing issue; confirm the hero image renders on the final deployment.
+The homepage hero image renders in the current desktop and mobile captures. A live `/api/health` request on 9 November 2026 returned `{"ok":true,"database":"Neon Postgres"}`. These checks confirm the public image and database connection; they do not cover signed-in Studio or order creation.
 
 ## Requirements check
 
@@ -17,11 +17,11 @@ During the browser walkthrough, the homepage hero area appeared flat gray in one
 | Product page and purchase controls | Eight products, price and size controls, front/back artwork, bag, filters, and sorting | Covered |
 | Account-required purchase flow | API rejects guest orders; account page and checkout gate are present; delivery and review steps are implemented in source | Covered in implementation; final authenticated checkout not exercised in this review |
 | Test QR and order confirmation | Non-payable QR step and order-record path are implemented; no money moves | Covered in implementation; order creation not exercised in this review |
-| Backend and database | Node API and Neon Postgres schema cover content, products, media, accounts, sessions, and orders | Covered in source; current database connection not checked in this review |
+| Backend and database | Node API and Neon Postgres schema cover content, products, media, accounts, sessions, and orders; live health endpoint reports Neon connected | Covered in source and live health check; current write flow not exercised |
 | Admin / CMS | Studio source supports content, product, image, customer, and order management behind a Studio key | Covered in source; signed-in Studio not inspected |
-| Responsive experience | Responsive CSS and desktop/mobile screenshots are present | Covered in source and evidence; final post-edit mobile check remains |
+| Responsive experience | Responsive CSS and current desktop/mobile screenshots are present | Covered in source and captured layouts; a full device matrix was not run |
 | SEO and performance basics | Metadata, semantic HTML, static assets, and image alternatives are present | Partial; direct paths work, but page content renders in the browser and there is no sitemap or measured performance report |
-| Submission materials | Run instructions, stack, database schema, architecture, estimate, and screenshots are documented here | Covered |
+| Submission materials | Run instructions, stack, database schema, architecture, estimate, current screenshots, and a short walkthrough video are linked from the README | Covered |
 
 ## Product strategy lens
 
