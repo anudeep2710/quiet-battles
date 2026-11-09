@@ -668,7 +668,7 @@ function field(label, path, value, options) {
 }
 
 function adminLogin() {
-  const setupLink = adminSetupConfigured ? "" : '<button class="text-button" type="button" data-admin-access-mode="setup">First time here? Create the owner account</button>';
+  const setupLink = adminSetupConfigured ? "" : '<button class="admin-access-switch" type="button" data-admin-access-mode="setup">First time here? Create the owner account</button>';
   return '<form class="admin-login" id="admin-login"><span class="mono section-label">CONTENT DESK · PRIVATE ACCESS</span><h2>Studio access</h2><p>Use your admin email, password, and Studio key to manage the archive, products, images, and test orders.</p>' +
     '<label class="admin-field"><span>Admin email</span><input type="email" name="email" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>' +
     '<label class="admin-field"><span>Password</span><input type="password" name="password" autocomplete="current-password" required></label>' +
@@ -683,7 +683,7 @@ function adminSetup() {
     '<label class="admin-field"><span>Confirm password</span><input type="password" name="confirmPassword" autocomplete="new-password" minlength="12" maxlength="128" required></label>' +
     '<label class="admin-field"><span>Studio key</span><input type="password" name="key" autocomplete="off" maxlength="512" required></label>' +
     '<div class="admin-status" role="status">' + escapeHtml(adminMessage) + '</div><button class="button button-dark" type="submit">Create owner account <span class="arrow">↗</span></button>' +
-    '<button class="text-button" type="button" data-admin-access-mode="login">Already have an account? Sign in</button></form>';
+    '<button class="admin-access-switch" type="button" data-admin-access-mode="login">Already have an account? Sign in</button></form>';
 }
 
 function renderAdminAccess() {
