@@ -140,8 +140,14 @@ function currentRoute() {
   let pathname = location.pathname;
   if (location.hash && location.hash !== "#main-content") {
     const legacyRoute = decodeURIComponent(location.hash.slice(1)).replace(/^\/+|\/+$/g, "");
-    pathname = !legacyRoute || legacyRoute === "home" ? "/" : "/" + legacyRoute;
-    history.replaceState(null, "", pathname + location.search);
+    const routeName = legacyRoute.split("/")[0];
+    const isLegacyRoute = legacyRoute === "home" ||
+      ["archive", "artifacts", "login", "signup", "account", "admin", "belief", "checkout"].includes(routeName) ||
+      /^(series|chapter|product)\/[^/]+$/.test(legacyRoute);
+    if (isLegacyRoute) {
+      pathname = legacyRoute === "home" ? "/" : "/" + legacyRoute;
+      history.replaceState(null, "", pathname + location.search);
+    }
   }
   if (pathname !== "/" && pathname.endsWith("/")) {
     pathname = pathname.replace(/\/+$/, "");

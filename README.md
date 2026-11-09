@@ -4,14 +4,14 @@ A story-led streetwear storefront built around one path: **The Archive → Serie
 
 ## Review the website
 
-- **Deployed preview:** [quiet-battles-demo.vercel.app](https://quiet-battles-demo.vercel.app) — this is an earlier release. It does not include the latest source changes.
+- **Deployed preview:** [quiet-battles-demo.vercel.app](https://quiet-battles-demo.vercel.app) — the Vercel Production alias is connected to this repository's `main` branch.
 - **Source:** [GitHub repository](https://github.com/anudeep2710/quiet-battles)
 - **Walkthrough video:** [Watch or download the MP4](docs/walkthrough/quiet-battles-walkthrough.mp4) · [Google Drive copy](https://drive.google.com/file/d/1mENUGDQX0RGVkf-2AYvi_thbVM8cEDD1/view?usp=drivesdk) *(anyone with the link can view; no sign-in required)*
 - **Code and product status:** [Readiness review](docs/READINESS_REVIEW.md)
 
 [![QUIET BATTLES website walkthrough](docs/walkthrough/quiet-battles-poster.jpg)](https://drive.google.com/file/d/1mENUGDQX0RGVkf-2AYvi_thbVM8cEDD1/view?usp=drivesdk)
 
-The screenshots and video below were captured from local source using sample content in `data/content.json` through a temporary read-only preview. That preview blocked every API route except reading sample content; capture did not create accounts or orders. The current Vercel site includes the latest Studio access fix, and the connected Neon content API has been verified. The Studio screenshot predates the latest sign-in-switch styling.
+The screenshots and video below were captured from local source with sample content in `data/content.json` through a temporary read-only preview. That preview blocked API routes that could write data; capture created no customer account, Studio owner, or order. The live Vercel Production deployment was checked against GitHub `main`; its health and content endpoints return the expected Neon-backed responses. The Studio image shows the one-time first-access form; its sign-in switch has since received a small styling update.
 
 **Payment notice:** Checkout requires a customer account. Its QR image is illustrative and cannot accept or verify a payment. Orders in this build are workflow records only; no money moves.
 
@@ -51,7 +51,7 @@ The Studio is a private content-management area at `/admin`.
 4. Upload PNG, JPEG, or WebP images up to 2 MB. The Studio stores them in Neon for this assessment build.
 5. Review customer and test-order records. Sign out when finished.
 
-The first-use Studio screenshot below shows the one-time owner form. The screenshot capture did not create an owner account or save Studio content. The connected Neon branch is now migrated, and the live content API returns Series 01, five Chapters, and eight products. The first Studio owner account has not been created yet; complete the one-time setup before using sign-in.
+The first-use Studio screenshot below shows the one-time owner form. The screenshot capture did not create an owner account or save Studio content. The live Neon-backed content API returns one Series, five Chapters, and eight products. The one-time Studio owner account has not been created yet. To demonstrate content management, the owner must complete setup at `/admin` with a private Studio key; keep the key and password out of GitHub, screenshots, and the public walkthrough.
 
 ## Run locally
 
@@ -69,7 +69,7 @@ npm run db:init
 npm run dev
 ```
 
-Open [http://127.0.0.1:4173](http://127.0.0.1:4173). `npm run db:init` creates or migrates the schema and seeds an empty database; use a disposable branch or back up the database first. The current migration adds shared authentication throttling, checkout idempotency and recovery, and versioned Studio content saves.
+Open [http://127.0.0.1:4173](http://127.0.0.1:4173). `npm run db:init` creates or migrates the schema and seeds an empty database. It also updates legacy test-QR order states, so run it only against a disposable Neon branch or after reviewing and backing up the target database. The migration adds shared authentication throttling, checkout idempotency and recovery, and versioned Studio content saves.
 
 On an empty database, visit `/admin` and complete one-time owner setup. Customer sign-up and checkout require the updated database schema. The connected Neon main branch was migrated on 9 November 2026; the live health and content APIs have been verified.
 
@@ -178,9 +178,9 @@ See [database schema](docs/database-schema.md) and the API overview below.
 
 ## What is and is not implemented
 
-The assessment build demonstrates browsing, search and catalogue filters, account creation and sign-in, private order history, account-required checkout, non-payable QR confirmation, and content-management screens. Product names, garment details, stories, sizes, prices, stock, and availability are illustrative and require brand approval. Inventory is not tracked.
+The assessment build demonstrates browsing, catalogue filters and sorting, account-area order/product search, account creation and sign-in, private order history, account-required checkout, non-payable QR confirmation, and content-management screens. Product names, garment details, stories, sizes, prices, stock, and availability are illustrative and require brand approval. Inventory is not tracked.
 
-This assessment build is not ready for public commerce. The latest Vercel commit and Neon content read path were verified on 9 November 2026, but live customer signup, Studio content saves, and order creation were not exercised during this repair. Email verification, password recovery, secure HttpOnly sessions, customer-data retention rules, named Studio roles, inventory reservation, shipping and tax calculation, returns, transactional email, real payment-provider verification, production SEO rendering, and performance monitoring remain to be completed. Do not collect real customer data or take payment through this build.
+This is ready to present as an assessment prototype, not as a live commerce service. The deployed Vercel source was verified against GitHub `main`, and the live Neon health/content reads returned 200 with one Series, five Chapters, and eight products. Live customer signup, Studio content saves, and order creation have not been exercised. Email verification, password recovery, secure HttpOnly sessions, customer-data retention rules, named Studio roles, inventory reservation, shipping and tax calculation, returns, transactional email, real payment-provider verification, production SEO rendering, and performance monitoring remain outside this assessment build. Do not collect real customer data or take payment through it.
 
 ## Submission and tool disclosure
 

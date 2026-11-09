@@ -2,7 +2,7 @@
 
 ## Local source captures · 9 November 2026
 
-These images were taken with Playwright from local source at capture time. The capture-only preview served `data/content.json` and blocked API routes that could modify a database. The Studio setup screen was shown in first-access state. The captures predate the latest sign-in-switch styling and Neon migration; they do not demonstrate live database writes. The current Vercel site includes the latest Studio access fix, and the live content API was verified separately.
+These images were taken with Playwright from the local source using `data/content.json` through a read-only preview. The preview blocked API routes that could write to a database. They show the site’s sample screens and customer flow; they do not prove customer signup, Studio saves, or order creation against Neon. The Studio image shows the intended first-access setup state. The live Vercel deployment and Neon-backed read endpoints were verified separately; see the [readiness review](../READINESS_REVIEW.md).
 
 | File | Screen | Capture |
 | --- | --- | --- |

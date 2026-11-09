@@ -42,7 +42,7 @@ img { max-width: 100%; display: block; }
 .nav-links a:hover, .nav-actions a:hover, .cart-trigger:hover { color: #fff; }
 .nav-actions { gap: 23px; }
 .mobile-account-link { display: none; }
-.cart-trigger { background: none; border: 0; padding: 9px 0; cursor: pointer; }
+.cart-trigger { min-width: 44px; min-height: 44px; background: none; border: 0; padding: 9px 4px; cursor: pointer; }
 .cart-count { color: #d98772; margin-left: 4px; }
 .menu-toggle { display: none; min-width: 44px; min-height: 44px; background: transparent; border: 0; color: var(--chalk); cursor: pointer; font: 10px var(--mono); text-transform: uppercase; }
 
