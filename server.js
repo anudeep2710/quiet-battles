@@ -173,6 +173,10 @@ function validText(value, max = 2000) {
   return typeof value === "string" && value.length <= max;
 }
 
+function validRequiredText(value, max = 2000) {
+  return typeof value === "string" && value.trim().length > 0 && value.length <= max;
+}
+
 function validImage(value) {
   if (!validText(value, 2048)) return false;
   if (/^\/assets\/[a-zA-Z0-9._/-]+$/.test(value) ||
@@ -219,16 +223,21 @@ function validContent(value) {
   }
   const productSlugs = new Set();
   for (const product of value.products) {
-    if (!isObject(product) || !["name", "kind", "category", "description", "chapterSlug"].every((k) => validText(product[k])) ||
-        !product.kind.trim() || product.kind.length > 40 ||
+    if (!isObject(product) ||
+        !validRequiredText(product.name, 160) ||
+        !validRequiredText(product.kind, 40) ||
+        !validRequiredText(product.category, 120) ||
+        !validRequiredText(product.description) ||
+        !validRequiredText(product.chapterSlug, 120) ||
         !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(product.slug || "") ||
         productSlugs.has(product.slug) || !validImage(product.image) ||
         (product.secondaryImage && !validImage(product.secondaryImage)) ||
-        !Number.isInteger(product.price) || product.price < 0 || product.price > 10000000 ||
+        !Number.isInteger(product.price) || product.price < 1 || product.price > 10000000 ||
         !Array.isArray(product.sizes) || product.sizes.length < 1 || product.sizes.length > 30 ||
-        !product.sizes.every((item) => validText(item, 30)) ||
-        !Array.isArray(product.details) || product.details.length > 30 ||
-        !product.details.every((item) => validText(item, 300)) ||
+        !product.sizes.every((item) => validRequiredText(item, 30)) ||
+        new Set(product.sizes.map((item) => item.trim().toLowerCase())).size !== product.sizes.length ||
+        !Array.isArray(product.details) || product.details.length < 1 || product.details.length > 30 ||
+        !product.details.every((item) => validRequiredText(item, 300)) ||
         !chapterSlugs.has(product.chapterSlug)) return false;
     productSlugs.add(product.slug);
   }
@@ -515,7 +524,7 @@ async function handle(req, res) {
       return send(res, 428, { error: "Reload Studio before saving so the latest archive version is protected." });
     }
     if (!validContent(body)) {
-      return send(res, 400, { error: "Check required fields, unique Series and Chapter slugs, linked products, and image URLs." });
+      return send(res, 400, { error: "Check required fields and unique Series and Chapter slugs. Products need a name, description, image, positive price, at least one size and detail, and a valid chapter link." });
     }
     let contentVersion;
     try {

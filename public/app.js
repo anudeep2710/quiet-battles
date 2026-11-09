@@ -660,14 +660,15 @@ function renderCheckout() {
 
 function field(label, path, value, options) {
   const config = options || {};
-  const attrs = ' data-field="' + escapeHtml(path) + '"' + (config.kind ? ' data-kind="' + escapeHtml(config.kind) + '"' : "");
+  const attrs = ' data-field="' + escapeHtml(path) + '"' + (config.kind ? ' data-kind="' + escapeHtml(config.kind) + '"' : "") +
+    (config.required ? ' aria-required="true"' : "");
   const val = config.kind === "paragraphs" ? (Array.isArray(value) ? value.join("\n\n") : "") :
     config.kind === "list" ? (Array.isArray(value) ? value.join(", ") : "") :
     config.kind === "lines" ? (Array.isArray(value) ? value.join("\n") : "") : value;
-  return '<label class="admin-field"><span>' + escapeHtml(label) + '</span>' +
+  return '<label class="admin-field"><span>' + escapeHtml(label) + (config.required ? '<b class="required-marker" aria-hidden="true"> *</b>' : "") + '</span>' +
     (config.textarea
       ? '<textarea' + attrs + '>' + escapeHtml(val) + '</textarea>'
-      : '<input type="' + (config.type || "text") + '"' + attrs + ' value="' + escapeHtml(val) + '"' + (config.type === "number" ? ' min="0" step="1"' : "") + '>') +
+      : '<input type="' + (config.type || "text") + '"' + attrs + ' value="' + escapeHtml(val) + '"' + (config.type === "number" ? ' min="' + Number(config.min || 0) + '" step="1"' : "") + '>') +
     (config.upload ? '<small>Replace image: <input type="file" accept="image/png,image/jpeg,image/webp" data-upload="' + escapeHtml(path) + '"></small>' : "") +
     (config.hint ? "<small>" + escapeHtml(config.hint) + "</small>" : "") +
   '</label>';
@@ -806,18 +807,18 @@ function adminDashboard() {
   const productForms = draft.products.map(function (product, index) {
     return '<article class="admin-product"><div class="admin-row-title"><h3>Product ' + String(index + 1).padStart(2, "0") + '</h3><button class="remove-button" type="button" data-remove-product="' + index + '">Remove product</button></div>' +
       '<div class="admin-grid">' +
-        field("Product name", "products." + index + ".name", product.name) +
-        field("Product type", "products." + index + ".kind", product.kind) +
-        field("URL slug", "products." + index + ".slug", product.slug) +
-        field("Category line", "products." + index + ".category", product.category) +
-        field("Price in INR", "products." + index + ".price", product.price, { type: "number" }) +
-        field("Sizes", "products." + index + ".sizes", product.sizes, { kind: "list", hint: "Separate sizes with commas." }) +
-        field("Linked chapter slug", "products." + index + ".chapterSlug", product.chapterSlug) +
+        field("Product name", "products." + index + ".name", product.name, { required: true }) +
+        field("Product type", "products." + index + ".kind", product.kind, { required: true }) +
+        field("URL slug", "products." + index + ".slug", product.slug, { required: true }) +
+        field("Category line", "products." + index + ".category", product.category, { required: true }) +
+        field("Price in INR", "products." + index + ".price", product.price, { type: "number", min: 1, required: true }) +
+        field("Sizes", "products." + index + ".sizes", product.sizes, { kind: "list", required: true, hint: "Add at least one size. Separate sizes with commas." }) +
+        field("Linked chapter slug", "products." + index + ".chapterSlug", product.chapterSlug, { required: true }) +
       '</div>' +
-      field("Description", "products." + index + ".description", product.description, { textarea: true }) +
-      field("Product image", "products." + index + ".image", product.image, { upload: true, hint: "Use an images.unsplash.com URL or upload a PNG, JPG, or WebP image (up to 2 MB)." }) +
+      field("Description", "products." + index + ".description", product.description, { textarea: true, required: true }) +
+      field("Product image", "products." + index + ".image", product.image, { upload: true, required: true, hint: "Required. Use an images.unsplash.com URL or upload a PNG, JPG, or WebP image (up to 2 MB)." }) +
       field("Back or detail image", "products." + index + ".secondaryImage", product.secondaryImage || "", { upload: true, hint: "Optional second product view. Use an images.unsplash.com URL or upload an image (up to 2 MB)." }) +
-      field("Details and care points", "products." + index + ".details", product.details, { textarea: true, kind: "lines", hint: "Illustrative copy only. Verify material, fit, care, and product claims with the brand before publishing." }) +
+      field("Details and care points", "products." + index + ".details", product.details, { textarea: true, kind: "lines", required: true, hint: "Required. Add at least one verified detail or care note, one per line." }) +
     '</article>';
   }).join("");
 
@@ -841,7 +842,7 @@ function adminDashboard() {
       field("Hero image", "hero.image", draft.hero.image, { upload: true, hint: "Use an images.unsplash.com URL or upload a PNG, JPG, or WebP image (up to 2 MB)." }) +
       '</div><div class="admin-card"><h2>Our note</h2><div class="admin-grid">' + field("Section label", "introduction.eyebrow", draft.introduction.eyebrow) + field("Heading", "introduction.title", draft.introduction.title) + '</div>' + field("Copy", "introduction.copy", draft.introduction.copy, { textarea: true }) + '</div></section>' +
       '<section class="admin-panel' + activeClass("series") + '" data-panel="series"><div class="admin-row-title"><h2>Archive Series · ' + draft.seriesList.length + '</h2><button class="button button-dark" type="button" data-add-series>Add series</button></div>' + seriesForms + '</section>' +
-      '<section class="admin-panel' + activeClass("products") + '" data-panel="products"><div class="admin-card"><div class="admin-row-title"><h2>Product catalogue · ' + draft.products.length + '</h2><button class="button button-light" type="button" data-add-product>Add product</button></div>' + productForms + '</div></section>' +
+      '<section class="admin-panel' + activeClass("products") + '" data-panel="products"><div class="admin-card"><div class="admin-row-title"><h2>Product catalogue · ' + draft.products.length + '</h2><button class="button button-light" type="button" data-add-product>Add product</button></div><p class="admin-required-note"><span aria-hidden="true">*</span> Required fields. New products need a positive price, at least one size, an image, and one or more details before any changes can be saved.</p>' + productForms + '</div></section>' +
       '<section class="admin-panel' + activeClass("orders") + '" data-panel="orders"><div class="admin-row-title"><div><span class="mono section-label">NEON ORDER RECORDS</span><h2>Order ledger · ' + adminOrders.length + '</h2></div><button class="button button-light" type="button" data-refresh-orders>Refresh orders</button></div><div class="admin-status order-admin-status" role="status">' + escapeHtml(adminMessage) + '</div>' + adminOrderCards() + '</section>' +
       '<section class="admin-panel' + activeClass("customers") + '" data-panel="customers"><div class="admin-row-title"><div><span class="mono section-label">NEON CUSTOMER RECORDS</span><h2>Private archives · ' + adminCustomers.length + '</h2></div><button class="button button-light" type="button" data-refresh-customers>Refresh customers</button></div><div class="admin-status customer-admin-status" role="status">' + escapeHtml(adminMessage) + '</div>' + adminCustomerCards() + '</section>' + savebar +
     '</form></div></div>';
@@ -1497,7 +1498,8 @@ function bindEvents() {
   });
   document.querySelectorAll("[data-add-product]").forEach(function (button) {
     button.addEventListener("click", function () {
-      adminDraft.products.push({ slug: "new-piece-" + Date.now(), name: "New field piece", kind: "Layers", category: adminDraft.seriesList[0].number, description: "", price: 0, image: "/assets/soft-armor.svg", secondaryImage: "", sizes: ["XS", "S", "M", "L", "XL"], details: [], chapterSlug: adminDraft.seriesList[0].chapters[0].slug });
+      adminDraft.products.push({ slug: "", name: "", kind: "", category: "", description: "", price: "", image: "", secondaryImage: "", sizes: [], details: [], chapterSlug: adminDraft.seriesList[0].chapters[0].slug });
+      adminMessage = "New product draft added. Complete its required details before saving.";
       render();
       document.querySelector('[data-tab="products"]').click();
     });
@@ -1669,6 +1671,37 @@ async function saveAdminContent(event) {
   event.preventDefault();
   const selectedTab = adminActiveTab;
   const status = document.getElementById("admin-status");
+  const textIsPresent = function (value) { return typeof value === "string" && value.trim().length > 0; };
+  const chapterSlugs = new Set(adminDraft.seriesList.flatMap(function (series) {
+    return series.chapters.map(function (chapter) { return chapter.slug; });
+  }));
+  for (let index = 0; index < adminDraft.products.length; index += 1) {
+    const product = adminDraft.products[index];
+    const requiredFields = [
+      ["name", "Product name", textIsPresent(product.name)],
+      ["kind", "Product type", textIsPresent(product.kind)],
+      ["slug", "URL slug", /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(product.slug || "")],
+      ["category", "Category line", textIsPresent(product.category)],
+      ["price", "Price", Number.isInteger(product.price) && product.price > 0],
+      ["sizes", "Sizes", Array.isArray(product.sizes) && product.sizes.length > 0 && product.sizes.every(textIsPresent) && new Set(product.sizes.map(function (size) { return size.trim().toLowerCase(); })).size === product.sizes.length],
+      ["chapterSlug", "Linked chapter", chapterSlugs.has(product.chapterSlug)],
+      ["description", "Description", textIsPresent(product.description)],
+      ["image", "Product image", textIsPresent(product.image)],
+      ["details", "Details and care points", Array.isArray(product.details) && product.details.length > 0 && product.details.every(textIsPresent)]
+    ];
+    const missing = requiredFields.find(function (field) { return !field[2]; });
+    if (missing) {
+      adminActiveTab = "products";
+      adminMessage = "Product " + String(index + 1).padStart(2, "0") + ": " + missing[1] + " is required. Complete all product details before saving.";
+      render();
+      const fieldToComplete = document.querySelector('[data-field="' + CSS.escape("products." + index + "." + missing[0]) + '"]');
+      if (fieldToComplete) {
+        fieldToComplete.focus();
+        fieldToComplete.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      return;
+    }
+  }
   if (status) status.textContent = "Saving…";
   try {
     const response = await fetch("/api/admin/content", { method: "PUT", headers: { "Content-Type": "application/json", Authorization: "Bearer " + adminToken }, body: JSON.stringify(adminDraft) });

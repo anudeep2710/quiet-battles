@@ -16,6 +16,7 @@ async function main() {
   const sessions = new Set();
   let account = null;
   let contentVersion = 1;
+  let contentWrites = 0;
   process.env.QB_ADMIN_KEY = key;
   db.findAdminAccount = async () => account;
   db.createAdminAccount = async (newEmail, passwordHash, passwordSalt) => {
@@ -34,6 +35,7 @@ async function main() {
       error.code = "CONTENT_VERSION_CONFLICT";
       throw error;
     }
+    contentWrites += 1;
     contentVersion += 1;
     return contentVersion;
   };
@@ -75,6 +77,12 @@ async function main() {
     assert.equal((await request("/api/admin/setup", { email, password, confirmPassword: password, key })).status, 409);
     assert.deepEqual((await request("/api/admin/setup-status")).body, { configured: true });
 
+    assert.equal((await request("/api/admin/content", { ...seedContent, contentVersion: 1 }, undefined, "PUT")).status, 401,
+      "product catalogue changes require an authenticated Studio session");
+    assert.equal((await request("/api/admin/upload", { data: "" })).status, 401,
+      "product images cannot be uploaded without an authenticated Studio session");
+    assert.equal(contentWrites, 0, "unauthenticated requests must not write content");
+
     for (const invalid of [
       { email, password, key: "wrong-key" },
       { email, password: "wrong-password", key },
@@ -95,14 +103,28 @@ async function main() {
       "Studio cannot advance a non-payable test order to fulfilment");
     assert.equal((await request("/api/admin/content", seedContent, auth, "PUT")).status, 428,
       "Studio requires a content version before writing");
+    const invalidProducts = [
+      ["name", " "], ["kind", ""], ["category", " "], ["description", ""],
+      ["price", 0], ["image", ""], ["sizes", []], ["sizes", [" "]],
+      ["details", []], ["details", ["\t"]], ["chapterSlug", "missing-chapter"], ["slug", ""]
+    ];
+    for (const [field, value] of invalidProducts) {
+      const invalidContent = structuredClone(seedContent);
+      invalidContent.contentVersion = 1;
+      invalidContent.products[0][field] = value;
+      const invalidSave = await request("/api/admin/content", invalidContent, auth, "PUT");
+      assert.equal(invalidSave.status, 400, "invalid product field should be rejected: " + field);
+    }
+    assert.equal(contentWrites, 0, "invalid product drafts must not be saved");
     const savedContent = await request("/api/admin/content", { ...seedContent, contentVersion: 1 }, auth, "PUT");
     assert.equal(savedContent.status, 200);
     assert.equal(savedContent.body.contentVersion, 2);
+    assert.equal(contentWrites, 1, "valid product content should save once");
     const staleContent = await request("/api/admin/content", { ...seedContent, contentVersion: 1 }, auth, "PUT");
     assert.equal(staleContent.status, 409, "a stale Studio tab cannot overwrite newer content");
     assert.equal((await request("/api/admin/logout", {}, auth)).status, 200);
     assert.equal((await request("/api/admin/orders", undefined, auth)).status, 401);
-    console.log("Studio API test passed: first-run setup, concurrent registration, login, protected access, safe order state, versioned content saves, stale-write rejection, and logout.");
+    console.log("Studio API test passed: owner setup, concurrent registration, login, admin-only writes, required product fields, versioned saves, stale-write rejection, safe order state, and logout.");
   } finally {
     await new Promise((resolve) => server.close(resolve));
     for (const [name, value] of Object.entries(savedEnv)) {
