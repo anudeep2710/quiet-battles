@@ -6,7 +6,7 @@ A story-led streetwear storefront built around one path: **The Archive → Serie
 
 - **Deployed preview:** [quiet-battles-demo.vercel.app](https://quiet-battles-demo.vercel.app) — this is an earlier release. It does not include the latest source changes.
 - **Source:** [GitHub repository](https://github.com/anudeep2710/quiet-battles)
-- **Walkthrough video:** [Watch or download the MP4](docs/walkthrough/quiet-battles-walkthrough.mp4) · [Google Drive copy](https://drive.google.com/file/d/1mENUGDQX0RGVkf-2AYvi_thbVM8cEDD1/view?usp=drivesdk) *(currently private to the owner; grant reviewer access before external sharing)*
+- **Walkthrough video:** [Watch or download the MP4](docs/walkthrough/quiet-battles-walkthrough.mp4) · [Google Drive copy](https://drive.google.com/file/d/1mENUGDQX0RGVkf-2AYvi_thbVM8cEDD1/view?usp=drivesdk) *(anyone with the link can view; no sign-in required)*
 - **Code and product status:** [Readiness review](docs/READINESS_REVIEW.md)
 
 [![QUIET BATTLES website walkthrough](docs/walkthrough/quiet-battles-poster.jpg)](https://drive.google.com/file/d/1mENUGDQX0RGVkf-2AYvi_thbVM8cEDD1/view?usp=drivesdk)
