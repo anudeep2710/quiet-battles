@@ -2,7 +2,7 @@
 
 ## Current site · 9 November 2026
 
-These images were captured from the [live website](https://quiet-battles-demo.vercel.app) at 1440 px desktop and 390 px mobile widths. The full page views show the public story and shopping path. The checkout image uses an isolated browser bag with one sample hoodie; no account or order was created.
+These images were captured from the [live website](https://quiet-battles-demo.vercel.app) at desktop and 390 px mobile widths. The full page views show the public story and shopping path. The checkout image uses an isolated browser bag with one sample hoodie; no account or order was created. The Studio access image shows the current three-field sign-in screen.
 
 | Screenshot | Page | What to look for |
 | --- | --- | --- |
@@ -13,7 +13,7 @@ These images were captured from the [live website](https://quiet-battles-demo.ve
 | [Hoodie product](current/05-product-desktop.jpg) | `/product/soft-armor-hoodie` | Price, size choice, and front/back views |
 | [Catalogue](current/06-catalogue-desktop.jpg) | `/artifacts` | Eight products and filters |
 | [Sign in](current/07-signin-desktop.jpg) · [create account](current/08-signup-desktop.jpg) | `/login`, `/signup` | Account access |
-| [Studio access](current/09-studio-access-desktop.jpg) | `/admin` | Private content desk entry |
+| [Studio access](current/09-studio-access-desktop.jpg) | `/admin` | Admin email, password, and Studio key fields |
 | [Mobile home](current/10-home-mobile.jpg) · [product](current/11-product-mobile.jpg) · [catalogue](current/12-catalogue-mobile.jpg) | Mobile | Responsive layouts |
 | [Mobile checkout gate](current/13-checkout-account-gate-mobile.jpg) | `/checkout` | Account required before an order |
 

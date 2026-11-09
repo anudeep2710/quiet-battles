@@ -4,7 +4,7 @@
 
 The current build covers the core technical-assessment requirements and is suitable to present as a working prototype with clear limits. It is not ready to process real customer accounts or payments.
 
-This review combines a read-only source and documentation review with a browser walkthrough of the hosted pages. Public routes, story pages, products, account pages, and the checkout account gate were inspected. Current desktop and mobile screenshots were captured on 9 November 2026. Studio's credential-protected tools and a new account-to-order transaction were not exercised during this review. No order was placed and no database records were changed.
+This review combines a source and documentation review with a browser walkthrough of the hosted pages. Public routes, story pages, products, account pages, and the checkout account gate were inspected. Current desktop and mobile screenshots were captured on 9 November 2026. The updated three-field Studio sign-in, brand and product editor screens, and protected orders read endpoint were checked on the live deployment; sign-out revoked access. Studio content editing and a new account-to-order transaction were not exercised during this review. No content, customer, product, or order records were changed.
 
 The homepage hero image renders in the current desktop and mobile captures. A live `/api/health` request on 9 November 2026 returned `{"ok":true,"database":"Neon Postgres"}`. These checks confirm the public image and database connection; they do not cover signed-in Studio or order creation.
 
@@ -18,7 +18,7 @@ The homepage hero image renders in the current desktop and mobile captures. A li
 | Account-required purchase flow | API rejects guest orders; account page and checkout gate are present; delivery and review steps are implemented in source | Covered in implementation; final authenticated checkout not exercised in this review |
 | Test QR and order confirmation | Non-payable QR step and order-record path are implemented; no money moves | Covered in implementation; order creation not exercised in this review |
 | Backend and database | Node API and Neon Postgres schema cover content, products, media, accounts, sessions, and orders; live health endpoint reports Neon connected | Covered in source and live health check; current write flow not exercised |
-| Admin / CMS | Studio source supports content, product, image, customer, and order management behind an admin email, password, and Studio key | Covered in source; signed-in Studio not inspected in this review |
+| Admin / CMS | Studio source supports content, product, image, customer, and order management behind an admin email, password, and Studio key | Live login, brand/product editor display, protected orders read, and sign-out checked; no content saved |
 | Responsive experience | Responsive CSS and current desktop/mobile screenshots are present | Covered in source and captured layouts; a full device matrix was not run |
 | SEO and performance basics | Metadata, semantic HTML, static assets, and image alternatives are present | Partial; direct paths work, but page content renders in the browser and there is no sitemap or measured performance report |
 | Submission materials | Run instructions, stack, database schema, architecture, estimate, current screenshots, and a short walkthrough video are linked from the README | Covered |
