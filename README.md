@@ -35,6 +35,41 @@ All product details, prices, and stories are illustrative. Checkout requires an 
 
 The purchase path is Browse → Add to bag → Checkout → Sign in or create an account → Delivery details → Order review → Test QR → Order confirmation. Guest orders are rejected by the API. The selected bag remains available while the visitor signs in.
 
+## Screenshots
+
+Click an image to open it at full size. The [screenshot index](docs/screenshots/README.md) also includes the route and review notes for each capture.
+
+### Story and shopping
+
+| Homepage | The Archive |
+| --- | --- |
+| <a href="docs/screenshots/current/01-home-desktop.jpg"><img src="docs/screenshots/current/01-home-desktop.jpg" alt="QUIET BATTLES homepage on desktop" width="440"></a> | <a href="docs/screenshots/current/02-archive-desktop.jpg"><img src="docs/screenshots/current/02-archive-desktop.jpg" alt="The Archive on desktop" width="440"></a> |
+| Series 01 | Chapter 01 |
+| <a href="docs/screenshots/current/03-series-desktop.jpg"><img src="docs/screenshots/current/03-series-desktop.jpg" alt="The Gentle Armor Series and its Chapters" width="440"></a> | <a href="docs/screenshots/current/04-chapter-desktop.jpg"><img src="docs/screenshots/current/04-chapter-desktop.jpg" alt="The First Quiet Chapter Chamber" width="440"></a> |
+| Artifact | Catalogue |
+| <a href="docs/screenshots/current/05-product-desktop.jpg"><img src="docs/screenshots/current/05-product-desktop.jpg" alt="Soft Armor Hoodie product page" width="440"></a> | <a href="docs/screenshots/current/06-catalogue-desktop.jpg"><img src="docs/screenshots/current/06-catalogue-desktop.jpg" alt="Artifact catalogue with filters" width="440"></a> |
+
+<details>
+<summary>View the full homepage capture</summary>
+
+<a href="docs/screenshots/current/01-home-full.jpg"><img src="docs/screenshots/current/01-home-full.jpg" alt="Full desktop homepage from hero through footer" width="440"></a>
+
+</details>
+
+### Accounts and Studio
+
+| Sign in | Create account | Studio access |
+| --- | --- | --- |
+| <a href="docs/screenshots/current/07-signin-desktop.jpg"><img src="docs/screenshots/current/07-signin-desktop.jpg" alt="Customer sign-in page" width="290"></a> | <a href="docs/screenshots/current/08-signup-desktop.jpg"><img src="docs/screenshots/current/08-signup-desktop.jpg" alt="Customer account creation page" width="290"></a> | <a href="docs/screenshots/current/09-studio-access-desktop.jpg"><img src="docs/screenshots/current/09-studio-access-desktop.jpg" alt="Private Studio key entry page" width="290"></a> |
+
+### Mobile
+
+| Homepage | Product |
+| --- | --- |
+| <a href="docs/screenshots/current/10-home-mobile.jpg"><img src="docs/screenshots/current/10-home-mobile.jpg" alt="Mobile homepage" width="240"></a> | <a href="docs/screenshots/current/11-product-mobile.jpg"><img src="docs/screenshots/current/11-product-mobile.jpg" alt="Mobile Soft Armor Hoodie product page" width="240"></a> |
+| Catalogue | Checkout account gate |
+| <a href="docs/screenshots/current/12-catalogue-mobile.jpg"><img src="docs/screenshots/current/12-catalogue-mobile.jpg" alt="Mobile artifact catalogue" width="240"></a> | <a href="docs/screenshots/current/13-checkout-account-gate-mobile.jpg"><img src="docs/screenshots/current/13-checkout-account-gate-mobile.jpg" alt="Mobile checkout requiring an account before purchase" width="240"></a> |
+
 ## Technology
 
 | Area | Choice |
