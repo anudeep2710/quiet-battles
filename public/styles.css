@@ -690,3 +690,72 @@ img { max-width: 100%; display: block; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Customer account */
+.account-heading { grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 36px; padding-bottom: 58px; }
+.account-heading > div:first-child > p { max-width: 490px; margin: 0; }
+.account-heading-actions { display: flex; align-items: center; gap: 22px; padding-bottom: 4px; }
+.account-heading-actions > a { color: var(--muted); font: 9px var(--mono); letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; }
+.account-heading-actions .button { white-space: nowrap; }
+.account-overview { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 14px; padding-bottom: 70px; }
+.account-profile-card, .account-stat-card { min-width: 0; border: 1px solid var(--line); background: #f4f2eb; }
+.account-profile-card { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; align-items: center; gap: 22px; padding: 30px; }
+.account-avatar { display: grid; width: 68px; aspect-ratio: 1; place-items: center; border-radius: 50%; background: var(--ink); color: var(--chalk); font: 500 20px var(--serif); }
+.account-profile-main h2 { margin: 10px 0 5px; font: 500 clamp(26px, 3vw, 38px)/.95 var(--serif); text-transform: uppercase; }
+.account-profile-main > a { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.account-profile-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 9px; padding-left: 24px; border-left: 1px solid var(--line); }
+.account-profile-meta > span { color: var(--muted); font-size: 8px; letter-spacing: .1em; }
+.account-profile-meta > strong { font: 10px var(--mono); }
+.account-stat-card { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 26px; }
+.account-stat-card > strong { margin: 12px 0 0; font: 500 54px/.85 var(--serif); }
+.account-stat-card > p { margin: 8px 0 20px; color: var(--muted); font-size: 11px; }
+.account-stat-card > a, .account-search-empty > a { color: var(--oxide); font: 9px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.account-ledger { padding-top: 70px; }
+.account-ledger-head { align-items: end; }
+.account-search { display: flex; flex-direction: column; gap: 9px; width: min(100%, 370px); }
+.account-search > span { color: var(--muted); font: 8px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.account-search input { width: 100%; min-height: 48px; border: 1px solid var(--line); border-radius: 0; outline: none; background: #f8f7f1; padding: 12px 14px; color: var(--ink); font: 11px var(--sans); }
+.account-search input:focus-visible { border-color: var(--oxide); box-shadow: 0 0 0 2px rgba(165, 77, 54, .13); }
+.account-order-results { min-height: 60px; }
+.account-search-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; min-height: 125px; justify-content: center; border: 1px solid var(--line); background: #f4f2eb; padding: 24px 28px; }
+.account-search-empty > p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.65; }
+.account-finder { padding: 68px 0 110px; border-top: 1px solid var(--line); }
+.account-finder-head { display: flex; justify-content: space-between; align-items: end; gap: 30px; margin-bottom: 20px; }
+.account-finder-head h2 { margin: 13px 0 10px; font: 500 clamp(48px, 6vw, 78px)/.86 var(--serif); text-transform: uppercase; }
+.account-finder-head > div > p { max-width: 485px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.65; }
+.account-search-summary { margin: 0 0 16px; color: var(--muted); font: 8px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.account-product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; background: transparent; border: 0; }
+.account-product-grid .catalog-card { border: 1px solid var(--line); }
+.account-catalogue-link { display: inline-flex; gap: 12px; margin-top: 25px; color: var(--oxide); font: 9px var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+
+@media (max-width: 900px) {
+  .account-heading { grid-template-columns: minmax(0, 1fr) auto; }
+  .account-overview { grid-template-columns: minmax(0, 1fr) 210px; }
+  .account-profile-card { grid-template-columns: 58px minmax(0, 1fr); gap: 17px; padding: 23px; }
+  .account-avatar { width: 56px; }
+  .account-profile-meta { grid-column: 2; align-items: flex-start; padding: 15px 0 0; border-left: 0; border-top: 1px solid var(--line); }
+  .account-finder-head { align-items: flex-start; flex-direction: column; }
+  .account-product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .account-heading { padding: 70px 0 42px; }
+  .account-heading h1 { font-size: clamp(64px, 17vw, 82px); }
+  .account-heading-actions { width: 100%; justify-content: space-between; margin-top: 30px; }
+  .account-overview { grid-template-columns: 1fr; padding-bottom: 52px; }
+  .account-profile-card { grid-template-columns: 52px minmax(0, 1fr); gap: 14px; padding: 19px; }
+  .account-avatar { width: 50px; }
+  .account-profile-main h2 { font-size: 28px; overflow-wrap: anywhere; }
+  .account-profile-meta { grid-column: 1 / -1; }
+  .account-stat-card { min-height: 170px; }
+  .account-ledger { padding: 48px 0 68px; }
+  .account-ledger-head { display: flex; flex-direction: column; align-items: stretch; gap: 24px; margin-bottom: 26px; }
+  .account-ledger-head h2 { font-size: 58px; }
+  .account-search { width: 100%; }
+  .account-search-empty { padding: 22px 19px; }
+  .account-finder { padding: 52px 0 75px; }
+  .account-finder-head { gap: 21px; }
+  .account-finder-head h2 { font-size: 56px; }
+  .account-product-grid { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; background: transparent; border: 0; gap: 9px; padding-bottom: 7px; }
+  .account-product-grid .catalog-card { flex: 0 0 78vw; scroll-snap-align: start; border: 1px solid var(--line); }
+}

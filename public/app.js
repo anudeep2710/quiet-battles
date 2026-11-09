@@ -31,6 +31,8 @@ let adminActiveTab = "brand";
 let customerToken = sessionStorage.getItem("qbCustomerToken") || "";
 let customer = null;
 let customerOrders = [];
+let accountOrderSearch = "";
+let accountProductSearch = "";
 let customerLoading = Boolean(customerToken);
 let authMessage = "";
 let catalogFilter = "All";
@@ -355,16 +357,102 @@ function renderArtifacts() {
      '<section class="catalogue" id="catalogue"><header class="catalogue-head page"><div><span class="mono section-label">THE COMPLETE DROP</span><h2>All artifacts</h2><p><strong>' + products.length + '</strong> of ' + content.products.length + ' objects</p></div><div class="catalogue-controls"><nav class="catalog-filters" aria-label="Filter artifacts">' + filterButtons + '</nav><label class="catalog-sort"><span>Sort</span><select data-catalog-sort><option value="featured"' + (catalogSort === 'featured' ? ' selected' : '') + '>Featured</option><option value="name"' + (catalogSort === 'name' ? ' selected' : '') + '>Name: A to Z</option><option value="price-low"' + (catalogSort === 'price-low' ? ' selected' : '') + '>Price: low to high</option><option value="price-high"' + (catalogSort === 'price-high' ? ' selected' : '') + '>Price: high to low</option></select></label></div></header><div class="catalog-grid">' + (cards || '<div class="catalog-empty">No artifacts in this category yet.</div>') + '</div></section></main>';
 }
 
+function matchingCustomerOrders() {
+  const query = accountOrderSearch.trim().toLowerCase();
+  if (!query) return customerOrders;
+  return customerOrders.filter(function (order) {
+    const itemDetails = (order.items || []).map(function (item) {
+      return [item.name, item.slug, item.size, item.qty].join(" ");
+    }).join(" ");
+    const searchText = [order.orderNumber, order.status, order.paymentStatus, order.paymentMethod,
+      order.createdAt, orderDate(order.createdAt), itemDetails].join(" ").toLowerCase();
+    return searchText.includes(query);
+  });
+}
+
 function customerOrderCards() {
   if (!customerOrders.length) {
     return '<div class="account-empty"><span class="mono section-label">ACQUISITION LEDGER · 0</span><h2>Nothing recorded yet.</h2><p>After you confirm a non-payable test order, its record will appear here.</p><a class="button button-dark" href="/artifacts">Meet the artifacts <span class="arrow">↗</span></a></div>';
   }
-  return customerOrders.map(function (order) {
+  const orders = matchingCustomerOrders();
+  if (!orders.length) {
+    return '<div class="account-search-empty" role="status"><span class="mono section-label">NO MATCHING RECORDS</span><p>Try an order reference, piece name, size, or order status.</p></div>';
+  }
+  const summary = accountOrderSearch.trim()
+    ? '<p class="account-search-summary" role="status">' + orders.length + (orders.length === 1 ? ' matching order.' : ' matching orders.') + '</p>'
+    : '';
+  return summary + orders.map(function (order) {
     const lines = (order.items || []).map(function (item) {
       return '<div class="account-order-line"><img src="' + escapeHtml(item.image) + '" alt=""><span><strong>' + escapeHtml(item.name) + '</strong><small>Size ' + escapeHtml(item.size) + ' · Qty ' + item.qty + '</small></span><b>' + money(item.lineTotal) + '</b></div>';
     }).join("");
     return '<article class="account-order"><header><div><span class="mono">' + escapeHtml(order.orderNumber) + '</span><h3>' + escapeHtml(orderDate(order.createdAt)) + '</h3></div><span class="order-badge">' + escapeHtml(order.status) + '</span></header>' + lines + '<footer><span>Dummy QR · ' + escapeHtml(order.paymentStatus) + '</span><strong>' + money(order.subtotal) + '</strong></footer></article>';
   }).join("");
+}
+
+function accountRecommendations() {
+  const products = content.products.slice();
+  const purchasedSlugs = new Set(customerOrders.flatMap(function (order) {
+    return (order.items || []).map(function (item) { return item.slug; });
+  }));
+  const latestItem = customerOrders[0] && customerOrders[0].items && customerOrders[0].items[0];
+  const anchor = latestItem ? getProduct(latestItem.slug) : null;
+  let recommendations = products.filter(function (product) { return !purchasedSlugs.has(product.slug); });
+  if (!recommendations.length) recommendations = products.filter(function (product) { return !anchor || product.slug !== anchor.slug; });
+  recommendations.sort(function (a, b) {
+    function score(product) {
+      if (!anchor) return 0;
+      return (product.chapterSlug === anchor.chapterSlug ? 4 : 0) +
+        (product.kind === anchor.kind ? 2 : 0) +
+        (product.category === anchor.category ? 1 : 0);
+    }
+    return score(b) - score(a);
+  });
+  return { anchor: anchor, products: recommendations.slice(0, 3) };
+}
+
+function accountProductFinderResults() {
+  const query = accountProductSearch.trim().toLowerCase();
+  let products;
+  let message;
+  if (query) {
+    products = content.products.filter(function (product) {
+      const chapter = getChapter(product.chapterSlug);
+      const searchText = [product.name, product.kind, product.category, product.description,
+        chapter ? chapter.title + " " + chapter.excerpt : ""].join(" ").toLowerCase();
+      return searchText.includes(query);
+    });
+    message = products.length + (products.length === 1 ? " artifact matches your search." : " artifacts match your search.");
+  } else {
+    const recommendation = accountRecommendations();
+    products = recommendation.products;
+    message = recommendation.anchor
+      ? "Chosen around " + recommendation.anchor.name + "."
+      : "A few pieces to begin with.";
+  }
+  if (!products.length) {
+    return '<p class="account-search-summary" role="status">' + escapeHtml(message) + '</p><div class="account-search-empty" role="status"><span class="mono section-label">NOTHING FOUND</span><p>Try a product name, category, or Chapter. You can also browse the full catalogue.</p><a href="/artifacts">Browse all artifacts <span class="arrow">↗</span></a></div>';
+  }
+  return '<p class="account-search-summary" role="status">' + escapeHtml(message) + '</p><div class="catalog-grid account-product-grid">' + products.map(function (product, index) {
+    return catalogCard(product, index);
+  }).join("") + '</div>';
+}
+
+function bindCatalogCardActions(scope) {
+  const rootElement = scope || document;
+  rootElement.querySelectorAll("[data-quick-open]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      quickAddSlug = quickAddSlug === button.dataset.quickOpen ? "" : button.dataset.quickOpen;
+      render();
+    });
+  });
+  rootElement.querySelectorAll("[data-quick-size]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      const product = getProduct(button.dataset.quickProduct);
+      if (!product || !addProductToCart(product, button.dataset.quickSize)) return;
+      quickAddSlug = "";
+      render();
+    });
+  });
 }
 
 function renderAccount() {
@@ -373,7 +461,15 @@ function renderAccount() {
   }
   if (!customer) return renderAuth("login");
   const firstName = customer.name.trim().split(/\s+/)[0];
-  return '<main class="account-page"><section class="page account-heading"><div><span class="mono section-label">PRIVATE ARCHIVE · ' + escapeHtml(orderDate(customer.createdAt)) + '</span><h1>Welcome back,<br>' + escapeHtml(firstName) + '.</h1><p>What you chose, when you chose it, and the chapters that travelled with you.</p></div><aside><span class="mono">ARCHIVE HOLDER</span><strong>' + escapeHtml(customer.name) + '</strong><a href="mailto:' + escapeHtml(customer.email) + '">' + escapeHtml(customer.email) + '</a><button class="text-button" type="button" data-customer-logout>Sign out</button></aside></section><section class="page account-ledger"><div class="account-ledger-head"><div><span class="mono section-label">YOUR ACQUISITIONS</span><h2>Objects with<br>a date attached.</h2></div><a class="button button-light" href="/artifacts">View all artifacts</a></div>' + customerOrderCards() + '</section></main>';
+  const initials = customer.name.trim().split(/\s+/).slice(0, 2).map(function (part) { return part.charAt(0); }).join("").toUpperCase();
+  const visibleOrderCount = matchingCustomerOrders().length;
+  const productCopy = accountProductSearch.trim() ? "Search the catalogue" : "Picked for your thread";
+  return '<main class="account-page"><section class="page account-heading"><div><span class="mono section-label">YOUR PRIVATE ARCHIVE · CUSTOMER PROFILE</span><h1>Welcome back,<br>' + escapeHtml(firstName) + '.</h1><p>Your profile, every recorded acquisition, and a few pieces to keep exploring.</p></div><div class="account-heading-actions"><a href="#account-orders">Order history <span class="arrow">↓</span></a><button class="button button-light" type="button" data-customer-logout>Sign out <span class="arrow">↗</span></button></div></section>' +
+    '<section class="page account-overview" id="account-profile"><article class="account-profile-card"><div class="account-avatar" aria-hidden="true">' + escapeHtml(initials) + '</div><div class="account-profile-main"><span class="mono section-label">ARCHIVE HOLDER · PROFILE</span><h2>' + escapeHtml(customer.name) + '</h2><a href="mailto:' + escapeHtml(customer.email) + '">' + escapeHtml(customer.email) + '</a></div><div class="account-profile-meta"><span class="mono">MEMBER SINCE</span><strong>' + escapeHtml(orderDate(customer.createdAt)) + '</strong></div></article><aside class="account-stat-card"><span class="mono section-label">YOUR LEDGER</span><strong>' + customerOrders.length + '</strong><p>' + (customerOrders.length === 1 ? 'order recorded' : 'orders recorded') + '</p><a href="#account-orders">View order history <span class="arrow">↗</span></a></aside></section>' +
+    '<section class="page account-ledger" id="account-orders"><div class="account-ledger-head"><div><span class="mono section-label">YOUR ACQUISITIONS · ' + String(customerOrders.length).padStart(2, "0") + '</span><h2>Objects with<br>a date attached.</h2></div>' + (customerOrders.length ? '<label class="account-search account-order-search"><span>Search order history</span><input type="search" data-account-order-search value="' + escapeHtml(accountOrderSearch) + '" placeholder="Reference, piece, size, or status" aria-label="Search order history" autocomplete="off"></label>' : '<a class="button button-light" href="/artifacts">View all artifacts</a>') + '</div>' +
+    '<div class="account-order-results" id="account-order-results" data-visible-orders="' + visibleOrderCount + '">' + customerOrderCards() + '</div></section>' +
+    '<section class="page account-finder" id="account-discover"><div class="account-finder-head"><div><span class="mono section-label" id="account-product-kicker">' + (accountProductSearch ? 'FIND YOUR NEXT PIECE' : 'CONTINUE EXPLORING') + '</span><h2 id="account-product-title">' + productCopy + '</h2><p>Search by garment, category, or Chapter. Each artifact stays connected to its story.</p></div><label class="account-search account-product-search"><span>Search products</span><input type="search" data-account-product-search value="' + escapeHtml(accountProductSearch) + '" placeholder="Try hoodie, Layers, or The First Quiet" aria-label="Search products by name, category, or Chapter" autocomplete="off"></label></div>' +
+    '<div id="account-product-results">' + accountProductFinderResults() + '</div><a class="account-catalogue-link" href="/artifacts">Explore the complete catalogue <span class="arrow">↗</span></a></section></main>';
 }
 
 function renderAuth(mode) {
@@ -886,20 +982,7 @@ function bindEvents() {
     quickAddSlug = "";
     render();
   });
-  document.querySelectorAll("[data-quick-open]").forEach(function (button) {
-    button.addEventListener("click", function () {
-      quickAddSlug = quickAddSlug === button.dataset.quickOpen ? "" : button.dataset.quickOpen;
-      render();
-    });
-  });
-  document.querySelectorAll("[data-quick-size]").forEach(function (button) {
-    button.addEventListener("click", function () {
-      const product = getProduct(button.dataset.quickProduct);
-      if (!product || !addProductToCart(product, button.dataset.quickSize)) return;
-      quickAddSlug = "";
-      render();
-    });
-  });
+  bindCatalogCardActions(document);
   document.querySelectorAll("[data-size]").forEach(function (button) {
     button.addEventListener("click", function () {
       sizeSelection[button.dataset.product] = button.dataset.size;
@@ -1095,11 +1178,36 @@ function bindEvents() {
     customerToken = "";
     customer = null;
     customerOrders = [];
+    accountOrderSearch = "";
+    accountProductSearch = "";
     customerLoading = false;
     sessionStorage.removeItem("qbCustomerToken");
     clearCheckoutState();
     authMessage = "You have signed out of your private archive.";
     navigateTo("/login");
+  });
+
+  const accountOrderSearchInput = document.querySelector("[data-account-order-search]");
+  if (accountOrderSearchInput) accountOrderSearchInput.addEventListener("input", function () {
+    accountOrderSearch = accountOrderSearchInput.value;
+    const results = document.getElementById("account-order-results");
+    if (results) {
+      results.innerHTML = customerOrderCards();
+      results.dataset.visibleOrders = matchingCustomerOrders().length;
+    }
+  });
+
+  const accountProductSearchInput = document.querySelector("[data-account-product-search]");
+  if (accountProductSearchInput) accountProductSearchInput.addEventListener("input", function () {
+    accountProductSearch = accountProductSearchInput.value;
+    const productKicker = document.getElementById("account-product-kicker");
+    const productTitle = document.getElementById("account-product-title");
+    if (productKicker) productKicker.textContent = accountProductSearch.trim() ? "FIND YOUR NEXT PIECE" : "CONTINUE EXPLORING";
+    if (productTitle) productTitle.textContent = accountProductSearch.trim() ? "Search the catalogue" : "Picked for your thread";
+    const results = document.getElementById("account-product-results");
+    if (!results) return;
+    results.innerHTML = accountProductFinderResults();
+    bindCatalogCardActions(results);
   });
 
   const retryAdminAccess = document.querySelector("[data-retry-admin-access]");
