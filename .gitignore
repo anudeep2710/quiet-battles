@@ -16,3 +16,4 @@ __pycache__/
 output/playwright/
 .playwright-cli/
 brag-output/
+brag-output-*/

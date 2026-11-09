@@ -1,53 +1,29 @@
 # Website screenshots
 
-## Last deployed preview · 9 November 2026
+## Current source captures · 9 November 2026
 
-These images were captured from the [deployed website](https://quiet-battles-demo.vercel.app) at desktop and 390 px mobile widths. They predate the latest local reliability and accessibility changes, which have not been deployed. The checkout image uses an isolated browser bag with one sample hoodie; no account or order was created. The Studio access screenshot shows email, password, and Studio key sign-in after setup. First use now presents the one-time email, password, confirmation, and Studio key form.
+These images were taken with Playwright from the latest local source. The capture-only preview served `data/content.json` and blocked API routes that could modify a database. The Studio setup screen was shown in first-access state. No Neon records, accounts, or orders were created. The hosted site is an earlier release; these images are not screenshots of the deployed version.
 
-| Screenshot | Page | What to look for |
+| File | Screen | Capture |
 | --- | --- | --- |
-| [Home hero](current/01-home-desktop.jpg) · [full page](current/01-home-full.jpg) | `/` | Brand introduction and featured content |
-| [The Archive](current/02-archive-desktop.jpg) | `/archive` | Series entry point |
-| [Series 01](current/03-series-desktop.jpg) | `/series/the-gentle-armor` | The five Chapters |
-| [Chapter 01](current/04-chapter-desktop.jpg) | `/chapter/the-first-quiet` | Story and linked Artifact |
-| [Hoodie product](current/05-product-desktop.jpg) | `/product/soft-armor-hoodie` | Price, size choice, and front/back views |
-| [Catalogue](current/06-catalogue-desktop.jpg) | `/artifacts` | Eight products and filters |
-| [Sign in](current/07-signin-desktop.jpg) · [create account](current/08-signup-desktop.jpg) | `/login`, `/signup` | Account access |
-| [Studio access](current/09-studio-access-desktop.jpg) | `/admin` | Studio sign-in after first-time setup |
-| [Mobile home](current/10-home-mobile.jpg) · [product](current/11-product-mobile.jpg) · [catalogue](current/12-catalogue-mobile.jpg) | Mobile | Responsive layouts |
-| [Mobile checkout gate](current/13-checkout-account-gate-mobile.jpg) | `/checkout` | Account required before an order |
+| [01-home-desktop.jpg](submission/01-home-desktop.jpg) | Homepage, desktop | 1440 × 980 |
+| [02-archive-desktop.jpg](submission/02-archive-desktop.jpg) | The Archive, desktop | 1440 × 980 |
+| [03-series-desktop.jpg](submission/03-series-desktop.jpg) | Series 01, desktop | 1440 × 980 |
+| [04-chapter-desktop.jpg](submission/04-chapter-desktop.jpg) | Chapter 01, desktop | 1440 × 980 |
+| [05-product-desktop.jpg](submission/05-product-desktop.jpg) | Soft Armor Hoodie, desktop | 1440 × 980 |
+| [06-catalogue-desktop.jpg](submission/06-catalogue-desktop.jpg) | Product catalogue, desktop | 1440 × 980 |
+| [07-signin-desktop.jpg](submission/07-signin-desktop.jpg) | Customer sign-in, desktop | 1440 × 980 |
+| [08-signup-desktop.jpg](submission/08-signup-desktop.jpg) | Create account, desktop | 1440 × 980 |
+| [09-studio-setup-desktop.jpg](submission/09-studio-setup-desktop.jpg) | First-use Studio setup, desktop | 1440 × 980 |
+| [10-home-full.jpg](submission/10-home-full.jpg) | Full homepage, desktop | Full page |
+| [11-bag-desktop.jpg](submission/11-bag-desktop.jpg) | Bag drawer with one sample item | 1440 × 980 |
+| [12-checkout-account-gate-desktop.jpg](submission/12-checkout-account-gate-desktop.jpg) | Account-required checkout | 1440 × 980 |
+| [13-home-mobile.jpg](submission/13-home-mobile.jpg) | Homepage, mobile | 390 × 844 |
+| [14-product-mobile.jpg](submission/14-product-mobile.jpg) | Product page, mobile | 390 × 844 |
+| [15-checkout-account-gate-mobile.jpg](submission/15-checkout-account-gate-mobile.jpg) | Account-required checkout, mobile | 390 × 844 |
 
-## Earlier workflow captures
+## Earlier deployed screenshots
 
-The captures below document the signed-in order and Studio flows with synthetic information. Some contain earlier interface wording. Use the current images above for the latest public pages and [READINESS_REVIEW.md](../READINESS_REVIEW.md) for verification limits.
+[previous-deployment-2026-11-09/](previous-deployment-2026-11-09/) contains captures of the previous Vercel release. Those images predate the latest local reliability and accessibility changes and should not be used as evidence for the current source.
 
-| File | What it shows |
-| --- | --- |
-| 01-home-desktop.jpg | Homepage and featured Series |
-| 02-archive-desktop.jpg | The Archive |
-| 03-series-desktop.jpg | Series 01 and its five Chapters |
-| 04-chamber-the-first-quiet.jpg | Chapter 01 and its linked Artifact |
-| 04-chamber-the-weight-you-carry.jpg | Chapter 02 |
-| 04-chamber-letting-someone-in.jpg | Chapter 03 |
-| 04-chamber-staying-tender.jpg | Chapter 04 |
-| 04-chamber-after-the-noise.jpg | Chapter 05 |
-| 05-artifact-desktop.jpg | Product details, front/back views, and size selection |
-| 06-home-mobile.jpg | Mobile homepage |
-| 07-artifact-mobile.jpg | Mobile product page |
-| 08-acquisition-bag.jpg | Mobile bag after adding a size |
-| 09-studio-series.jpg | Studio Series editor |
-| 10-studio-new-series.jpg | New Series form |
-| 11-checkout-details-mobile.jpg | Delivery form and order summary |
-| 12-test-qr-payment-mobile.jpg | Non-payable test QR step |
-| 13-order-confirmation-mobile.jpg | Recorded order confirmation |
-| 14-studio-orders.jpg | Studio order ledger and fulfilment controls |
-| 15-artifacts-desktop.jpg | Product catalogue with filters and sorting |
-| 16-signin-desktop.jpg | Customer sign-in |
-| 17-signup-desktop.jpg | Account creation |
-| 18-signup-mobile.jpg | Mobile account creation |
-| 19-account-empty-mobile.jpg | Empty private order archive |
-| 20-account-order-mobile.jpg | Private archive with a linked order |
-| 22-artifacts-mobile.jpg | Mobile two-column product catalogue |
-| 23-checkout-account-gate-mobile.jpg | Account required before checkout |
-
-Images that contain customer details use synthetic information. The Studio key is not included in the screenshots or source files.
+See the [README reviewer guide](../../README.md#screenshots) and [readiness review](../READINESS_REVIEW.md) for the current test and deployment limits.

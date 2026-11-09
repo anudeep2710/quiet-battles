@@ -1,187 +1,210 @@
 # QUIET BATTLES™
 
-A story-led clothing storefront for the QUIET BATTLES brief. The site connects The Archive to Series, five Chapter Chambers, eight related products, customer accounts, an order history, and a private content Studio.
+A story-led streetwear storefront built around one path: **The Archive → Series → Chapter → Artifact → Acquisition.** This repository contains the website source, a custom content Studio, a Neon Postgres API, Playwright screenshots, and a short website walkthrough.
 
-- **Website preview:** [Open the last deployed build](https://quiet-battles-demo.vercel.app)
+## Review the website
+
+- **Deployed preview:** [quiet-battles-demo.vercel.app](https://quiet-battles-demo.vercel.app) — this is an earlier release. It does not include the latest source changes.
 - **Source:** [GitHub repository](https://github.com/anudeep2710/quiet-battles)
+- **Walkthrough video:** [Watch or download the MP4](docs/walkthrough/quiet-battles-walkthrough.mp4) · [Google Drive copy](https://drive.google.com/file/d/1mENUGDQX0RGVkf-2AYvi_thbVM8cEDD1/view?usp=drivesdk) *(currently private to the owner; grant reviewer access before external sharing)*
+- **Code and product status:** [Readiness review](docs/READINESS_REVIEW.md)
 
-The latest source changes have not been deployed. The preview may not include them, and the pending Neon schema migration must be applied before using the updated account, checkout, or Studio write flows. See the [readiness review](docs/READINESS_REVIEW.md).
+[![QUIET BATTLES website walkthrough](docs/walkthrough/quiet-battles-poster.jpg)](https://drive.google.com/file/d/1mENUGDQX0RGVkf-2AYvi_thbVM8cEDD1/view?usp=drivesdk)
 
-All product details, prices, and stories are illustrative. Checkout requires an account, but its QR is a non-payable test image: no payment is collected, verified, or transferred.
+The screenshots and video below were captured from the current local source using sample content in `data/content.json` through a temporary read-only preview. That preview blocked every API route except reading sample content. No Neon records, customer accounts, or orders were created. The Vercel preview is still on the earlier release, and the latest Neon schema migration has not been verified on the connected database.
 
-## Watch the walkthrough
+**Payment notice:** Checkout requires a customer account. Its QR image is illustrative and cannot accept or verify a payment. Orders in this build are workflow records only; no money moves.
 
-[![QUIET BATTLES walkthrough poster](docs/walkthrough/quiet-battles-poster.jpg)](docs/walkthrough/quiet-battles-walkthrough.mp4)
+## How to use the customer site
 
-[Play or download the short walkthrough](docs/walkthrough/quiet-battles-walkthrough.mp4) · [View current desktop and mobile screenshots](docs/screenshots/README.md)
+1. Start at `/` and choose **Enter the Archive** or **The Archive** in the top navigation.
+2. Open **Series 01 — THE GENTLE ARMOR™**. It contains five Chapter stories.
+3. Open a Chapter such as **The First Quiet**, read the story, then follow its linked Artifact.
+4. On a product page, choose a sample size and select **Add to bag**. The bag drawer shows the item and subtotal; the bag is retained in that browser.
+5. Select **Continue to checkout**. The site sends visitors to account access. Create an account or sign in; guest orders are not accepted. The bag remains available while signing in.
+6. Enter delivery details, review the order, and continue to the **non-payable test QR**. Confirming records a test order; it does not process payment.
+7. Open **Account** to view private order history, search orders and products, see recommendations, or sign out.
+8. Use **Artifacts** to browse the catalogue. Category filters and sorting help narrow the eight sample products.
 
-## Review guide
+### Direct pages
 
-1. Start at the [homepage](https://quiet-battles-demo.vercel.app/) and enter [The Archive](https://quiet-battles-demo.vercel.app/archive).
-2. Open [Series 01](https://quiet-battles-demo.vercel.app/series/the-gentle-armor), choose a Chapter such as [The First Quiet](https://quiet-battles-demo.vercel.app/chapter/the-first-quiet), and follow its link to [The Soft Armor Hoodie](https://quiet-battles-demo.vercel.app/product/soft-armor-hoodie).
-3. Choose a size, add the hoodie to the bag, and continue to checkout. [Sign in](https://quiet-battles-demo.vercel.app/login) or [create an account](https://quiet-battles-demo.vercel.app/signup) to place a test order. The QR cannot accept payment.
-4. Browse the [full catalogue](https://quiet-battles-demo.vercel.app/artifacts). The private [Studio](https://quiet-battles-demo.vercel.app/admin) manages site content and orders; its sign-in credentials are shared separately with reviewers.
-
-### Direct page paths
-
-- Homepage: /
-- The Archive: /archive
-- Series 01 — THE GENTLE ARMOR™: /series/the-gentle-armor
-- Chapter 01: /chapter/the-first-quiet
-- Product: /product/soft-armor-hoodie
-- Product catalogue: /artifacts
-- Sign in: /login
-- Create an account: /signup
-- Private order history: /account
-- Studio: /admin
-
-The purchase path is Browse → Add to bag → Checkout → Create an account or sign in → Delivery details → Order review → Non-payable test QR → Order confirmation. Guest orders are rejected by the API. Account creation uses the same response for new and existing email addresses, then asks the customer to sign in. The selected bag remains available while the visitor signs in.
-
-## Screenshots
-
-Click an image to open it at full size. These captures document the last deployed preview and predate the latest local reliability changes; the [screenshot index](docs/screenshots/README.md) includes route and review notes.
-
-### Story and shopping
-
-| Homepage | The Archive |
+| Page | Path |
 | --- | --- |
-| <a href="docs/screenshots/current/01-home-desktop.jpg"><img src="docs/screenshots/current/01-home-desktop.jpg" alt="QUIET BATTLES homepage on desktop" width="440"></a> | <a href="docs/screenshots/current/02-archive-desktop.jpg"><img src="docs/screenshots/current/02-archive-desktop.jpg" alt="The Archive on desktop" width="440"></a> |
-| Series 01 | Chapter 01 |
-| <a href="docs/screenshots/current/03-series-desktop.jpg"><img src="docs/screenshots/current/03-series-desktop.jpg" alt="The Gentle Armor Series and its Chapters" width="440"></a> | <a href="docs/screenshots/current/04-chapter-desktop.jpg"><img src="docs/screenshots/current/04-chapter-desktop.jpg" alt="The First Quiet Chapter Chamber" width="440"></a> |
-| Artifact | Catalogue |
-| <a href="docs/screenshots/current/05-product-desktop.jpg"><img src="docs/screenshots/current/05-product-desktop.jpg" alt="Soft Armor Hoodie product page" width="440"></a> | <a href="docs/screenshots/current/06-catalogue-desktop.jpg"><img src="docs/screenshots/current/06-catalogue-desktop.jpg" alt="Artifact catalogue with filters" width="440"></a> |
+| Homepage | `/` |
+| The Archive | `/archive` |
+| Series 01 — THE GENTLE ARMOR™ | `/series/the-gentle-armor` |
+| Chapter 01 — The First Quiet | `/chapter/the-first-quiet` |
+| The Soft Armor Hoodie | `/product/soft-armor-hoodie` |
+| Product catalogue | `/artifacts` |
+| Sign in | `/login` |
+| Create an account | `/signup` |
+| Customer profile and order history | `/account` |
+| Private content Studio | `/admin` |
 
-<details>
-<summary>View the full homepage capture</summary>
+## How to use the Studio
 
-<a href="docs/screenshots/current/01-home-full.jpg"><img src="docs/screenshots/current/01-home-full.jpg" alt="Full desktop homepage from hero through footer" width="440"></a>
+The Studio is a private content-management area at `/admin`.
 
-</details>
+1. On first access, create the one-time owner account using an email, password, password confirmation, and the private Studio key configured on the server as `QB_ADMIN_KEY`.
+2. On later visits, sign in with the owner email, password, and Studio key.
+3. Use the Studio tabs to edit homepage copy, Series, Chapters, and products. Chapter-to-product links are checked before saving.
+4. Upload PNG, JPEG, or WebP images up to 2 MB. The Studio stores them in Neon for this assessment build.
+5. Review customer and test-order records. Sign out when finished.
 
-### Accounts and Studio
-
-| Sign in | Create account | Studio access |
-| --- | --- | --- |
-| <a href="docs/screenshots/current/07-signin-desktop.jpg"><img src="docs/screenshots/current/07-signin-desktop.jpg" alt="Customer sign-in page" width="290"></a> | <a href="docs/screenshots/current/08-signup-desktop.jpg"><img src="docs/screenshots/current/08-signup-desktop.jpg" alt="Customer account creation page" width="290"></a> | <a href="docs/screenshots/current/09-studio-access-desktop.jpg"><img src="docs/screenshots/current/09-studio-access-desktop.jpg" alt="Private Studio email, password, and key entry page" width="290"></a> |
-
-### Mobile
-
-| Homepage | Product |
-| --- | --- |
-| <a href="docs/screenshots/current/10-home-mobile.jpg"><img src="docs/screenshots/current/10-home-mobile.jpg" alt="Mobile homepage" width="240"></a> | <a href="docs/screenshots/current/11-product-mobile.jpg"><img src="docs/screenshots/current/11-product-mobile.jpg" alt="Mobile Soft Armor Hoodie product page" width="240"></a> |
-| Catalogue | Checkout account gate |
-| <a href="docs/screenshots/current/12-catalogue-mobile.jpg"><img src="docs/screenshots/current/12-catalogue-mobile.jpg" alt="Mobile artifact catalogue" width="240"></a> | <a href="docs/screenshots/current/13-checkout-account-gate-mobile.jpg"><img src="docs/screenshots/current/13-checkout-account-gate-mobile.jpg" alt="Mobile checkout requiring an account before purchase" width="240"></a> |
-
-## Technology
-
-| Area | Choice |
-| --- | --- |
-| Frontend | Semantic HTML, responsive CSS, browser JavaScript |
-| API | Node.js HTTP handler, shared by local server and Vercel Function |
-| Database | Neon Postgres through @neondatabase/serverless |
-| Hosting | Vercel; source hosted in GitHub |
-| Content management | Custom Studio backed by the same API and database |
-| Images | Local WebP editorial images, Unsplash photography, original garment SVGs |
-| Fonts | Barlow Condensed, DM Sans, IBM Plex Mono from Google Fonts |
-| Walkthrough media | Playwright CLI captures, Hyperframes composition, FFmpeg poster and encoding |
-
-The frontend has no framework or component library. The CMS is built for this project; no CMS plugin or site template is used.
-
-## Architecture
-
-```mermaid
-flowchart LR
-  visitor[Visitor browser] --> ui[HTML, CSS, and browser JavaScript]
-  ui --> api[Node.js JSON API]
-  api --> db[(Neon Postgres)]
-  ui --> bag[Browser storage: bag and session token]
-  bag -->|account required| api
-  api -->|catalogue-priced order record| db
-  studio[Private Studio] -->|content, product, order, and customer requests| api
-  api -->|validated updates and media| db
-  ui --> assets[Vercel static images, styles, and scripts]
-```
-
-Locally, server.js serves the public files and the API. On Vercel, public/ contains static assets and api/index.js exposes the same request handler. db.js contains the Neon queries and schema setup; data/content.json supplies initial content.
+The first-use Studio screenshot below shows the form only. The local capture preview returned a setup-needed response for this screen; it did not create an owner account or save Studio content. Studio saves and database-backed admin workflows need a verified Neon migration before they can be reviewed live.
 
 ## Run locally
 
-Requirements: Node.js 24.15 or newer, npm, and a Neon Postgres database branch reserved for this project.
+Requirements: Node.js 24.15 or newer, npm, and a Neon branch reserved for this project.
 
-1. Install dependencies with npm install.
-2. Copy .env.example to .env.local and set DATABASE_URL and QB_ADMIN_KEY. Use a private Studio key with at least 16 characters.
-3. Run npm run db:init to create or migrate the schema and seed an empty database. The current migration adds shared authentication throttling, checkout idempotency and demo-order states, and optimistic Studio content versioning. Back up the database branch before applying schema changes.
-4. Run npm run dev and open http://127.0.0.1:4173. The first visitor with the Studio key can create the one-time owner account at /admin.
+```powershell
+npm install
+Copy-Item .env.example .env.local
+```
 
-Keep .env.local, .studio-key, and database credentials out of Git. Configure DATABASE_URL and the same private Studio key in Vercel. Changing QB_ADMIN_KEY invalidates existing Studio sessions. The account password is salted and hashed by the server, then stored in Neon; only the account owner can use the login form after initial setup.
+Set `DATABASE_URL` to the project branch and set `QB_ADMIN_KEY` to a private key at least 16 characters long in `.env.local`. Keep `.env.local` and `.studio-key` out of Git. Do not point schema setup at a production database.
 
-`npm run db:init` has not been run against the connected Neon database as part of this source change. The updated API requires the migration before customer sign-in, checkout, or Studio saves can use the new tables and columns.
+```powershell
+npm run db:init
+npm run dev
+```
 
-The smoke check writes temporary customer, order, content, and image records. Run it only against a disposable Neon branch. Set QB_ADMIN_TEST_EMAIL and QB_ADMIN_TEST_PASSWORD in ignored .env.local; on a fresh branch the test creates this test-only Studio account once. Never set those variables in Vercel. The check expects the local server on port 4174. In PowerShell, start it with `$env:PORT = "4174"; npm run dev`, then run `npm run test:smoke` in another terminal. The isolated `npm run test:admin-auth` check does not use Neon.
+Open [http://127.0.0.1:4173](http://127.0.0.1:4173). `npm run db:init` creates or migrates the schema and seeds an empty database; use a disposable branch or back up the database first. The current migration adds shared authentication throttling, checkout idempotency and recovery, and versioned Studio content saves.
 
-## Content Studio
+On an empty database, visit `/admin` and complete one-time owner setup. Customer sign-up and checkout require the updated database schema. The connected Neon branch was not migrated as part of this submission update.
 
-Open /admin. On first use, create the owner account with an email, password, password confirmation, and private Studio key. The key is checked against a server-only secret and is never stored in Neon. Setup is locked after the first account is saved; later visits use the email, password, and key sign-in form. Passwords are scrypt-hashed asynchronously with a random salt in Neon. Shared, hashed-key rate limits protect customer and Studio authentication across deployed instances. The Studio can edit homepage copy; add, edit, and remove Series, Chapters, and products; upload images; and review customer and order records. Content saves use a version check so an older Studio tab cannot overwrite a newer save. Uploaded PNG, JPEG, and WebP files are limited to 2 MB and stored in Neon. Non-payable test orders cannot be advanced to paid or fulfillment states. Deleting an account revokes its sessions but leaves customer details in linked order snapshots; deleting order records remains a separate manual action. Chapters and products must keep valid links to one another.
+### Checks
 
-The Studio uses one owner credential set. A real team should use named staff accounts, roles, and an audit log.
+```powershell
+npm run test:unit
+npm run test:admin-auth
+```
 
-## Data model
+`npm run test:smoke` writes temporary customer, order, content, and image records. Run it only against a disposable Neon branch. Set `QB_ADMIN_TEST_EMAIL` and `QB_ADMIN_TEST_PASSWORD` in ignored `.env.local`; never set them in Vercel. The smoke script expects the app on port 4174:
 
-| Table | Purpose |
+```powershell
+$env:PORT = '4174'
+npm run dev
+# In another terminal:
+npm run test:smoke
+```
+
+## Screenshots
+
+These Playwright captures show the current source UI with sample content. Click any image to open it at full size.
+
+### Story and product journey
+
+| Homepage | The Archive |
 | --- | --- |
-| site_settings | Brand/homepage content and optimistic version for safe Studio saves |
-| series | Ordered Series records |
-| chapters | Chapter story and Series/product links |
-| products | Product details, prices, sizes, and imagery |
-| media_assets | Uploaded image bytes |
-| admin_accounts | One-time Studio owner email and salted scrypt password hash |
-| customers | Customer profile and scrypt-derived password hash |
-| customer_sessions | Hashed, expiring customer session token |
-| admin_sessions | Hashed, expiring Studio session token |
-| orders | Customer delivery and item snapshots, checkout idempotency key, request fingerprint, payment label, order state, and fulfillment state |
-| auth_rate_limits | Hashed authentication buckets with attempt counts and expiry timestamps |
+| <a href="docs/screenshots/submission/01-home-desktop.jpg"><img src="docs/screenshots/submission/01-home-desktop.jpg" alt="Homepage with the Wear Your Battles headline and editorial portrait" width="440"></a> | <a href="docs/screenshots/submission/02-archive-desktop.jpg"><img src="docs/screenshots/submission/02-archive-desktop.jpg" alt="The Archive introduction and Series entry" width="440"></a> |
+| Series 01 | Chapter 01 |
+| <a href="docs/screenshots/submission/03-series-desktop.jpg"><img src="docs/screenshots/submission/03-series-desktop.jpg" alt="The Gentle Armor Series page" width="440"></a> | <a href="docs/screenshots/submission/04-chapter-desktop.jpg"><img src="docs/screenshots/submission/04-chapter-desktop.jpg" alt="The First Quiet Chapter Chamber" width="440"></a> |
+| Product | Bag |
+| <a href="docs/screenshots/submission/05-product-desktop.jpg"><img src="docs/screenshots/submission/05-product-desktop.jpg" alt="Soft Armor Hoodie product page with size selection" width="440"></a> | <a href="docs/screenshots/submission/11-bag-desktop.jpg"><img src="docs/screenshots/submission/11-bag-desktop.jpg" alt="Bag drawer with the selected hoodie and checkout action" width="440"></a> |
 
-The app validates content links before saving. The order API checks the signed-in customer, validates product and size selections, recalculates prices from the catalogue, and stores an order snapshot. One UUID key is enforced per customer and checkout attempt; retries return the original record and an authenticated customer can look it up after a refresh. Demo orders are recorded as `demo_recorded`, payment is `not_payable`, and fulfillment is `not_applicable`. The API does not handle real payment details.
+### Accounts, catalogue, and Studio
 
-See [docs/database-schema.md](docs/database-schema.md) for fields and relationships.
+| Catalogue | Account-required checkout |
+| --- | --- |
+| <a href="docs/screenshots/submission/06-catalogue-desktop.jpg"><img src="docs/screenshots/submission/06-catalogue-desktop.jpg" alt="Eight-item product catalogue" width="440"></a> | <a href="docs/screenshots/submission/12-checkout-account-gate-desktop.jpg"><img src="docs/screenshots/submission/12-checkout-account-gate-desktop.jpg" alt="Checkout requiring an account while preserving the bag" width="440"></a> |
+| Sign in | Create an account |
+| <a href="docs/screenshots/submission/07-signin-desktop.jpg"><img src="docs/screenshots/submission/07-signin-desktop.jpg" alt="Customer sign-in form" width="440"></a> | <a href="docs/screenshots/submission/08-signup-desktop.jpg"><img src="docs/screenshots/submission/08-signup-desktop.jpg" alt="Customer account creation form" width="440"></a> |
+| Studio first access | Mobile account gate |
+| <a href="docs/screenshots/submission/09-studio-setup-desktop.jpg"><img src="docs/screenshots/submission/09-studio-setup-desktop.jpg" alt="One-time Studio owner account setup form" width="440"></a> | <a href="docs/screenshots/submission/15-checkout-account-gate-mobile.jpg"><img src="docs/screenshots/submission/15-checkout-account-gate-mobile.jpg" alt="Mobile checkout requiring an account" width="240"></a> |
+
+### Mobile homepage and full homepage
+
+<a href="docs/screenshots/submission/13-home-mobile.jpg"><img src="docs/screenshots/submission/13-home-mobile.jpg" alt="Responsive mobile homepage" width="240"></a>
+
+<details>
+<summary>Full desktop homepage</summary>
+
+<a href="docs/screenshots/submission/10-home-full.jpg"><img src="docs/screenshots/submission/10-home-full.jpg" alt="Full homepage from hero through the footer" width="440"></a>
+
+</details>
+
+See [the screenshot index](docs/screenshots/README.md) for capture details and earlier deployed screenshots.
+
+## Technology and architecture
+
+| Area | Technology | Role |
+| --- | --- | --- |
+| Frontend | Semantic HTML, CSS, browser JavaScript | Responsive pages, navigation, bag, account and Studio interfaces |
+| API | Node.js | Shared JSON request handler for local development and Vercel Functions |
+| Database | Neon Postgres via `@neondatabase/serverless` | Content, products, media, customer accounts, sessions, orders, and auth limits |
+| Hosting | Vercel | Static assets and serverless API |
+| Source control | GitHub | Application source and handoff |
+| CMS | Custom Studio | Manage homepage, Series, Chapters, products, images, customers, and test orders |
+
+```mermaid
+flowchart LR
+  visitor[Customer browser] --> web[HTML, CSS, and JavaScript]
+  web --> api[Node.js JSON API]
+  api --> db[(Neon Postgres)]
+  web --> bag[Browser bag and session storage]
+  bag -->|account required| api
+  api -->|catalogue-priced test order| db
+  studio[Private Studio] -->|protected content and admin requests| api
+  api -->|validated content, image, customer, and order data| db
+  hosting[Vercel] -->|static files and API function| visitor
+  web --> assets[Images, styles, and scripts]
+```
+
+`server.js` serves local pages and the API. `api/index.js` exposes the shared handler on Vercel. `db.js` contains Neon queries and schema setup. `data/content.json` provides initial content. The custom Studio uses the same API and validation path as the public site.
+
+### Data model
+
+The database contains `site_settings`, `series`, `chapters`, `products`, `media_assets`, `customers`, `customer_sessions`, `admin_accounts`, `admin_sessions`, `orders`, and `auth_rate_limits`. Chapters reference Series and products; the Studio validates these links before saving. Order records snapshot customer, item, and price details. Demo orders use `demo_recorded` and `not_payable` states; fulfillment is not available.
+
+See [database schema](docs/database-schema.md) and the API overview below.
 
 ## API overview
 
 | Method and route | Purpose |
 | --- | --- |
-| GET /api/health | Check API and database connectivity |
-| GET /api/content | Read published content |
-| GET /api/media/:id | Read an uploaded image |
-| POST /api/auth/signup | Create a customer account |
-| POST /api/auth/login | Sign in |
-| GET /api/auth/me | Read the current account and its orders |
-| POST /api/auth/logout | Revoke a customer session |
-| POST /api/orders | Validate and record an account-linked order |
-| GET /api/orders/attempt/:key | Recover an order after a retry or refresh; requires its customer session |
-| GET /api/admin/setup-status | Check whether first-time Studio setup is complete |
-| POST /api/admin/setup | Create the one-time Studio owner account |
-| POST /api/admin/login | Start a Studio session |
-| GET /api/admin/session | Validate the current Studio session |
-| PUT /api/admin/content | Save validated content |
-| POST /api/admin/upload | Store an image |
-| GET /api/admin/orders | List orders in Studio |
-| DELETE /api/admin/orders/:id | Remove an order |
-| GET /api/admin/customers | List customer accounts |
-| DELETE /api/admin/customers/:id | Remove a customer account |
+| `GET /api/health` | Check API and database connectivity |
+| `GET /api/content` | Read published site content |
+| `GET /api/media/:id` | Read an uploaded image |
+| `POST /api/auth/signup` · `POST /api/auth/login` | Create a customer account or sign in |
+| `GET /api/auth/me` · `POST /api/auth/logout` | Read the signed-in profile and orders, or revoke the session |
+| `POST /api/orders` | Revalidate and record an account-linked, non-payable test order |
+| `GET /api/orders/attempt/:key` | Recover a test order after a retry or refresh |
+| `GET /api/admin/setup-status` · `POST /api/admin/setup` | Check and complete one-time Studio owner setup |
+| `POST /api/admin/login` · `GET /api/admin/session` | Sign in to or validate a Studio session |
+| `PUT /api/admin/content` · `POST /api/admin/upload` | Save validated content and upload an image |
+| `GET /api/admin/orders` · `DELETE /api/admin/orders/:id` | Review or remove a test order |
+| `GET /api/admin/customers` · `DELETE /api/admin/customers/:id` | Review or remove a customer account |
 
-## Submission files
+## What is and is not implemented
 
-- [Submission overview](SUBMISSION.md)
-- [Technical approach and estimate](TECHNICAL_APPROACH.md)
-- [Product readiness review](docs/READINESS_REVIEW.md)
+The assessment build demonstrates browsing, search and catalogue filters, account creation and sign-in, private order history, account-required checkout, non-payable QR confirmation, and content-management screens. Product names, garment details, stories, sizes, prices, stock, and availability are illustrative and require brand approval. Inventory is not tracked.
+
+This is not ready for public commerce. The latest Neon migration and Vercel deployment are unverified. Email verification, password recovery, secure HttpOnly sessions, customer-data retention rules, named Studio roles, inventory reservation, shipping and tax calculation, returns, transactional email, real payment-provider verification, production SEO rendering, and performance monitoring remain to be completed. Do not collect real customer data or take payment through this build.
+
+## Submission and tool disclosure
+
+- The screenshots were captured with the Playwright CLI from current local source using sample JSON content.
+- The walkthrough was composed with the Brag workflow and HyperFrames; FFmpeg generated its poster and final MP4. Its soundtrack is locally generated ambient audio with short Kenney CC0 sound effects.
+- Five editorial concepts were generated with OpenAI image generation; additional photography is from Unsplash; garment illustrations are original SVGs. Fonts are served by Google Fonts.
+- No website template, frontend framework, CMS plugin, or paid UI plugin was used. OpenAI Codex assisted with implementation and documentation.
+- The video and stills are in `docs/walkthrough/` and `docs/screenshots/submission/`; this repo contains the source code and database schema.
+
+## Indicative full-project estimate
+
+These ranges assume approved brand copy, product data, size charts, photography rights, policies, and shipping/payment-provider requirements.
+
+| Scope | Time | Indicative fee |
+| --- | --- | --- |
+| Editorial website and CMS: up to 3 Series, 15 Chapters, 10 products, staff roles, media storage, responsive QA, accessibility and SEO basics, deployment, handover | 6–8 weeks | ₹1,80,000–₹2,60,000 |
+| Commerce completion: checkout, order records, stock hooks, shipping/tax rules, payment integration, launch QA | 2–4 additional weeks | ₹90,000–₹1,50,000 |
+| Combined | 8–12 weeks | ₹2,70,000–₹4,10,000 |
+
+This is a scoping estimate, not a fixed quote. It excludes hosting, database and media usage, payment-provider fees, content production, taxes, and ongoing maintenance. Agree a fixed fee after requirements and acceptance criteria are confirmed.
+
+## Supporting documents
+
+- [Product and technical readiness review](docs/READINESS_REVIEW.md)
 - [Database schema](docs/database-schema.md)
-- [Screenshots](docs/screenshots/README.md)
-- [Walkthrough video](docs/walkthrough/quiet-battles-walkthrough.mp4)
-
-## Scope and next steps
-
-This build is for technical assessment, not public commerce. Use sample information only. Customer email verification and password recovery are not implemented. Customer and admin bearer tokens remain in browser `sessionStorage`; production should move to secure, HttpOnly, SameSite cookies with a reviewed CSRF approach. Customer deletion removes the account and sessions but retains personal data copied into order snapshots; define and implement a retention or anonymization policy before accepting real accounts. Named Studio users, inventory, shipping and tax calculation, returns, transactional email, and payment-provider verification are also production blockers. Prices, story copy, sizes, garment details, and images are sample content; stock is not tracked and the interface does not claim it is.
-
-The site uses direct paths for its pages, backed by a single-page-app fallback. Page content and titles render in the browser; a production release should add server-side or static rendering, route-specific social metadata, a sitemap, optimized image derivatives, and monitoring.
-
-Five editorial concepts were generated with OpenAI image generation; additional photography is sourced from Unsplash; the garment illustrations are local SVGs. Google Fonts serves the typefaces. OpenAI Codex assisted with implementation, documentation, and code review. Playwright CLI captured the current screenshots. The walkthrough was composed with the Brag skill and Hyperframes, with FFmpeg used for the poster and final video.
+- [Screenshot index](docs/screenshots/README.md)
+- [Walkthrough poster and video](docs/walkthrough/quiet-battles-poster.jpg) · [MP4](docs/walkthrough/quiet-battles-walkthrough.mp4)
