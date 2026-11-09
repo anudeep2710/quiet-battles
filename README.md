@@ -2,8 +2,10 @@
 
 A story-led clothing storefront for the QUIET BATTLES brief. The site connects The Archive to Series, five Chapter Chambers, eight related products, customer accounts, an order history, and a private content Studio.
 
-- **Website:** [Open the site](https://quiet-battles-demo.vercel.app)
+- **Website preview:** [Open the last deployed build](https://quiet-battles-demo.vercel.app)
 - **Source:** [GitHub repository](https://github.com/anudeep2710/quiet-battles)
+
+The latest source changes have not been deployed. The preview may not include them, and the pending Neon schema migration must be applied before using the updated account, checkout, or Studio write flows. See the [readiness review](docs/READINESS_REVIEW.md).
 
 All product details, prices, and stories are illustrative. Checkout requires an account, but its QR is a non-payable test image: no payment is collected, verified, or transferred.
 
@@ -33,11 +35,11 @@ All product details, prices, and stories are illustrative. Checkout requires an 
 - Private order history: /account
 - Studio: /admin
 
-The purchase path is Browse → Add to bag → Checkout → Sign in or create an account → Delivery details → Order review → Test QR → Order confirmation. Guest orders are rejected by the API. The selected bag remains available while the visitor signs in.
+The purchase path is Browse → Add to bag → Checkout → Create an account or sign in → Delivery details → Order review → Non-payable test QR → Order confirmation. Guest orders are rejected by the API. Account creation uses the same response for new and existing email addresses, then asks the customer to sign in. The selected bag remains available while the visitor signs in.
 
 ## Screenshots
 
-Click an image to open it at full size. The [screenshot index](docs/screenshots/README.md) also includes the route and review notes for each capture.
+Click an image to open it at full size. These captures document the last deployed preview and predate the latest local reliability changes; the [screenshot index](docs/screenshots/README.md) includes route and review notes.
 
 ### Story and shopping
 
@@ -108,16 +110,18 @@ Requirements: Node.js 24.15 or newer, npm, and a Neon Postgres database branch r
 
 1. Install dependencies with npm install.
 2. Copy .env.example to .env.local and set DATABASE_URL and QB_ADMIN_KEY. Use a private Studio key with at least 16 characters.
-3. Run npm run db:init to create or migrate the schema and seed an empty database.
+3. Run npm run db:init to create or migrate the schema and seed an empty database. The current migration adds shared authentication throttling, checkout idempotency and demo-order states, and optimistic Studio content versioning. Back up the database branch before applying schema changes.
 4. Run npm run dev and open http://127.0.0.1:4173. The first visitor with the Studio key can create the one-time owner account at /admin.
 
 Keep .env.local, .studio-key, and database credentials out of Git. Configure DATABASE_URL and the same private Studio key in Vercel. Changing QB_ADMIN_KEY invalidates existing Studio sessions. The account password is salted and hashed by the server, then stored in Neon; only the account owner can use the login form after initial setup.
+
+`npm run db:init` has not been run against the connected Neon database as part of this source change. The updated API requires the migration before customer sign-in, checkout, or Studio saves can use the new tables and columns.
 
 The smoke check writes temporary customer, order, content, and image records. Run it only against a disposable Neon branch. Set QB_ADMIN_TEST_EMAIL and QB_ADMIN_TEST_PASSWORD in ignored .env.local; on a fresh branch the test creates this test-only Studio account once. Never set those variables in Vercel. The check expects the local server on port 4174. In PowerShell, start it with `$env:PORT = "4174"; npm run dev`, then run `npm run test:smoke` in another terminal. The isolated `npm run test:admin-auth` check does not use Neon.
 
 ## Content Studio
 
-Open /admin. On first use, create the owner account with an email, password, password confirmation, and private Studio key. The key is checked against a server-only secret and is never stored in Neon. Setup is locked after the first account is saved; later visits use the email, password, and key sign-in form. Passwords are scrypt-hashed with a random salt in Neon. The Studio can edit homepage copy; add, edit, and remove Series, Chapters, and products; upload images; and review customer and order records. Uploaded PNG, JPEG, and WebP files are limited to 2 MB and stored in Neon. Order status can be updated and records can be removed. Chapters and products must keep valid links to one another.
+Open /admin. On first use, create the owner account with an email, password, password confirmation, and private Studio key. The key is checked against a server-only secret and is never stored in Neon. Setup is locked after the first account is saved; later visits use the email, password, and key sign-in form. Passwords are scrypt-hashed asynchronously with a random salt in Neon. Shared, hashed-key rate limits protect customer and Studio authentication across deployed instances. The Studio can edit homepage copy; add, edit, and remove Series, Chapters, and products; upload images; and review customer and order records. Content saves use a version check so an older Studio tab cannot overwrite a newer save. Uploaded PNG, JPEG, and WebP files are limited to 2 MB and stored in Neon. Non-payable test orders cannot be advanced to paid or fulfillment states. Deleting an account revokes its sessions but leaves customer details in linked order snapshots; deleting order records remains a separate manual action. Chapters and products must keep valid links to one another.
 
 The Studio uses one owner credential set. A real team should use named staff accounts, roles, and an audit log.
 
@@ -125,7 +129,7 @@ The Studio uses one owner credential set. A real team should use named staff acc
 
 | Table | Purpose |
 | --- | --- |
-| site_settings | Brand and homepage content |
+| site_settings | Brand/homepage content and optimistic version for safe Studio saves |
 | series | Ordered Series records |
 | chapters | Chapter story and Series/product links |
 | products | Product details, prices, sizes, and imagery |
@@ -134,9 +138,10 @@ The Studio uses one owner credential set. A real team should use named staff acc
 | customers | Customer profile and scrypt-derived password hash |
 | customer_sessions | Hashed, expiring customer session token |
 | admin_sessions | Hashed, expiring Studio session token |
-| orders | Customer-linked delivery, item, price, and status snapshots |
+| orders | Customer delivery and item snapshots, checkout idempotency key, request fingerprint, payment label, order state, and fulfillment state |
+| auth_rate_limits | Hashed authentication buckets with attempt counts and expiry timestamps |
 
-The app validates content links before saving. The order API checks the signed-in customer, validates product and size selections, recalculates prices from the catalogue, and stores an order snapshot. It does not handle real payment details.
+The app validates content links before saving. The order API checks the signed-in customer, validates product and size selections, recalculates prices from the catalogue, and stores an order snapshot. One UUID key is enforced per customer and checkout attempt; retries return the original record and an authenticated customer can look it up after a refresh. Demo orders are recorded as `demo_recorded`, payment is `not_payable`, and fulfillment is `not_applicable`. The API does not handle real payment details.
 
 See [docs/database-schema.md](docs/database-schema.md) for fields and relationships.
 
@@ -152,6 +157,7 @@ See [docs/database-schema.md](docs/database-schema.md) for fields and relationsh
 | GET /api/auth/me | Read the current account and its orders |
 | POST /api/auth/logout | Revoke a customer session |
 | POST /api/orders | Validate and record an account-linked order |
+| GET /api/orders/attempt/:key | Recover an order after a retry or refresh; requires its customer session |
 | GET /api/admin/setup-status | Check whether first-time Studio setup is complete |
 | POST /api/admin/setup | Create the one-time Studio owner account |
 | POST /api/admin/login | Start a Studio session |
@@ -159,7 +165,6 @@ See [docs/database-schema.md](docs/database-schema.md) for fields and relationsh
 | PUT /api/admin/content | Save validated content |
 | POST /api/admin/upload | Store an image |
 | GET /api/admin/orders | List orders in Studio |
-| PATCH /api/admin/orders/:id | Update fulfilment status |
 | DELETE /api/admin/orders/:id | Remove an order |
 | GET /api/admin/customers | List customer accounts |
 | DELETE /api/admin/customers/:id | Remove a customer account |
@@ -175,7 +180,7 @@ See [docs/database-schema.md](docs/database-schema.md) for fields and relationsh
 
 ## Scope and next steps
 
-This build is for technical assessment, not public commerce. Use sample information only. Customer email verification, password recovery, generic account-registration responses, shared/edge-enforced request throttling, production privacy and retention controls, named Studio users, stock management, shipping and tax calculation, returns, transactional email, and payment-provider verification are not implemented. Studio setup and sign-in use a basic per-instance attempt limit; replace it with shared edge or database-backed throttling before public use. Before accepting real customer accounts, implement and review the account and privacy controls. Before launching commerce, add inventory, shipping, tax, return, and payment-provider integrations.
+This build is for technical assessment, not public commerce. Use sample information only. Customer email verification and password recovery are not implemented. Customer and admin bearer tokens remain in browser `sessionStorage`; production should move to secure, HttpOnly, SameSite cookies with a reviewed CSRF approach. Customer deletion removes the account and sessions but retains personal data copied into order snapshots; define and implement a retention or anonymization policy before accepting real accounts. Named Studio users, inventory, shipping and tax calculation, returns, transactional email, and payment-provider verification are also production blockers. Prices, story copy, sizes, garment details, and images are sample content; stock is not tracked and the interface does not claim it is.
 
 The site uses direct paths for its pages, backed by a single-page-app fallback. Page content and titles render in the browser; a production release should add server-side or static rendering, route-specific social metadata, a sitemap, optimized image derivatives, and monitoring.
 

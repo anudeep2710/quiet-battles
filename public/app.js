@@ -35,11 +35,12 @@ let accountOrderSearch = "";
 let accountProductSearch = "";
 let customerLoading = Boolean(customerToken);
 let authMessage = "";
+let recoveringOrderAttempt = false;
 let catalogFilter = "All";
 let catalogSort = "featured";
 let quickAddSlug = "";
 const checkoutAuthPendingKey = "qbCheckoutAuthPending";
-const orderStatuses = ["Placed", "Confirmed", "Packed", "Shipped", "Completed", "Cancelled"];
+const orderAttemptStorageKey = "qbOrderAttemptKey";
 
 function readCart() {
   try {
@@ -61,6 +62,10 @@ function clearCheckoutState() {
   checkoutOrder = null;
   checkoutMessage = "";
   sessionStorage.removeItem(checkoutAuthPendingKey);
+}
+
+function clearOrderAttempt() {
+  localStorage.removeItem(orderAttemptStorageKey);
 }
 
 function cloneContent(value) {
@@ -105,6 +110,7 @@ function addProductToCart(product, size) {
   else cart.push({ slug: product.slug, name: product.name, image: product.image, size: size, price: Number(product.price), qty: 1 });
   checkoutOrder = null;
   checkoutStep = "details";
+  clearOrderAttempt();
   saveCart();
   cartOpen = true;
   cartReturnFocus = true;
@@ -131,7 +137,7 @@ function cartQuantity() {
 
 function currentRoute() {
   let pathname = location.pathname;
-  if (location.hash) {
+  if (location.hash && location.hash !== "#main-content") {
     const legacyRoute = decodeURIComponent(location.hash.slice(1)).replace(/^\/+|\/+$/g, "");
     pathname = !legacyRoute || legacyRoute === "home" ? "/" : "/" + legacyRoute;
     history.replaceState(null, "", pathname + location.search);
@@ -167,6 +173,17 @@ function finishRouteChange() {
   } else {
     window.scrollTo(0, 0);
   }
+  requestAnimationFrame(focusPageHeading);
+  if (route[0] === "checkout" && customer && localStorage.getItem(orderAttemptStorageKey)) {
+    recoverOrderAttempt().then(function (recovered) { if (recovered) render(); });
+  }
+}
+
+function focusPageHeading() {
+  const heading = document.querySelector("main h1");
+  if (!heading) return;
+  heading.setAttribute("tabindex", "-1");
+  heading.focus({ preventScroll: true });
 }
 
 function navigateTo(path) {
@@ -194,6 +211,14 @@ root.addEventListener("click", function (event) {
   if (target.origin !== location.origin) return;
   event.preventDefault();
   navigateTo(target.pathname + target.search);
+});
+
+document.addEventListener("click", function (event) {
+  const skip = event.target.closest && event.target.closest(".skip-link");
+  if (!skip) return;
+  event.preventDefault();
+  const main = document.getElementById("main-content");
+  if (main) main.focus();
 });
 
 function imageFrame(src, alt, className) {
@@ -294,7 +319,7 @@ function renderHome() {
     '</div><div class="page chapter-list">' + chapterCards(series) + '</div></section>' +
     '<section class="page section product-feature">' +
       '<div class="product-photo"><img src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + '" loading="lazy"><span class="product-stamp mono">FIELD PIECE 001</span></div>' +
-      '<div class="product-copy"><span class="mono section-label">FROM THE SERIES · ' + escapeHtml(firstChapter.number) + '</span><h2>' + escapeHtml(product.name) + '</h2><p>' + escapeHtml(product.description) + '</p><div class="price">' + money(product.price) + '<small>Illustrative price · INR</small></div><div class="product-details">' + product.details.map(function (line) { return "<span>" + escapeHtml(line) + "</span>"; }).join("") + '</div><a class="button button-dark" href="/product/' + escapeHtml(product.slug) + '">View the piece <span class="arrow">↗</span></a></div>' +
+      '<div class="product-copy"><span class="mono section-label">FROM THE SERIES · ' + escapeHtml(firstChapter.number) + '</span><h2>' + escapeHtml(product.name) + '</h2><p>' + escapeHtml(product.description) + '</p><div class="price">' + money(product.price) + '<small>Illustrative price · INR</small></div><p class="product-data-note">Story and product copy are illustrative; specifications and availability are not verified.</p><a class="button button-dark" href="/product/' + escapeHtml(product.slug) + '">View the piece <span class="arrow">↗</span></a></div>' +
     '</section>' +
   '</main>';
 }
@@ -314,14 +339,14 @@ function renderNotFound() {
 function catalogCard(product, index) {
   const quickOpen = quickAddSlug === product.slug;
   const sizes = product.sizes.map(function (size) {
-    return '<button type="button" data-quick-size="' + escapeHtml(size) + '" data-quick-product="' + escapeHtml(product.slug) + '">' + escapeHtml(size) + '</button>';
+    return '<button type="button" data-quick-size="' + escapeHtml(size) + '" data-quick-product="' + escapeHtml(product.slug) + '" aria-label="Add ' + escapeHtml(product.name) + ', sample size ' + escapeHtml(size) + '">' + escapeHtml(size) + '</button>';
   }).join("");
   return '<article class="catalog-card" data-product-kind="' + escapeHtml(product.kind) + '">' +
     '<div class="catalog-media"><a href="/product/' + escapeHtml(product.slug) + '" aria-label="View ' + escapeHtml(product.name) + '"><img class="catalog-front" src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + ' front view" loading="' + (index < 4 ? 'eager' : 'lazy') + '">' +
       (product.secondaryImage ? '<img class="catalog-back" src="' + escapeHtml(product.secondaryImage) + '" alt="' + escapeHtml(product.name) + ' back view" loading="lazy">' : '') + '</a>' +
       '<div class="catalog-badges"><span>' + escapeHtml(product.kind) + '</span></div>' +
       '<button class="quick-add-trigger" type="button" data-quick-open="' + escapeHtml(product.slug) + '" aria-expanded="' + String(quickOpen) + '">' + (quickOpen ? 'Close' : 'Quick add') + ' <span aria-hidden="true">' + (quickOpen ? '−' : '+') + '</span></button>' +
-      '<div class="quick-add-panel' + (quickOpen ? ' open' : '') + '" aria-hidden="' + String(!quickOpen) + '"' + (quickOpen ? '' : ' inert') + '><div><span class="mono">Choose size</span><a href="/product/' + escapeHtml(product.slug) + '">View details ↗</a></div><div class="quick-size-grid">' + sizes + '</div></div>' +
+      '<div class="quick-add-panel' + (quickOpen ? ' open' : '') + '" aria-hidden="' + String(!quickOpen) + '"' + (quickOpen ? '' : ' inert') + '><div><span class="mono">Sample sizes · no stock tracking</span><a href="/product/' + escapeHtml(product.slug) + '">View details ↗</a></div><div class="quick-size-grid" role="group" aria-label="Choose a sample size for ' + escapeHtml(product.name) + '">' + sizes + '</div></div>' +
     '</div>' +
     '<div class="catalog-card-meta"><div><span class="mono">' + escapeHtml(product.category) + '</span><h2><a href="/product/' + escapeHtml(product.slug) + '">' + escapeHtml(product.name) + '</a></h2></div><strong>' + money(product.price) + '</strong></div>' +
   '</article>';
@@ -353,7 +378,7 @@ function renderArtifacts() {
   const heroIndex = String(content.products.indexOf(heroProduct) + 1).padStart(2, "0");
   const indexMax = String(productCount).padStart(2, "0");
   return '<main class="shop-page"><section class="shop-hero"><div class="shop-hero-copy"><span class="mono">' + escapeHtml(featuredSeries.number) + ' · COMPLETE ARTIFACT INDEX</span><h1>Wear what<br>stayed.</h1><p>' + productCount + ' objects for the private work of continuing. Begin with the story, or choose the shape you need today.</p><div><button class="button shop-primary" type="button" data-scroll-catalogue>Shop the drop <span class="arrow">↓</span></button><a href="/series/' + escapeHtml(featuredSeries.slug) + '">Read the Series</a></div></div><div class="shop-hero-visual"><img src="' + escapeHtml(featuredSeries.image) + '" alt="' + escapeHtml(featuredSeries.title) + ' campaign portrait" fetchpriority="high"><a class="floating-artifact" href="/product/' + escapeHtml(heroProduct.slug) + '"><img src="' + escapeHtml(heroProduct.image) + '" alt="' + escapeHtml(heroProduct.name) + '"><span><b>Featured · Artifact ' + heroIndex + '</b>' + escapeHtml(heroProduct.name) + ' · ' + money(heroProduct.price) + '</span></a><span class="shop-index">01—' + indexMax + '</span></div></section>' +
-    '<div class="drop-ticker" aria-label="Collection information"><div><span>' + productCount + ' artifacts</span><span>' + chapterCount + ' chapters</span><span>Front + back views</span><span>Dummy QR checkout</span><span>' + productCount + ' artifacts</span><span>' + chapterCount + ' chapters</span><span>Front + back views</span><span>Dummy QR checkout</span></div></div>' +
+    '<div class="drop-ticker" role="group" aria-label="Collection details"><div><span>' + productCount + ' artifacts</span><span>' + chapterCount + ' chapters</span><span>Front + back views</span><span>Dummy QR checkout</span></div></div>' +
      '<section class="catalogue" id="catalogue"><header class="catalogue-head page"><div><span class="mono section-label">THE COMPLETE DROP</span><h2>All artifacts</h2><p><strong>' + products.length + '</strong> of ' + content.products.length + ' objects</p></div><div class="catalogue-controls"><nav class="catalog-filters" aria-label="Filter artifacts">' + filterButtons + '</nav><label class="catalog-sort"><span>Sort</span><select data-catalog-sort><option value="featured"' + (catalogSort === 'featured' ? ' selected' : '') + '>Featured</option><option value="name"' + (catalogSort === 'name' ? ' selected' : '') + '>Name: A to Z</option><option value="price-low"' + (catalogSort === 'price-low' ? ' selected' : '') + '>Price: low to high</option><option value="price-high"' + (catalogSort === 'price-high' ? ' selected' : '') + '>Price: high to low</option></select></label></div></header><div class="catalog-grid">' + (cards || '<div class="catalog-empty">No artifacts in this category yet.</div>') + '</div></section></main>';
 }
 
@@ -443,6 +468,8 @@ function bindCatalogCardActions(scope) {
     button.addEventListener("click", function () {
       quickAddSlug = quickAddSlug === button.dataset.quickOpen ? "" : button.dataset.quickOpen;
       render();
+      const nextButton = document.querySelector('[data-quick-open="' + CSS.escape(button.dataset.quickOpen) + '"]');
+      if (nextButton) nextButton.focus();
     });
   });
   rootElement.querySelectorAll("[data-quick-size]").forEach(function (button) {
@@ -477,7 +504,7 @@ function renderAuth(mode) {
   const signup = mode === "signup";
   return '<main class="auth-page"><section class="auth-visual"><div><span class="mono section-label">A PRIVATE PLACE IN THE ARCHIVE</span><blockquote>“Keep a record of what carried you.”</blockquote><p>Your account connects each order to one quiet, personal ledger.</p></div></section><section class="auth-panel"><form class="auth-form" id="customer-auth" data-auth-mode="' + (signup ? 'signup' : 'login') + '"><span class="mono section-label">' + (signup ? 'OPEN YOUR ARCHIVE' : 'RETURN TO YOUR ARCHIVE') + '</span><h1>' + (signup ? 'Begin<br>quietly.' : 'Welcome<br>back.') + '</h1><p>' + (signup ? 'Create a private archive for your order history.' : 'Sign in to revisit your order history.') + '</p>' +
     (signup ? '<label><span>Your name</span><input name="name" autocomplete="name" minlength="2" maxlength="80" required></label>' : '') +
-    '<label><span>Email</span><input name="email" type="email" autocomplete="email" maxlength="254" required></label><label><span>Password</span><input name="password" type="password" autocomplete="' + (signup ? 'new-password' : 'current-password') + '" minlength="8" maxlength="128" required></label>' +
+    '<label><span>Email</span><input name="email" type="email" autocomplete="email" maxlength="254" value="' + escapeHtml(authSubmittedValues && !signup ? authSubmittedValues.email : "") + '" required></label><label><span>Password</span><input name="password" type="password" autocomplete="' + (signup ? 'new-password' : 'current-password') + '" minlength="8" maxlength="128" required></label>' +
     (signup ? '<label><span>Confirm password</span><input name="confirmPassword" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></label>' : '') +
     '<div class="auth-message" role="status">' + escapeHtml(authMessage) + '</div><button class="button button-dark" type="submit">' + (signup ? 'Create private archive' : 'Sign in') + ' <span class="arrow">↗</span></button><p class="auth-switch">' + (signup ? 'Already have an archive? <a href="/login">Sign in</a>' : 'New here? <a href="/signup">Create your archive</a>') + '</p><small>Use sample details and a unique password. No real payment is collected.</small></form></section></main>';
 }
@@ -525,13 +552,14 @@ function renderProduct(slug) {
     return Number(b.kind === product.kind) - Number(a.kind === product.kind);
   }).slice(0, 3);
   return '<main class="page product-page"><nav class="breadcrumbs" aria-label="Breadcrumbs"><a href="/">Home</a><span>/</span><a href="/archive">Archive</a><span>/</span><a href="/series/' + escapeHtml(series.slug) + '">' + escapeHtml(series.number) + '</a><span>/</span><a href="/chapter/' + escapeHtml(chapter.slug) + '">' + escapeHtml(chapter.number) + '</a><span>/</span><span>Artifact</span></nav>' +
-    '<div class="product-detail-layout"><div class="product-gallery"><figure class="gallery-frame"><img src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + ' front view" fetchpriority="high"></figure>' +
-    (product.secondaryImage ? '<figure class="gallery-frame"><img src="' + escapeHtml(product.secondaryImage) + '" alt="' + escapeHtml(product.name) + ' back or detail view" loading="lazy"></figure>' : "") + '</div>' +
-    '<section class="product-info"><span class="mono section-label">' + escapeHtml(product.category) + ' · CONCEPT PIECE</span><h1 class="page-title">' + escapeHtml(product.name) + '</h1><div class="price">' + money(product.price) + '<small>Illustrative price · INR</small></div><p class="product-desc">' + escapeHtml(product.description) + '</p>' +
-    '<div class="size-label"><span>Choose your size</span><button class="size-guide" type="button" data-size-guide="' + escapeHtml(product.slug) + '">Size guide</button></div><div class="size-options">' + product.sizes.map(function (size) { return '<button class="size-option' + (selection === size ? " selected" : "") + '" type="button" data-size="' + escapeHtml(size) + '" data-product="' + escapeHtml(product.slug) + '" aria-pressed="' + (selection === size) + '">' + escapeHtml(size) + '</button>'; }).join("") + '</div><div class="size-help" id="size-help" aria-live="polite"></div>' +
+    '<div class="product-detail-layout"><div class="product-gallery product-gallery-primary"><figure class="gallery-frame"><img src="' + escapeHtml(product.image) + '" alt="' + escapeHtml(product.name) + ' front view" fetchpriority="high"></figure></div>' +
+    '<section class="product-info"><span class="mono section-label">' + escapeHtml(product.category) + ' · CONCEPT PIECE</span><h1 class="page-title">' + escapeHtml(product.name) + '</h1><div class="price">' + money(product.price) + '<small>Illustrative price · INR</small></div><p class="product-desc">' + escapeHtml(product.description) + '</p><p class="product-data-note">Story and product copy are illustrative; specifications and availability are not verified.</p>' +
+    '<div class="size-picker"><div class="size-label"><span id="size-label-' + escapeHtml(product.slug) + '">Choose a sample size</span></div><div class="size-options" role="group" aria-labelledby="size-label-' + escapeHtml(product.slug) + '" aria-describedby="size-stock-note">' + product.sizes.map(function (size) { return '<button class="size-option' + (selection === size ? " selected" : "") + '" type="button" data-size="' + escapeHtml(size) + '" data-product="' + escapeHtml(product.slug) + '" aria-pressed="' + (selection === size) + '">' + escapeHtml(size) + '</button>'; }).join("") + '</div><p class="size-stock-note" id="size-stock-note">These size options are illustrative. Stock and garment measurements are not tracked.</p><div class="size-help" id="size-help" role="status" aria-live="polite"></div></div>' +
     '<button class="button button-dark" type="button" data-add="' + escapeHtml(product.slug) + '">Add to bag <span class="arrow">↗</span></button><p class="shipping-note">TEST ORDER · NON-PAYABLE QR · NO PAYMENT</p>' +
-    '<div class="accordions"><details class="accordion" open><summary>About the piece</summary><p>' + escapeHtml(product.description) + '</p></details><details class="accordion"><summary>Details and care</summary><ul>' + product.details.map(function (detail) { return "<li>" + escapeHtml(detail) + "</li>"; }).join("") + '<li>Care information is sample copy for this prototype.</li></ul></details><details class="accordion"><summary>From the archive</summary><p>This piece accompanies <a href="/chapter/' + escapeHtml(product.chapterSlug) + '"><u>' + escapeHtml(getChapter(product.chapterSlug).title) + '</u></a>.</p></details></div>' +
-    '</section></div><section class="related-products"><header><span class="mono section-label">KEEP EXPLORING</span><h2>Carry it together.</h2><a href="/artifacts">View all ' + content.products.length + ' artifacts <span class="arrow">↗</span></a></header><div class="related-grid">' + related.map(function (item, index) { return catalogCard(item, index); }).join("") + '</div></section></main>';
+    '<div class="accordions"><details class="accordion" open><summary>About the piece</summary><p>' + escapeHtml(product.description) + '</p></details><details class="accordion"><summary>Product information</summary><p>Material, fit, care, measurements, stock, shipping, and return terms have not been verified for this sample catalogue.</p></details><details class="accordion"><summary>From the archive</summary><p>This piece accompanies <a href="/chapter/' + escapeHtml(product.chapterSlug) + '"><u>' + escapeHtml(getChapter(product.chapterSlug).title) + '</u></a>.</p></details></div>' +
+    '</section>' + (product.secondaryImage ? '<div class="product-gallery product-gallery-secondary"><figure class="gallery-frame"><img src="' + escapeHtml(product.secondaryImage) + '" alt="' + escapeHtml(product.name) + ' back or detail view" loading="lazy"></figure></div>' : '') +
+    '</div>' +
+    '<section class="related-products"><header><span class="mono section-label">KEEP EXPLORING</span><h2>Carry it together.</h2><a href="/artifacts">View all ' + content.products.length + ' artifacts <span class="arrow">↗</span></a></header><div class="related-grid">' + related.map(function (item, index) { return catalogCard(item, index); }).join("") + '</div></section></main>';
 }
 
 function checkoutSteps(active) {
@@ -720,13 +748,10 @@ function adminOrderCards() {
     const lines = (order.items || []).map(function (item) {
       return '<div class="admin-order-line"><img src="' + escapeHtml(item.image) + '" alt=""><span><strong>' + escapeHtml(item.name) + '</strong><small>Size ' + escapeHtml(item.size) + ' · Qty ' + item.qty + '</small></span><b>' + money(item.lineTotal) + '</b></div>';
     }).join("");
-    const statusOptions = orderStatuses.map(function (status) {
-      return '<option value="' + status + '"' + (status === order.status ? " selected" : "") + '>' + status + '</option>';
-    }).join("");
     return '<article class="admin-card admin-order"><div class="admin-order-head"><div><span class="mono section-label">' + escapeHtml(order.orderNumber) + '</span><h2>' + escapeHtml(customer.name) + '</h2><p>' + escapeHtml(orderDate(order.createdAt)) + '</p></div><span class="order-badge">' + escapeHtml(order.status) + '</span></div>' +
       '<div class="admin-order-grid"><section><h3>Artifact</h3>' + lines + '<div class="admin-order-total"><span>Test subtotal</span><strong>' + money(order.subtotal) + '</strong></div></section>' +
       '<section class="admin-customer"><h3>Customer & delivery</h3><p><strong>' + escapeHtml(customer.email) + '</strong><br>' + escapeHtml(customer.phone) + '</p><p>' + escapeHtml(customer.address) + '<br>' + escapeHtml(customer.city) + ' · ' + escapeHtml(customer.postalCode) + '</p><span class="mono">PAYMENT · ' + escapeHtml(order.paymentStatus) + '</span></section></div>' +
-      '<div class="admin-order-actions"><label><span>Order status</span><select data-order-status="' + escapeHtml(order.id) + '">' + statusOptions + '</select></label><button class="button button-dark" type="button" data-update-order="' + escapeHtml(order.id) + '">Save status</button><button class="remove-button" type="button" data-delete-order="' + escapeHtml(order.id) + '">Delete order</button></div></article>';
+      '<div class="admin-order-actions"><p class="admin-order-demo-note">Test records cannot advance to payment or fulfillment.</p><button class="remove-button" type="button" data-delete-order="' + escapeHtml(order.id) + '">Delete test record</button></div></article>';
   }).join("");
 }
 
@@ -781,7 +806,7 @@ function adminDashboard() {
       field("Description", "products." + index + ".description", product.description, { textarea: true }) +
       field("Product image", "products." + index + ".image", product.image, { upload: true, hint: "Use an images.unsplash.com URL or upload a PNG, JPG, or WebP image (up to 2 MB)." }) +
       field("Back or detail image", "products." + index + ".secondaryImage", product.secondaryImage || "", { upload: true, hint: "Optional second product view. Use an images.unsplash.com URL or upload an image (up to 2 MB)." }) +
-      field("Details and care points", "products." + index + ".details", product.details, { textarea: true, kind: "lines", hint: "One detail per line." }) +
+      field("Details and care points", "products." + index + ".details", product.details, { textarea: true, kind: "lines", hint: "Illustrative copy only. Verify material, fit, care, and product claims with the brand before publishing." }) +
     '</article>';
   }).join("");
 
@@ -887,6 +912,15 @@ function render() {
   else if (["", "home", "belief"].includes(route[0])) main = renderHome();
   else main = renderNotFound();
   root.innerHTML = renderHeader() + main + renderFooter() + renderCart() + renderNotice();
+  const mainElement = root.querySelector("main");
+  if (mainElement) {
+    mainElement.id = "main-content";
+    mainElement.setAttribute("tabindex", "-1");
+    if (location.hash === "#main-content") {
+      mainElement.focus();
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+  }
   if (checkoutValues) {
     const nextCheckoutForm = document.getElementById("checkout-details");
     if (nextCheckoutForm) Object.keys(checkoutValues).forEach(function (name) {
@@ -949,6 +983,7 @@ function bindEvents() {
         return;
       }
       cart[index].qty += 1;
+      clearOrderAttempt();
       saveCart();
       render();
       focusCart('[data-cart-inc="' + index + '"]');
@@ -959,6 +994,7 @@ function bindEvents() {
       const index = Number(button.dataset.cartDec);
       cart[index].qty -= 1;
       if (cart[index].qty <= 0) cart.splice(index, 1);
+      clearOrderAttempt();
       saveCart();
       render();
       focusCart(cart[index] ? '[data-cart-dec="' + index + '"]' : "[data-cart-close]");
@@ -969,6 +1005,8 @@ function bindEvents() {
       catalogFilter = button.dataset.catalogFilter;
       quickAddSlug = "";
       render();
+      const nextFilter = document.querySelector('[data-catalog-filter="' + CSS.escape(catalogFilter) + '"]');
+      if (nextFilter) nextFilter.focus();
     });
   });
   const scrollCatalogue = document.querySelector("[data-scroll-catalogue]");
@@ -981,6 +1019,8 @@ function bindEvents() {
     catalogSort = catalogSortSelect.value;
     quickAddSlug = "";
     render();
+    const nextSort = document.querySelector("[data-catalog-sort]");
+    if (nextSort) nextSort.focus();
   });
   bindCatalogCardActions(document);
   document.querySelectorAll("[data-size]").forEach(function (button) {
@@ -1006,16 +1046,6 @@ function bindEvents() {
       }
       if (addProductToCart(product, size)) render();
     });
-  });
-  const sizeGuide = document.querySelector("[data-size-guide]");
-  if (sizeGuide) sizeGuide.addEventListener("click", function () {
-    const product = getProduct(sizeGuide.dataset.sizeGuide);
-    if (!product) return;
-    const sizes = product.sizes.join(" · ");
-    const fitNote = product.sizes.length === 1 && product.sizes[0] === "ONE SIZE"
-      ? "One size. See the product details for fit and adjustment information."
-      : "Available sizes: " + sizes + ". Garment measurements are pending approved product specifications.";
-    showNotice(fitNote);
   });
   const checkout = document.querySelector("[data-checkout]");
   if (checkout) checkout.addEventListener("click", function () {
@@ -1064,8 +1094,21 @@ function bindEvents() {
     confirmOrder.disabled = true;
     confirmOrder.textContent = "Recording order…";
     checkoutMessage = "";
+    let attemptKey = localStorage.getItem(orderAttemptStorageKey);
+    if (!attemptKey) {
+      if (!window.crypto || typeof window.crypto.randomUUID !== "function") {
+        checkoutMessage = "This browser cannot create a secure checkout reference. Update your browser and try again.";
+        confirmOrder.disabled = false;
+        confirmOrder.innerHTML = 'Confirm test order <span class="arrow">↗</span>';
+        const message = document.querySelector(".checkout-message");
+        if (message) message.textContent = checkoutMessage;
+        return;
+      }
+      attemptKey = window.crypto.randomUUID();
+      localStorage.setItem(orderAttemptStorageKey, attemptKey);
+    }
     try {
-      const orderHeaders = { "Content-Type": "application/json" };
+      const orderHeaders = { "Content-Type": "application/json", "Idempotency-Key": attemptKey };
       if (customerToken) orderHeaders.Authorization = "Bearer " + customerToken;
       const response = await fetch("/api/orders", {
         method: "POST",
@@ -1078,12 +1121,21 @@ function bindEvents() {
         })
       });
       const result = await response.json();
+      if (response.status === 409 && result.code === "IDEMPOTENCY_KEY_REUSED") {
+        if (await recoverOrderAttempt()) {
+          render();
+          window.scrollTo(0, 0);
+          return;
+        }
+        throw new Error(result.error || "Recover the existing order before trying again.");
+      }
       if (!response.ok && response.status === 409) {
         const latest = await fetch("/api/content");
         if (latest.ok) {
           const latestContent = await latest.json();
           const sync = syncCartWithContent(latestContent);
           content = latestContent;
+          clearOrderAttempt();
           checkoutStep = "review";
           checkoutMessage = sync.removed
             ? "A product or selected size changed. Review the updated bag before continuing."
@@ -1107,6 +1159,7 @@ function bindEvents() {
       }
       if (!response.ok) throw new Error(result.error || "The test order could not be recorded.");
       checkoutOrder = result.order;
+      clearOrderAttempt();
       if (customer) customerOrders = [result.order].concat(customerOrders.filter(function (order) { return order.id !== result.order.id; }));
       checkoutStep = "complete";
       cart = [];
@@ -1114,7 +1167,12 @@ function bindEvents() {
       render();
       window.scrollTo(0, 0);
     } catch (error) {
-      checkoutMessage = error.message;
+      if (attemptKey && await recoverOrderAttempt()) {
+        render();
+        window.scrollTo(0, 0);
+        return;
+      }
+      checkoutMessage = "We could not confirm whether this order was recorded. Your bag is saved; retrying will safely reuse this checkout attempt.";
       confirmOrder.disabled = false;
       confirmOrder.innerHTML = 'Confirm test order <span class="arrow">↗</span>';
       const message = document.querySelector(".checkout-message");
@@ -1145,6 +1203,12 @@ function bindEvents() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Your private archive could not be opened.");
+      if (mode === "signup" && !result.token) {
+        authMessage = result.message || "If a new account was created, sign in with this email and password to continue.";
+        authSubmittedValues = { name: "", email: values.email || "" };
+        navigateTo("/login");
+        return;
+      }
       customerToken = result.token;
       customer = result.customer;
       customerOrders = result.orders || [];
@@ -1178,6 +1242,7 @@ function bindEvents() {
     customerToken = "";
     customer = null;
     customerOrders = [];
+    clearOrderAttempt();
     accountOrderSearch = "";
     accountProductSearch = "";
     customerLoading = false;
@@ -1332,12 +1397,6 @@ function bindEvents() {
     adminCustomersLoaded = false;
     loadAdminCustomers();
   });
-  document.querySelectorAll("[data-update-order]").forEach(function (button) {
-    button.addEventListener("click", function () {
-      const select = document.querySelector('[data-order-status="' + CSS.escape(button.dataset.updateOrder) + '"]');
-      updateAdminOrder(button.dataset.updateOrder, select.value, button);
-    });
-  });
   document.querySelectorAll("[data-delete-order]").forEach(function (button) {
     button.addEventListener("click", function () {
       if (window.confirm("Delete this order from Neon?")) deleteAdminOrder(button.dataset.deleteOrder, button);
@@ -1345,7 +1404,7 @@ function bindEvents() {
   });
   document.querySelectorAll("[data-delete-customer]").forEach(function (button) {
     button.addEventListener("click", function () {
-      if (window.confirm("Delete this customer account? Linked orders will remain in the order ledger.")) deleteAdminCustomer(button.dataset.deleteCustomer, button);
+      if (window.confirm("Delete this customer account and sign-in access? Name, email, phone, address, and item details saved in linked order snapshots will remain in the order ledger.")) deleteAdminCustomer(button.dataset.deleteCustomer, button);
     });
   });
 
@@ -1514,27 +1573,6 @@ async function deleteAdminCustomer(id, button) {
   }
 }
 
-async function updateAdminOrder(id, status, button) {
-  button.disabled = true;
-  try {
-    const response = await fetch("/api/admin/orders/" + encodeURIComponent(id), {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + adminToken },
-      body: JSON.stringify({ status: status })
-    });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || "The order status could not be updated.");
-    adminOrders = adminOrders.map(function (order) { return order.id === id ? result.order : order; });
-    adminMessage = result.order.orderNumber + " moved to " + result.order.status + ".";
-    render();
-  } catch (error) {
-    adminMessage = error.message;
-    button.disabled = false;
-    const status = document.querySelector(".order-admin-status");
-    if (status) status.textContent = adminMessage;
-  }
-}
-
 async function deleteAdminOrder(id, button) {
   button.disabled = true;
   try {
@@ -1621,6 +1659,7 @@ async function saveAdminContent(event) {
     }
     adminMessage = "Saved to Neon Postgres.";
     content = cloneContent(adminDraft);
+    content.contentVersion = result.contentVersion;
     adminDraft = cloneContent(content);
     render();
     const tab = document.querySelector('[data-tab="' + selectedTab + '"]');
@@ -1653,6 +1692,9 @@ async function loadCustomerSession() {
     customer = result.customer;
     customerOrders = result.orders || [];
     authMessage = "";
+    if (currentRoute()[0] === "checkout" && localStorage.getItem(orderAttemptStorageKey)) {
+      await recoverOrderAttempt();
+    }
   } catch (error) {
     customer = null;
     customerOrders = [];
@@ -1660,6 +1702,34 @@ async function loadCustomerSession() {
   } finally {
     customerLoading = false;
     render();
+  }
+}
+
+async function recoverOrderAttempt() {
+  const key = localStorage.getItem(orderAttemptStorageKey);
+  if (!key || !customerToken || recoveringOrderAttempt) return false;
+  recoveringOrderAttempt = true;
+  try {
+    const response = await fetch("/api/orders/attempt/" + encodeURIComponent(key), {
+      headers: { Authorization: "Bearer " + customerToken }
+    });
+    if (response.status === 404) return false;
+    if (!response.ok) return false;
+    const result = await response.json();
+    if (!result.order) return false;
+    checkoutOrder = result.order;
+    checkoutCustomer = result.order.customer || {};
+    customerOrders = [result.order].concat(customerOrders.filter(function (order) { return order.id !== result.order.id; }));
+    checkoutStep = "complete";
+    checkoutMessage = "";
+    cart = [];
+    saveCart();
+    clearOrderAttempt();
+    return true;
+  } catch {
+    return false;
+  } finally {
+    recoveringOrderAttempt = false;
   }
 }
 
@@ -1686,7 +1756,8 @@ window.addEventListener("keydown", function (event) {
   }
 });
 
-fetch("/api/content")
+function loadContent() {
+  fetch("/api/content")
   .then(function (response) { if (!response.ok) throw new Error("The content service is unavailable."); return response.json(); })
   .then(function (data) {
     content = data;
@@ -1704,5 +1775,10 @@ fetch("/api/content")
     if (customerToken) loadCustomerSession(); else customerLoading = false;
   })
   .catch(function () {
-    root.innerHTML = '<main class="page" style="padding:80px 0"><span class="mono">The archive is offline.</span><p>Please try again shortly.</p></main>';
+    root.innerHTML = '<main id="main-content" class="page content-error" tabindex="-1"><section role="alert"><span class="mono">The archive could not load.</span><p>Your bag is stored in this browser. Check your connection and try again.</p><button class="button button-dark" type="button" data-retry-content>Retry</button></section></main>';
+    const retry = root.querySelector("[data-retry-content]");
+    if (retry) retry.addEventListener("click", loadContent);
   });
+}
+
+loadContent();

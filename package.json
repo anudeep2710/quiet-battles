@@ -7,6 +7,7 @@
     "start": "node server.js",
     "dev": "node --env-file=.env.local server.js",
     "db:init": "node --env-file=.env.local scripts/init-db.js",
+    "test:unit": "node --test tests/order-contract.test.js tests/order-api.test.js tests/customer-auth-api.test.js",
     "test:admin-auth": "node scripts/admin-auth-test.js",
     "test:smoke": "node --env-file=.env.local scripts/smoke-test.js"
   },

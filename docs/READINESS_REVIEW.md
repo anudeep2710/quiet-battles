@@ -2,11 +2,11 @@
 
 ## Decision
 
-The current build covers the core technical-assessment requirements and is suitable to present as a working prototype with clear limits. It is not ready to process real customer accounts or payments.
+The current build is suitable to present as a working prototype. It is not ready to process real customer orders or payments. The account-required checkout and test QR are demonstration flows; the QR cannot collect money.
 
-This review combines source, documentation, and browser checks. Public routes, story pages, products, account pages, and checkout account gate were inspected. The Studio now offers one-time first-use account creation and switches to sign-in after setup; the account and salted password hash are stored in Neon, and the Studio key remains server-only. Focused auth coverage checks setup validation, first-account-only behavior, login, protected routes, and logout with mocked account persistence. The assigned Chrome browser also confirmed the local Studio form, confirmation/key rejection messages, and a 390 px view with no horizontal overflow. The live first-time setup was intentionally not submitted because doing so would claim the one-time owner account. Recheck the deployed setup page and Neon status before presenting it as live-verified.
+The 9 November 2026 source and local-browser pass covered the homepage, product details, catalogue filters, sample-size selection, bag, account-required checkout gate, and signup form. It did not submit signup or create an order. Unit tests passed for retry/idempotency behavior, order recovery scope, and customer-auth behavior; the mocked Studio-auth test and JavaScript syntax checks also passed. No Neon migration, database write, live checkout, or full device matrix was performed in this pass.
 
-The homepage hero image renders in the current desktop and mobile captures. A live `/api/health` request on 9 November 2026 returned `{"ok":true,"database":"Neon Postgres"}`. These checks confirm the public image and database connection; they do not cover signed-in Studio or order creation.
+Earlier project checks recorded a successful `/api/health` response from Neon and a 390 px local layout review. Those results do not prove that the updated schema is applied or that current Studio and order writes work. The migration for idempotent orders, shared auth throttling, and optimistic Studio saves has not been run against the connected Neon database.
 
 ## Requirements check
 
@@ -15,13 +15,13 @@ The homepage hero image renders in the current desktop and mobile captures. A li
 | Premium homepage, brand introduction, and navigation | Homepage, brand copy, responsive navigation, editorial imagery, and featured Series | Covered |
 | Archive, Series, and five Chapters | Series 01 and five Chapter Chambers, each with story copy and a product relationship | Covered |
 | Product page and purchase controls | Eight products, price and size controls, front/back artwork, bag, filters, and sorting | Covered |
-| Account-required purchase flow | API rejects guest orders; account page and checkout gate are present; delivery and review steps are implemented in source | Covered in implementation; final authenticated checkout not exercised in this review |
-| Test QR and order confirmation | Non-payable QR step and order-record path are implemented; no money moves | Covered in implementation; order creation not exercised in this review |
-| Backend and database | Node API and Neon Postgres schema cover content, products, media, accounts, sessions, and orders; live health endpoint reports Neon connected | Covered in source and live health check; current write flow not exercised |
-| Admin / CMS | Studio source supports content, product, image, customer, and order management behind a one-time Neon owner account, password, and server-checked Studio key | First-run UI and API validation checked locally; no owner account was created. Confirm live setup and sign-in after release |
-| Responsive experience | Responsive CSS and current desktop/mobile screenshots are present | Covered in source and captured layouts; a full device matrix was not run |
+| Account-required purchase flow | Guest path is blocked; bag is retained; account, delivery, review, and dummy-QR steps exist | Account gate and signup UI seen in local Chrome; signed-in checkout not exercised |
+| Test QR and order confirmation | QR is explicitly non-payable; orders are marked `demo_recorded` / `not_payable`; fulfillment cannot be advanced | Source and API behavior covered by tests; no order was created in Neon |
+| Backend and database | Node API and Neon schema cover content, products, media, accounts, sessions, orders, idempotency, and rate-limit buckets | Source reviewed; tests use mocked persistence; schema migration and live writes remain unverified |
+| Admin / CMS | Studio supports content, product, image, customer, and order management behind a one-time owner account, password, and server-checked Studio key | Auth test uses mocked database; no owner setup or save was performed against Neon |
+| Responsive experience | Responsive CSS and prior local desktop/mobile captures exist | Desktop purchase path inspected; the prior 390 px check is historical and a complete device matrix remains unrun |
 | SEO and performance basics | Metadata, semantic HTML, static assets, and image alternatives are present | Partial; direct paths work, but page content renders in the browser and there is no sitemap or measured performance report |
-| Submission materials | Run instructions, stack, database schema, architecture, estimate, current screenshots, and a short walkthrough video are linked from the README | Covered |
+| Submission materials | Run instructions, stack, database schema, architecture, estimate, screenshots, and a walkthrough video are linked from the README | Covered; screenshots/video are from the prior deployed build |
 
 ## Product strategy lens
 
@@ -29,7 +29,8 @@ The site has a clear organizing idea: each Chapter pairs a personal story with a
 
 ## Gaps before public commerce
 
-- Customer accounts need email verification, recovery, generic registration responses, and effective request throttling.
+- Apply and verify the pending schema migration before running the updated API with the connected Neon database. Take a backup or use a disposable Neon branch first.
+- Customer accounts still need email verification and password recovery. Session tokens are held in browser session storage; review session revocation and expiry for production.
 - Privacy notices, retention rules, and named Studio accounts with roles and audit history are needed before storing personal information.
 - Inventory, shipping, tax, returns, order messaging, and payment-provider verification are not implemented.
 - Inner pages need crawlable URLs and page-specific metadata for production search indexing.
@@ -37,8 +38,8 @@ The site has a clear organizing idea: each Chapter pairs a personal story with a
 
 ## Before sending the submission
 
-1. Confirm the Vercel deployment serves the final Git commit and can read the connected Neon database.
-2. Sign into Studio privately and confirm the content and product editor loads.
-3. If you test signup and checkout, use a disposable Neon branch and synthetic customer details; confirm temporary records are removed.
-4. Keep .env.local and .studio-key out of Git and out of any archive.
+1. Review and apply the pending migration on a disposable Neon branch, then verify Studio content saves, customer auth, and test-order recovery there.
+2. Confirm the Vercel deployment serves the reviewed Git commit and uses the migrated schema before presenting live database functionality.
+3. Use synthetic customer details for signup and checkout verification; confirm temporary records are removed.
+4. Keep `.env.local` and `.studio-key` out of Git and out of any archive.
 5. Give reviewers access to the private GitHub repository. The repository contains source code; no source ZIP is included.

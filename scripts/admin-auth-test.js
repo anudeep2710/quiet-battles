@@ -2,6 +2,7 @@
 
 const assert = require("node:assert/strict");
 const http = require("node:http");
+const seedContent = require("../data/content.json");
 const db = require("../db");
 const onRequest = require("../server");
 
@@ -10,10 +11,11 @@ async function main() {
   const password = "local test password";
   const key = "local-test-studio-key-123";
   const savedEnv = Object.fromEntries(["QB_ADMIN_KEY"].map((name) => [name, process.env[name]]));
-  const dbMethods = ["findAdminAccount", "createAdminAccount", "createSession", "hasSession", "deleteSession", "readOrders"];
+  const dbMethods = ["findAdminAccount", "createAdminAccount", "createSession", "hasSession", "deleteSession", "readOrders", "consumeAuthAttempt", "writeContent", "pruneUnusedMedia"];
   const savedDb = Object.fromEntries(dbMethods.map((name) => [name, db[name]]));
   const sessions = new Set();
   let account = null;
+  let contentVersion = 1;
   process.env.QB_ADMIN_KEY = key;
   db.findAdminAccount = async () => account;
   db.createAdminAccount = async (newEmail, passwordHash, passwordSalt) => {
@@ -25,13 +27,24 @@ async function main() {
   db.hasSession = async (token) => sessions.has(token);
   db.deleteSession = async (token) => { sessions.delete(token); };
   db.readOrders = async () => [];
+  db.consumeAuthAttempt = async () => false;
+  db.writeContent = async (_content, expectedVersion) => {
+    if (expectedVersion !== contentVersion) {
+      const error = new Error("The archive changed after you opened Studio.");
+      error.code = "CONTENT_VERSION_CONFLICT";
+      throw error;
+    }
+    contentVersion += 1;
+    return contentVersion;
+  };
+  db.pruneUnusedMedia = async () => {};
 
   const server = http.createServer(onRequest);
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const base = "http://127.0.0.1:" + server.address().port;
-  async function request(route, body, headers) {
+  async function request(route, body, headers, method) {
     const response = await fetch(base + route, {
-      method: body === undefined ? "GET" : "POST",
+      method: method || (body === undefined ? "GET" : "POST"),
       headers: { ...(body === undefined ? {} : { "Content-Type": "application/json" }), ...(headers || {}) },
       ...(body === undefined ? {} : { body: JSON.stringify(body) })
     });
@@ -78,9 +91,18 @@ async function main() {
     const auth = { Authorization: "Bearer " + login.body.token };
     assert.equal((await request("/api/admin/session", undefined, auth)).status, 200);
     assert.equal((await request("/api/admin/orders", undefined, auth)).status, 200);
+    assert.equal((await request("/api/admin/orders/5f7220cb-0876-4c65-9c68-87b2fd924512", { status: "Shipped" }, auth, "PATCH")).status, 409,
+      "Studio cannot advance a non-payable test order to fulfilment");
+    assert.equal((await request("/api/admin/content", seedContent, auth, "PUT")).status, 428,
+      "Studio requires a content version before writing");
+    const savedContent = await request("/api/admin/content", { ...seedContent, contentVersion: 1 }, auth, "PUT");
+    assert.equal(savedContent.status, 200);
+    assert.equal(savedContent.body.contentVersion, 2);
+    const staleContent = await request("/api/admin/content", { ...seedContent, contentVersion: 1 }, auth, "PUT");
+    assert.equal(staleContent.status, 409, "a stale Studio tab cannot overwrite newer content");
     assert.equal((await request("/api/admin/logout", {}, auth)).status, 200);
     assert.equal((await request("/api/admin/orders", undefined, auth)).status, 401);
-    console.log("Admin auth test passed: first-run setup, concurrent registration, validation, login, protected session, and logout.");
+    console.log("Studio API test passed: first-run setup, concurrent registration, login, protected access, safe order state, versioned content saves, stale-write rejection, and logout.");
   } finally {
     await new Promise((resolve) => server.close(resolve));
     for (const [name, value] of Object.entries(savedEnv)) {

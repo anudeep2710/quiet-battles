@@ -1,8 +1,8 @@
 # Website screenshots
 
-## Current site · 9 November 2026
+## Last deployed preview · 9 November 2026
 
-These images were captured from the [live website](https://quiet-battles-demo.vercel.app) at desktop and 390 px mobile widths. The full page views show the public story and shopping path. The checkout image uses an isolated browser bag with one sample hoodie; no account or order was created. The Studio access screenshot shows email, password, and Studio key sign-in after setup. First use now presents the one-time email, password, confirmation, and Studio key form.
+These images were captured from the [deployed website](https://quiet-battles-demo.vercel.app) at desktop and 390 px mobile widths. They predate the latest local reliability and accessibility changes, which have not been deployed. The checkout image uses an isolated browser bag with one sample hoodie; no account or order was created. The Studio access screenshot shows email, password, and Studio key sign-in after setup. First use now presents the one-time email, password, confirmation, and Studio key form.
 
 | Screenshot | Page | What to look for |
 | --- | --- | --- |

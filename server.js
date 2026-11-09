@@ -4,16 +4,18 @@ const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
+const { promisify } = require("node:util");
 const db = require("./db");
+const { normalizeIdempotencyKey, orderRequestFingerprint } = require("./lib/order-contract");
 
 const PUBLIC_DIR = path.join(__dirname, "public");
 const PORT = Number(process.env.PORT || 4173);
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
-const ORDER_STATUSES = new Set(["Placed", "Confirmed", "Packed", "Shipped", "Completed", "Cancelled"]);
 const CUSTOMER_SESSION_MS = 7 * 24 * 60 * 60 * 1000;
 const ADMIN_AUTH_WINDOW_MS = 15 * 60 * 1000;
 const ADMIN_AUTH_MAX_ATTEMPTS = 10;
-const adminAuthAttempts = new Map();
+const CUSTOMER_AUTH_MAX_ATTEMPTS = 10;
+const scryptAsync = promisify(crypto.scrypt);
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -106,40 +108,38 @@ function validCustomerCredentials(body, includeName) {
   return !includeName || (typeof body.name === "string" && body.name.trim().length >= 2 && body.name.trim().length <= 80);
 }
 
-function derivePassword(password, salt) {
-  return crypto.scryptSync(password, salt, 64).toString("hex");
+async function derivePassword(password, salt) {
+  return (await scryptAsync(password, salt, 64)).toString("hex");
 }
 
-function passwordMatches(password, salt, expected) {
-  const actual = Buffer.from(derivePassword(password, salt), "hex");
+async function passwordMatches(password, salt, expected) {
+  const actual = Buffer.from(await derivePassword(password, salt), "hex");
   const stored = Buffer.from(String(expected || ""), "hex");
   return actual.length === stored.length && crypto.timingSafeEqual(actual, stored);
 }
 
-function adminPasswordMatches(password, account) {
+async function adminPasswordMatches(password, account) {
   if (!account || !/^[a-f0-9]{128}$/.test(account.password_hash || "") ||
       !/^[a-f0-9]{32}$/.test(account.password_salt || "")) return false;
   return passwordMatches(password, account.password_salt, account.password_hash);
 }
 
-function rateLimitedAdminAuth(req, scope) {
-  const now = Date.now();
-  const address = String(req.headers["x-real-ip"] || req.socket?.remoteAddress || "unknown").slice(0, 128);
-  const key = scope + ":" + address;
-  let attempt = adminAuthAttempts.get(key);
-  if (!attempt || now - attempt.startedAt >= ADMIN_AUTH_WINDOW_MS) {
-    attempt = { startedAt: now, count: 0 };
-  }
-  if (attempt.count >= ADMIN_AUTH_MAX_ATTEMPTS) {
-    adminAuthAttempts.set(key, attempt);
-    return true;
-  }
-  attempt.count += 1;
-  adminAuthAttempts.set(key, attempt);
-  if (adminAuthAttempts.size > 500) {
-    for (const [entryKey, entry] of adminAuthAttempts) {
-      if (now - entry.startedAt >= ADMIN_AUTH_WINDOW_MS) adminAuthAttempts.delete(entryKey);
-    }
+function clientAddress(req) {
+  const platformAddress = process.env.VERCEL === "1" ? req.headers["x-real-ip"] : "";
+  return String(platformAddress || req.socket?.remoteAddress || "unknown").slice(0, 128);
+}
+
+function authBucket(scope, value) {
+  const secret = process.env.QB_RATE_LIMIT_SECRET || process.env.QB_ADMIN_KEY || process.env.DATABASE_URL || "";
+  if (!secret) throw new Error("Configure a stable secret before rate limiting authentication.");
+  return crypto.createHmac("sha256", secret).update(scope + "\u0000" + value).digest("hex");
+}
+
+async function rateLimitedAuth(req, scope, email, maxAttempts = CUSTOMER_AUTH_MAX_ATTEMPTS) {
+  const buckets = [authBucket(scope, "ip:" + clientAddress(req))];
+  if (email) buckets.push(authBucket(scope, "email:" + normalizeEmail(email)));
+  for (const bucket of buckets) {
+    if (await db.consumeAuthAttempt(bucket, ADMIN_AUTH_WINDOW_MS, maxAttempts)) return true;
   }
   return false;
 }
@@ -266,8 +266,27 @@ function validOrderRequest(value) {
   });
 }
 
-async function createOrder(body, customerId) {
+async function createOrder(body, customerId, idempotencyKey) {
   if (!validOrderRequest(body)) throw requestError("Check the customer details, bag items, and no-payment acknowledgement.");
+  const customer = {
+    name: body.customer.name.trim(),
+    email: body.customer.email.trim().toLowerCase(),
+    phone: body.customer.phone.trim(),
+    address: body.customer.address.trim(),
+    city: body.customer.city.trim(),
+    postalCode: body.customer.postalCode.trim()
+  };
+  const requestHash = orderRequestFingerprint(customer, body.items);
+  const existing = await db.findOrderByIdempotencyKey(customerId, idempotencyKey);
+  if (existing) {
+    if (existing.requestHash && existing.requestHash !== requestHash) {
+      const error = new Error("This checkout key belongs to a different order attempt. Recover the existing order before starting another.");
+      error.code = "IDEMPOTENCY_KEY_REUSED";
+      throw error;
+    }
+    return { order: existing.order, replayed: true };
+  }
+
   const content = await db.readContent();
   const products = new Map(content.products.map((product) => [product.slug, product]));
   const items = body.items.map((line) => {
@@ -287,17 +306,13 @@ async function createOrder(body, customerId) {
   });
   const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
   if (body.expectedSubtotal !== subtotal) {
+    const concurrentOrder = await db.findOrderByIdempotencyKey(customerId, idempotencyKey);
+    if (concurrentOrder && concurrentOrder.requestHash === requestHash) {
+      return { order: concurrentOrder.order, replayed: true };
+    }
     throw requestError("The bag price changed. Review the updated subtotal before confirming your order.", 409);
   }
-  const customer = {
-    name: body.customer.name.trim(),
-    email: body.customer.email.trim().toLowerCase(),
-    phone: body.customer.phone.trim(),
-    address: body.customer.address.trim(),
-    city: body.customer.city.trim(),
-    postalCode: body.customer.postalCode.trim()
-  };
-  return db.createOrder(customer, items, subtotal, customerId);
+  return db.createOrder(customer, items, subtotal, customerId, idempotencyKey, requestHash);
 }
 
 async function handle(req, res) {
@@ -321,19 +336,16 @@ async function handle(req, res) {
       return send(res, 400, { error: "Enter your name, a valid email, and a password of at least 8 characters." });
     }
     const email = normalizeEmail(body.email);
-    if (await db.findCustomerByEmail(email)) {
-      return send(res, 409, { error: "An archive already exists for that email. Sign in instead." });
+    if (await rateLimitedAuth(req, "customer-signup", email, 5)) {
+      return send(res, 429, { error: "Too many account attempts. Try again in 15 minutes." });
     }
     const salt = crypto.randomBytes(16).toString("hex");
-    let customer;
     try {
-      customer = await db.createCustomer(body.name.trim(), email, derivePassword(body.password, salt), salt);
+      await db.createCustomer(body.name.trim(), email, await derivePassword(body.password, salt), salt);
     } catch (error) {
-      if (error.code === "23505") return send(res, 409, { error: "An archive already exists for that email. Sign in instead." });
-      throw error;
+      if (error.code !== "23505") throw error;
     }
-    const session = await startCustomerSession(customer);
-    return send(res, 201, { customer, orders: [], token: session.token, expiresAt: session.expiresAt });
+    return send(res, 202, { message: "If a new account was created, sign in with this email and password to continue." });
   }
 
   if (req.method === "POST" && pathname === "/api/auth/login") {
@@ -341,8 +353,15 @@ async function handle(req, res) {
     if (!validCustomerCredentials(body, false)) {
       return send(res, 400, { error: "Enter a valid email and password." });
     }
-    const record = await db.findCustomerByEmail(normalizeEmail(body.email));
-    if (!record || !passwordMatches(body.password, record.password_salt, record.password_hash)) {
+    const email = normalizeEmail(body.email);
+    if (await rateLimitedAuth(req, "customer-login", email)) {
+      return send(res, 429, { error: "Too many sign-in attempts. Try again in 15 minutes." });
+    }
+    const record = await db.findCustomerByEmail(email);
+    const passwordIsCorrect = record
+      ? await passwordMatches(body.password, record.password_salt, record.password_hash)
+      : await passwordMatches(body.password, "00112233445566778899aabbccddeeff", "0".repeat(128));
+    if (!record || !passwordIsCorrect) {
       return send(res, 401, { error: "The email or password is not correct." });
     }
     const customer = { id: record.id, name: record.name, email: record.email, createdAt: record.created_at };
@@ -364,8 +383,27 @@ async function handle(req, res) {
   if (req.method === "POST" && pathname === "/api/orders") {
     const signedInCustomer = await requireCustomer(req, res);
     if (!signedInCustomer) return;
-    const order = await createOrder(await readJson(req, 64 * 1024), signedInCustomer.id);
-    return send(res, 201, { order });
+    const idempotencyKey = normalizeIdempotencyKey(req.headers["idempotency-key"]);
+    if (!idempotencyKey) return send(res, 400, { error: "A valid checkout attempt key is required." });
+    try {
+      const result = await createOrder(await readJson(req, 64 * 1024), signedInCustomer.id, idempotencyKey);
+      return send(res, result.replayed ? 200 : 201, { order: result.order, replayed: result.replayed });
+    } catch (error) {
+      if (error.code === "IDEMPOTENCY_KEY_REUSED") {
+        return send(res, 409, { code: error.code, error: error.message });
+      }
+      throw error;
+    }
+  }
+
+  const orderAttemptMatch = /^\/api\/orders\/attempt\/([a-f0-9-]{36})$/i.exec(pathname);
+  if (req.method === "GET" && orderAttemptMatch) {
+    const signedInCustomer = await requireCustomer(req, res);
+    if (!signedInCustomer) return;
+    const idempotencyKey = normalizeIdempotencyKey(orderAttemptMatch[1]);
+    if (!idempotencyKey) return send(res, 400, { error: "Invalid checkout attempt key." });
+    const result = await db.findOrderByIdempotencyKey(signedInCustomer.id, idempotencyKey);
+    return result ? send(res, 200, { order: result.order }) : send(res, 404, { error: "No order has been recorded for this attempt." });
   }
 
   const mediaMatch = /^\/api\/media\/([a-f0-9-]{36})$/.exec(pathname);
@@ -386,10 +424,8 @@ async function handle(req, res) {
   }
 
   if (req.method === "POST" && pathname === "/api/admin/setup") {
-    if (rateLimitedAdminAuth(req, "setup")) return send(res, 429, { error: "Too many attempts. Try again in 15 minutes." });
     const studioKey = process.env.QB_ADMIN_KEY || "";
     if (studioKey.length < 16) return send(res, 503, { error: "Studio setup is not configured." });
-    if (await db.findAdminAccount()) return send(res, 409, { error: "Studio setup is already complete. Sign in instead." });
     const body = await readJson(req, 8192);
     if (!isObject(body) || typeof body.email !== "string" || body.email.length > 254 ||
         typeof body.password !== "string" || body.password.length > 128 ||
@@ -398,6 +434,10 @@ async function handle(req, res) {
       return send(res, 400, { error: "Enter a valid email, password, confirmation, and Studio key." });
     }
     const email = normalizeEmail(body.email);
+    if (await rateLimitedAuth(req, "admin-setup", email, 5)) {
+      return send(res, 429, { error: "Too many Studio setup attempts. Try again in 15 minutes." });
+    }
+    if (await db.findAdminAccount()) return send(res, 409, { error: "Studio setup is already complete. Sign in instead." });
     if (!validEmail(email) || body.password.length < 12) {
       return send(res, 400, { error: "Use a valid email and a password with at least 12 characters." });
     }
@@ -405,14 +445,13 @@ async function handle(req, res) {
     if (!safeEqual(body.key, studioKey)) return send(res, 401, { error: "Studio credentials are not correct." });
 
     const passwordSalt = crypto.randomBytes(16).toString("hex");
-    const passwordHash = crypto.scryptSync(body.password, passwordSalt, 64).toString("hex");
+    const passwordHash = await derivePassword(body.password, passwordSalt);
     const account = await db.createAdminAccount(email, passwordHash, passwordSalt);
     if (!account) return send(res, 409, { error: "Studio setup is already complete. Sign in instead." });
     return send(res, 201, await startAdminSession());
   }
 
   if (req.method === "POST" && pathname === "/api/admin/login") {
-    if (rateLimitedAdminAuth(req, "login")) return send(res, 429, { error: "Too many attempts. Try again in 15 minutes." });
     const studioKey = process.env.QB_ADMIN_KEY || "";
     if (studioKey.length < 16) return send(res, 503, { error: "Studio access is not configured." });
     const body = await readJson(req, 4096);
@@ -420,10 +459,13 @@ async function handle(req, res) {
       typeof body.password === "string" && body.password.length <= 128 &&
       typeof body.key === "string" && body.key.length <= 512;
     if (!validInput) return send(res, 401, { error: "Studio credentials are not correct." });
+    if (await rateLimitedAuth(req, "admin-login", body.email, ADMIN_AUTH_MAX_ATTEMPTS)) {
+      return send(res, 429, { error: "Too many attempts. Try again in 15 minutes." });
+    }
     const account = await db.findAdminAccount();
     const emailMatches = Boolean(account) && safeEqual(normalizeEmail(body.email), account.email);
     const keyMatches = safeEqual(body.key, studioKey);
-    const passwordIsCorrect = adminPasswordMatches(body.password, account);
+    const passwordIsCorrect = await adminPasswordMatches(body.password, account);
     if (!emailMatches || !keyMatches || !passwordIsCorrect) {
       return send(res, 401, { error: "Studio credentials are not correct." });
     }
@@ -454,14 +496,6 @@ async function handle(req, res) {
   }
 
   const orderMatch = /^\/api\/admin\/orders\/([a-f0-9-]{36})$/.exec(pathname);
-  if (orderMatch && req.method === "PATCH") {
-    if (!await requireAdmin(req, res)) return;
-    const body = await readJson(req, 4096);
-    if (!ORDER_STATUSES.has(body.status)) return send(res, 400, { error: "Choose a valid order status." });
-    const order = await db.updateOrderStatus(orderMatch[1], body.status);
-    return order ? send(res, 200, { order }) : send(res, 404, { error: "Order not found." });
-  }
-
   if (orderMatch && req.method === "DELETE") {
     if (!await requireAdmin(req, res)) return;
     const removed = await db.deleteOrder(orderMatch[1]);
@@ -469,13 +503,29 @@ async function handle(req, res) {
       send(res, 404, { error: "Order not found." });
   }
 
+  if (orderMatch && req.method === "PATCH") {
+    if (!await requireAdmin(req, res)) return;
+    return send(res, 409, { error: "This test order has no verified payment, so its order and fulfillment states cannot be advanced." });
+  }
+
   if (req.method === "PUT" && pathname === "/api/admin/content") {
     if (!await requireAdmin(req, res)) return;
     const body = await readJson(req, 1024 * 1024);
+    if (!Number.isSafeInteger(body.contentVersion) || body.contentVersion < 1) {
+      return send(res, 428, { error: "Reload Studio before saving so the latest archive version is protected." });
+    }
     if (!validContent(body)) {
       return send(res, 400, { error: "Check required fields, unique Series and Chapter slugs, linked products, and image URLs." });
     }
-    await db.writeContent(body);
+    let contentVersion;
+    try {
+      contentVersion = await db.writeContent(body, body.contentVersion);
+    } catch (error) {
+      if (error.code === "CONTENT_VERSION_CONFLICT") {
+        return send(res, 409, { error: error.message, code: error.code });
+      }
+      throw error;
+    }
     try {
       await db.pruneUnusedMedia();
     } catch (error) {
@@ -483,7 +533,7 @@ async function handle(req, res) {
       // like it failed; unused assets can be pruned on the next successful save.
       console.error("Unused media cleanup failed:", error);
     }
-    return send(res, 200, { ok: true, savedAt: new Date().toISOString() });
+    return send(res, 200, { ok: true, contentVersion, savedAt: new Date().toISOString() });
   }
 
   if (req.method === "POST" && pathname === "/api/admin/upload") {

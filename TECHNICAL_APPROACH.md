@@ -47,7 +47,7 @@ The final checkout step uses a test QR that cannot accept payment. The customer 
 
 ## Studio
 
-On first use, the owner creates a single Studio account with an email, password, confirmation, and Studio key. The server checks the key against its environment secret and stores a random-salt scrypt password hash in Neon. The singleton account row makes setup one-time. Later visits require the owner email, password, and key. Sign-in creates a random four-hour token; Neon stores its HMAC hash, keyed with the Studio secret. Studio can manage homepage content, Series, Chapters, products, uploaded images, customer accounts, and order fulfilment status. Images are limited to 2 MB and checked by file signature. Content updates validate slugs and cross-links and are committed in a database transaction.
+On first use, the owner creates a single Studio account with an email, password, confirmation, and Studio key. The server checks the key against its environment secret and stores a random-salt scrypt password hash in Neon. The singleton account row makes setup one-time. Later visits require the owner email, password, and key. Sign-in creates a random four-hour token; Neon stores its HMAC hash, keyed with the Studio secret. Studio manages homepage content, Series, Chapters, products, uploaded images, customer accounts, and non-payable test orders. Test orders cannot move through payment or fulfillment states. Images are limited to 2 MB and checked by file signature. Content updates validate slugs and cross-links, use optimistic version checks, and are committed in a database transaction.
 
 The shared Studio key is appropriate for this assessment build. Production access should use named staff accounts, roles, recovery controls, and an audit log.
 
@@ -59,7 +59,7 @@ The site uses direct page paths with a single-page-app fallback. Page content an
 
 ## Security and operating limits
 
-The customer account flow lacks email verification, password recovery, account-enumeration protections, and reliable rate limiting. Studio setup and login use a basic per-instance attempt limit; production should use shared edge or database-backed throttling. Privacy notices, retention controls, named Studio identities, and role-based access also need work before public customer data is collected. The build should use sample information only.
+Customer registration now returns a generic response, authentication attempts use shared database-backed limits, and password hashing uses asynchronous scrypt. Email verification and password recovery are still missing. Customer and Studio bearer tokens remain in browser `sessionStorage`, so production should move to secure, HttpOnly, SameSite cookies with a reviewed CSRF approach. Deleting an account leaves personal data in order snapshots; define and implement a retention or anonymization policy before collecting real customer data. Named Studio identities and roles are also required before team access. Use sample information only.
 
 A production commerce release also needs inventory reservation, shipping and tax rules, returns, transactional email, payment-provider verification and webhooks, and a media service instead of database-stored image bytes.
 
