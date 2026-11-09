@@ -11,7 +11,7 @@ A story-led streetwear storefront built around one path: **The Archive → Serie
 
 [![QUIET BATTLES website walkthrough](docs/walkthrough/quiet-battles-poster.jpg)](https://drive.google.com/file/d/1mENUGDQX0RGVkf-2AYvi_thbVM8cEDD1/view?usp=drivesdk)
 
-The screenshots and video below were captured from the current local source using sample content in `data/content.json` through a temporary read-only preview. That preview blocked every API route except reading sample content. No Neon records, customer accounts, or orders were created. The Vercel preview is still on the earlier release, and the latest Neon schema migration has not been verified on the connected database.
+The screenshots and video below were captured from local source using sample content in `data/content.json` through a temporary read-only preview. That preview blocked every API route except reading sample content; capture did not create accounts or orders. The current Vercel site includes the latest Studio access fix, and the connected Neon content API has been verified. The Studio screenshot predates the latest sign-in-switch styling.
 
 **Payment notice:** Checkout requires a customer account. Its QR image is illustrative and cannot accept or verify a payment. Orders in this build are workflow records only; no money moves.
 
@@ -51,7 +51,7 @@ The Studio is a private content-management area at `/admin`.
 4. Upload PNG, JPEG, or WebP images up to 2 MB. The Studio stores them in Neon for this assessment build.
 5. Review customer and test-order records. Sign out when finished.
 
-The first-use Studio screenshot below shows the form only. The local capture preview returned a setup-needed response for this screen; it did not create an owner account or save Studio content. Studio saves and database-backed admin workflows need a verified Neon migration before they can be reviewed live.
+The first-use Studio screenshot below shows the one-time owner form. The screenshot capture did not create an owner account or save Studio content. The connected Neon branch is now migrated, and the live content API returns Series 01, five Chapters, and eight products. The first Studio owner account has not been created yet; complete the one-time setup before using sign-in.
 
 ## Run locally
 
@@ -71,7 +71,7 @@ npm run dev
 
 Open [http://127.0.0.1:4173](http://127.0.0.1:4173). `npm run db:init` creates or migrates the schema and seeds an empty database; use a disposable branch or back up the database first. The current migration adds shared authentication throttling, checkout idempotency and recovery, and versioned Studio content saves.
 
-On an empty database, visit `/admin` and complete one-time owner setup. Customer sign-up and checkout require the updated database schema. The connected Neon branch was not migrated as part of this submission update.
+On an empty database, visit `/admin` and complete one-time owner setup. Customer sign-up and checkout require the updated database schema. The connected Neon main branch was migrated on 9 November 2026; the live health and content APIs have been verified.
 
 ### Checks
 
@@ -180,7 +180,7 @@ See [database schema](docs/database-schema.md) and the API overview below.
 
 The assessment build demonstrates browsing, search and catalogue filters, account creation and sign-in, private order history, account-required checkout, non-payable QR confirmation, and content-management screens. Product names, garment details, stories, sizes, prices, stock, and availability are illustrative and require brand approval. Inventory is not tracked.
 
-This is not ready for public commerce. The latest Neon migration and Vercel deployment are unverified. Email verification, password recovery, secure HttpOnly sessions, customer-data retention rules, named Studio roles, inventory reservation, shipping and tax calculation, returns, transactional email, real payment-provider verification, production SEO rendering, and performance monitoring remain to be completed. Do not collect real customer data or take payment through this build.
+This assessment build is not ready for public commerce. The latest Vercel commit and Neon content read path were verified on 9 November 2026, but live customer signup, Studio content saves, and order creation were not exercised during this repair. Email verification, password recovery, secure HttpOnly sessions, customer-data retention rules, named Studio roles, inventory reservation, shipping and tax calculation, returns, transactional email, real payment-provider verification, production SEO rendering, and performance monitoring remain to be completed. Do not collect real customer data or take payment through this build.
 
 ## Submission and tool disclosure
 

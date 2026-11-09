@@ -1,8 +1,8 @@
 # Website screenshots
 
-## Current source captures · 9 November 2026
+## Local source captures · 9 November 2026
 
-These images were taken with Playwright from the latest local source. The capture-only preview served `data/content.json` and blocked API routes that could modify a database. The Studio setup screen was shown in first-access state. No Neon records, accounts, or orders were created. The hosted site is an earlier release; these images are not screenshots of the deployed version.
+These images were taken with Playwright from local source at capture time. The capture-only preview served `data/content.json` and blocked API routes that could modify a database. The Studio setup screen was shown in first-access state. The captures predate the latest sign-in-switch styling and Neon migration; they do not demonstrate live database writes. The current Vercel site includes the latest Studio access fix, and the live content API was verified separately.
 
 | File | Screen | Capture |
 | --- | --- | --- |
